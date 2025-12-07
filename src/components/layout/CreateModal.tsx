@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Dumbbell, Utensils, PenSquare, Users, ChefHat, RotateCcw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 interface CreateOption {
@@ -7,6 +8,7 @@ interface CreateOption {
   label: string;
   description: string;
   gradient: string;
+  path: string;
 }
 
 const createOptions: CreateOption[] = [
@@ -14,37 +16,43 @@ const createOptions: CreateOption[] = [
     icon: <Dumbbell size={24} />, 
     label: "Workout", 
     description: "Log your exercise session",
-    gradient: "from-primary to-accent"
+    gradient: "from-primary to-accent",
+    path: "/create/workout"
   },
   { 
     icon: <Utensils size={24} />, 
     label: "Meal", 
     description: "Track your nutrition",
-    gradient: "from-success to-emerald-400"
+    gradient: "from-success to-emerald-400",
+    path: "/create/meal"
   },
   { 
     icon: <PenSquare size={24} />, 
     label: "Post", 
     description: "Share a wellness update",
-    gradient: "from-blue-500 to-cyan-400"
+    gradient: "from-blue-500 to-cyan-400",
+    path: "/create/post"
   },
   { 
     icon: <Users size={24} />, 
     label: "Group", 
     description: "Create a fitness group",
-    gradient: "from-amber-500 to-orange-400"
+    gradient: "from-amber-500 to-orange-400",
+    path: "/create/group"
   },
   { 
     icon: <ChefHat size={24} />, 
     label: "Recipe", 
     description: "Share a healthy recipe",
-    gradient: "from-rose-500 to-pink-400"
+    gradient: "from-rose-500 to-pink-400",
+    path: "/create/recipe"
   },
   { 
     icon: <RotateCcw size={24} />, 
     label: "Routine", 
     description: "Build a workout routine",
-    gradient: "from-violet-500 to-purple-400"
+    gradient: "from-violet-500 to-purple-400",
+    path: "/create/routine"
   },
 ];
 
@@ -54,6 +62,13 @@ interface CreateModalProps {
 }
 
 export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
+  const navigate = useNavigate();
+
+  const handleOptionClick = (path: string) => {
+    onClose();
+    navigate(path);
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -96,7 +111,7 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-200 group"
-                    onClick={onClose}
+                    onClick={() => handleOptionClick(option.path)}
                   >
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-200`}>
                       {option.icon}
