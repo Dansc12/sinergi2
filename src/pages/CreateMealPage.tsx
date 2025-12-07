@@ -54,8 +54,14 @@ const CreateMealPage = () => {
       toast({ title: "Please select a meal type", variant: "destructive" });
       return;
     }
-    toast({ title: "Meal logged!", description: "Your meal has been tracked." });
-    navigate("/");
+    // Navigate to share screen with meal data
+    navigate("/share", {
+      state: {
+        contentType: "meal",
+        contentData: { mealType, foods },
+        images: [],
+      },
+    });
   };
 
   return (

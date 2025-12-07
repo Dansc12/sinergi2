@@ -27,8 +27,14 @@ const CreatePostPage = () => {
       toast({ title: "Please write something", variant: "destructive" });
       return;
     }
-    toast({ title: "Post shared!", description: "Your update is now live." });
-    navigate("/");
+    // Navigate to share screen with post data
+    navigate("/share", {
+      state: {
+        contentType: "post",
+        contentData: { content },
+        images: images,
+      },
+    });
   };
 
   return (

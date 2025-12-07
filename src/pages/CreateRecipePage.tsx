@@ -96,8 +96,14 @@ const CreateRecipePage = () => {
       toast({ title: "Please enter a recipe title", variant: "destructive" });
       return;
     }
-    toast({ title: "Recipe shared!", description: "Your recipe is now live." });
-    navigate("/");
+    // Navigate to share screen with recipe data
+    navigate("/share", {
+      state: {
+        contentType: "recipe",
+        contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
+        images: [],
+      },
+    });
   };
 
   return (
