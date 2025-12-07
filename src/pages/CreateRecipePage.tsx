@@ -7,6 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
+
+interface Ingredient {
+  id: string;
+  name: string;
+  quantity: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
 
 const CreateRecipePage = () => {
   const navigate = useNavigate();
@@ -15,19 +26,46 @@ const CreateRecipePage = () => {
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [servings, setServings] = useState("");
-  const [ingredients, setIngredients] = useState<string[]>([""]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([
+    { id: "1", name: "", quantity: "", calories: 0, protein: 0, carbs: 0, fats: 0 }
+  ]);
   const [instructions, setInstructions] = useState<string[]>([""]);
 
-  const addIngredient = () => setIngredients([...ingredients, ""]);
-  const removeIngredient = (index: number) => {
+  const addIngredient = () => {
+    setIngredients([...ingredients, { 
+      id: Date.now().toString(), 
+      name: "", 
+      quantity: "",
+      calories: 0, 
+      protein: 0, 
+      carbs: 0, 
+      fats: 0 
+    }]);
+  };
+
+  const removeIngredient = (id: string) => {
     if (ingredients.length > 1) {
-      setIngredients(ingredients.filter((_, i) => i !== index));
+      setIngredients(ingredients.filter((i) => i.id !== id));
     }
   };
-  const updateIngredient = (index: number, value: string) => {
-    const updated = [...ingredients];
-    updated[index] = value;
-    setIngredients(updated);
+
+  const updateIngredientName = (id: string, value: string) => {
+    setIngredients(ingredients.map(i => i.id === id ? { ...i, name: value } : i));
+  };
+
+  const updateIngredientQuantity = (id: string, value: string) => {
+    setIngredients(ingredients.map(i => i.id === id ? { ...i, quantity: value } : i));
+  };
+
+  const handleIngredientSelect = (id: string, food: FoodItem) => {
+    setIngredients(ingredients.map(i => i.id === id ? {
+      ...i,
+      name: food.description,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fats: food.fats,
+    } : i));
   };
 
   const addInstruction = () => setInstructions([...instructions, ""]);
@@ -41,6 +79,17 @@ const CreateRecipePage = () => {
     updated[index] = value;
     setInstructions(updated);
   };
+
+  // Calculate total nutrition
+  const totalNutrition = ingredients.reduce(
+    (acc, ing) => ({
+      calories: acc.calories + ing.calories,
+      protein: acc.protein + ing.protein,
+      carbs: acc.carbs + ing.carbs,
+      fats: acc.fats + ing.fats,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fats: 0 }
+  );
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -118,20 +167,72 @@ const CreateRecipePage = () => {
             </div>
           </div>
 
+          {/* Total Nutrition Summary */}
+          {totalNutrition.calories > 0 && (
+            <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20">
+              <Label className="text-xs text-muted-foreground mb-2 block">Total Recipe Nutrition</Label>
+              <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                <div>
+                  <div className="font-semibold text-lg text-foreground">{totalNutrition.calories}</div>
+                  <div className="text-muted-foreground">Calories</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-lg text-foreground">{totalNutrition.protein}g</div>
+                  <div className="text-muted-foreground">Protein</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-lg text-foreground">{totalNutrition.carbs}g</div>
+                  <div className="text-muted-foreground">Carbs</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-lg text-foreground">{totalNutrition.fats}g</div>
+                  <div className="text-muted-foreground">Fats</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Ingredients */}
           <div className="space-y-3">
             <Label>Ingredients</Label>
             {ingredients.map((ingredient, index) => (
-              <motion.div key={index} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2">
-                <Input
-                  placeholder={`Ingredient ${index + 1}`}
-                  value={ingredient}
-                  onChange={(e) => updateIngredient(index, e.target.value)}
-                />
-                {ingredients.length > 1 && (
-                  <Button variant="ghost" size="icon" onClick={() => removeIngredient(index)}>
-                    <Trash2 size={16} className="text-destructive" />
-                  </Button>
+              <motion.div 
+                key={ingredient.id} 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                className="p-3 rounded-xl bg-card border border-border space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Ingredient {index + 1}</span>
+                  {ingredients.length > 1 && (
+                    <Button variant="ghost" size="icon-sm" onClick={() => removeIngredient(ingredient.id)}>
+                      <Trash2 size={16} className="text-destructive" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <FoodSearchInput
+                      value={ingredient.name}
+                      onChange={(value) => updateIngredientName(ingredient.id, value)}
+                      onSelect={(food) => handleIngredientSelect(ingredient.id, food)}
+                      placeholder="Search ingredient..."
+                    />
+                  </div>
+                  <Input 
+                    className="w-24"
+                    placeholder="Qty"
+                    value={ingredient.quantity}
+                    onChange={(e) => updateIngredientQuantity(ingredient.id, e.target.value)}
+                  />
+                </div>
+                {ingredient.calories > 0 && (
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    <span>{ingredient.calories} cal</span>
+                    <span>P: {ingredient.protein}g</span>
+                    <span>C: {ingredient.carbs}g</span>
+                    <span>F: {ingredient.fats}g</span>
+                  </div>
                 )}
               </motion.div>
             ))}

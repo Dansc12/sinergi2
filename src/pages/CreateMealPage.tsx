@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Utensils, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
 
 interface Food {
   id: string;
@@ -34,8 +34,19 @@ const CreateMealPage = () => {
     }
   };
 
-  const updateFood = (id: string, field: keyof Food, value: string) => {
-    setFoods(foods.map(f => f.id === id ? { ...f, [field]: value } : f));
+  const updateFoodName = (id: string, value: string) => {
+    setFoods(foods.map(f => f.id === id ? { ...f, name: value } : f));
+  };
+
+  const handleFoodSelect = (id: string, food: FoodItem) => {
+    setFoods(foods.map(f => f.id === id ? {
+      ...f,
+      name: food.description,
+      calories: food.calories.toString(),
+      protein: food.protein.toString(),
+      carbs: food.carbs.toString(),
+      fats: food.fats.toString(),
+    } : f));
   };
 
   const handleSubmit = () => {
@@ -101,45 +112,32 @@ const CreateMealPage = () => {
                     </Button>
                   )}
                 </div>
-                <Input
-                  placeholder="Food name"
+                <FoodSearchInput
                   value={food.name}
-                  onChange={(e) => updateFood(food.id, "name", e.target.value)}
+                  onChange={(value) => updateFoodName(food.id, value)}
+                  onSelect={(selectedFood) => handleFoodSelect(food.id, selectedFood)}
+                  placeholder="Search for a food..."
                 />
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Calories</Label>
-                    <Input
-                      placeholder="250"
-                      value={food.calories}
-                      onChange={(e) => updateFood(food.id, "calories", e.target.value)}
-                    />
+                {food.calories && (
+                  <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div className="p-2 rounded-lg bg-accent/30">
+                      <div className="text-muted-foreground">Calories</div>
+                      <div className="font-semibold text-foreground">{food.calories}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-accent/30">
+                      <div className="text-muted-foreground">Protein</div>
+                      <div className="font-semibold text-foreground">{food.protein}g</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-accent/30">
+                      <div className="text-muted-foreground">Carbs</div>
+                      <div className="font-semibold text-foreground">{food.carbs}g</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-accent/30">
+                      <div className="text-muted-foreground">Fats</div>
+                      <div className="font-semibold text-foreground">{food.fats}g</div>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-xs">Protein (g)</Label>
-                    <Input
-                      placeholder="20"
-                      value={food.protein}
-                      onChange={(e) => updateFood(food.id, "protein", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Carbs (g)</Label>
-                    <Input
-                      placeholder="30"
-                      value={food.carbs}
-                      onChange={(e) => updateFood(food.id, "carbs", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Fats (g)</Label>
-                    <Input
-                      placeholder="10"
-                      value={food.fats}
-                      onChange={(e) => updateFood(food.id, "fats", e.target.value)}
-                    />
-                  </div>
-                </div>
+                )}
               </motion.div>
             ))}
             <Button variant="outline" className="w-full" onClick={addFood}>
