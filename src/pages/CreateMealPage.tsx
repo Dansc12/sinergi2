@@ -69,13 +69,39 @@ const CreateMealPage = () => {
   };
 
   const handleFoodConfirm = (food: FoodItem, servings: number, servingSize: string) => {
+    // The FoodDetailModal now calculates the proper multiplier based on serving size
+    // We need to apply the same logic here
+    const parseServingSize = (servingSizeStr?: string): { value: number; unit: string } => {
+      if (!servingSizeStr) return { value: 100, unit: "g" };
+      const match = servingSizeStr.match(/^([\d.]+)\s*(.*)$/);
+      if (match) {
+        return { value: parseFloat(match[1]) || 100, unit: match[2] || "g" };
+      }
+      return { value: 100, unit: "g" };
+    };
+
+    const getServingSizeMultiplier = (selectedSize: string, baseServing: { value: number; unit: string }): number => {
+      const baseGrams = baseServing.unit.toLowerCase() === "g" ? baseServing.value : 100;
+      switch (selectedSize) {
+        case "serving": return baseGrams / 100;
+        case "100g": return 1;
+        case "1oz": return 28 / 100;
+        case "cup": return 240 / 100;
+        default: return 1;
+      }
+    };
+
+    const baseServing = parseServingSize(food.servingSize);
+    const sizeMultiplier = getServingSizeMultiplier(servingSize, baseServing);
+    const totalMultiplier = servings * sizeMultiplier;
+
     const newFood: SelectedFood = {
       id: Date.now().toString(),
       name: food.description,
-      calories: Math.round(food.calories * servings),
-      protein: food.protein * servings,
-      carbs: food.carbs * servings,
-      fats: food.fats * servings,
+      calories: Math.round(food.calories * totalMultiplier),
+      protein: food.protein * totalMultiplier,
+      carbs: food.carbs * totalMultiplier,
+      fats: food.fats * totalMultiplier,
       servings,
       servingSize,
     };
@@ -83,7 +109,7 @@ const CreateMealPage = () => {
     setSearchValue("");
     setIsFoodDetailOpen(false);
     setPendingFood(null);
-    toast({ title: "Food added!", description: `${servings} ${servingSize} of ${food.description}` });
+    toast({ title: "Food added!", description: `${servings} ${servingSize === "serving" ? (food.servingSize || "serving") : servingSize} of ${food.description}` });
   };
 
   const handleFoodDetailClose = () => {
