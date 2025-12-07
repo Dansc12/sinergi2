@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, PenSquare, Image, X } from "lucide-react";
+import { ArrowLeft, PenSquare, X, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { CameraCapture } from "@/components/CameraCapture";
 
 const CreatePostPage = () => {
   const navigate = useNavigate();
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
-  const handleImageUpload = () => {
-    // Simulated image upload
-    const mockImage = `https://images.unsplash.com/photo-${Date.now()}?w=400`;
-    setImages([...images, mockImage]);
+  const handleCapturePhoto = (imageUrl: string) => {
+    setImages([...images, imageUrl]);
   };
 
   const removeImage = (index: number) => {
@@ -81,11 +81,11 @@ const CreatePostPage = () => {
             <div className="grid grid-cols-3 gap-2">
               {images.map((img, index) => (
                 <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20" />
+                  <img src={img} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
                   <Button
                     variant="ghost"
-                    size="icon-sm"
-                    className="absolute top-1 right-1 bg-background/80"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
                     onClick={() => removeImage(index)}
                   >
                     <X size={14} />
@@ -94,12 +94,27 @@ const CreatePostPage = () => {
               ))}
             </div>
           )}
-
-          <Button variant="outline" className="w-full" onClick={handleImageUpload}>
-            <Image size={18} /> Add Photo
-          </Button>
         </div>
       </motion.div>
+
+      {/* Fixed Bottom Camera Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
+        <Button 
+          variant="outline" 
+          className="w-full" 
+          onClick={() => setIsCameraOpen(true)}
+        >
+          <Camera size={18} /> Take a Photo
+        </Button>
+      </div>
+
+      {/* Camera Capture Modal */}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCapturePhoto}
+        onSelectFromGallery={(urls) => setImages([...images, ...urls])}
+      />
     </div>
   );
 };

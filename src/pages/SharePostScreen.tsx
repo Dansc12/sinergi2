@@ -52,16 +52,6 @@ const SharePostScreen = () => {
   };
 
   const handleSubmit = () => {
-    // Public posts require at least one photo
-    if (visibility === "public" && images.length === 0) {
-      toast({ 
-        title: "Photo required", 
-        description: "Public posts must include at least one photo",
-        variant: "destructive" 
-      });
-      return;
-    }
-
     const contentTypeLabels: Record<string, string> = {
       workout: "Workout",
       meal: "Meal",
@@ -201,9 +191,7 @@ const SharePostScreen = () => {
               <span className="text-xs">Gallery</span>
             </motion.button>
           </div>
-          {visibility === "public" && images.length === 0 && (
-            <p className="text-xs text-destructive">* Required for public posts</p>
-          )}
+          <p className="text-xs text-muted-foreground">Photos are optional</p>
         </div>
 
         {/* Description */}
