@@ -3,15 +3,17 @@ import { Input } from "@/components/ui/input";
 import { Search, Dumbbell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Exercise {
+export interface Exercise {
   id: string;
   name: string;
   category: string;
   muscleGroup: string;
+  isCardio?: boolean;
 }
 
 // Common exercises database
 const exerciseDatabase: Exercise[] = [
+  // Strength exercises
   { id: "1", name: "Bench Press", category: "Barbell", muscleGroup: "Chest" },
   { id: "2", name: "Incline Bench Press", category: "Barbell", muscleGroup: "Chest" },
   { id: "3", name: "Dumbbell Bench Press", category: "Dumbbell", muscleGroup: "Chest" },
@@ -52,6 +54,22 @@ const exerciseDatabase: Exercise[] = [
   { id: "38", name: "Shrug", category: "Dumbbell", muscleGroup: "Back" },
   { id: "39", name: "Upright Row", category: "Barbell", muscleGroup: "Shoulders" },
   { id: "40", name: "Arnold Press", category: "Dumbbell", muscleGroup: "Shoulders" },
+  // Cardio exercises
+  { id: "41", name: "Treadmill Run", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "42", name: "Outdoor Run", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "43", name: "Stationary Bike", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "44", name: "Outdoor Cycling", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "45", name: "Elliptical", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "46", name: "Rowing Machine", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "47", name: "Stair Climber", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "48", name: "Swimming", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "49", name: "Jump Rope", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "50", name: "Walking", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "51", name: "Hiking", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "52", name: "Sprints", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "53", name: "HIIT", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "54", name: "Battle Ropes", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
+  { id: "55", name: "Box Jumps", category: "Cardio", muscleGroup: "Cardio", isCardio: true },
 ];
 
 interface ExerciseSearchInputProps {
@@ -126,8 +144,8 @@ const ExerciseSearchInput = ({ onSelect, placeholder = "Search exercises..." }: 
                 onClick={() => handleSelect(exercise)}
                 className="w-full p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Dumbbell size={18} className="text-primary" />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${exercise.isCardio ? "bg-accent/20" : "bg-primary/20"}`}>
+                  <Dumbbell size={18} className={exercise.isCardio ? "text-accent" : "text-primary"} />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-foreground">{exercise.name}</p>

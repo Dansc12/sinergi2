@@ -13,6 +13,8 @@ interface Set {
   id: string;
   weight: string;
   reps: string;
+  distance: string;
+  time: string;
   completed: boolean;
 }
 
@@ -24,6 +26,7 @@ interface Exercise {
   notes: string;
   sets: Set[];
   isExpanded: boolean;
+  isCardio: boolean;
 }
 
 const CreateWorkoutPage = () => {
@@ -31,15 +34,16 @@ const CreateWorkoutPage = () => {
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
 
-  const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string }) => {
+  const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string; isCardio?: boolean }) => {
     const newExercise: Exercise = {
       id: Date.now().toString(),
       name: exercise.name,
       category: exercise.category,
       muscleGroup: exercise.muscleGroup,
       notes: "",
-      sets: [{ id: "1", weight: "", reps: "", completed: false }],
+      sets: [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false }],
       isExpanded: true,
+      isCardio: exercise.isCardio || false,
     };
     setExercises([...exercises, newExercise]);
   };
@@ -72,6 +76,8 @@ const CreateWorkoutPage = () => {
             id: Date.now().toString(),
             weight: "",
             reps: "",
+            distance: "",
+            time: "",
             completed: false,
           };
           return { ...e, sets: [...e.sets, newSet] };
@@ -268,8 +274,8 @@ const CreateWorkoutPage = () => {
                       <div className="px-4 pb-2">
                         <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
                           <div className="col-span-2 text-center">SET</div>
-                          <div className="col-span-4 text-center">WEIGHT</div>
-                          <div className="col-span-4 text-center">REPS</div>
+                          <div className="col-span-4 text-center">{exercise.isCardio ? "DISTANCE" : "WEIGHT"}</div>
+                          <div className="col-span-4 text-center">{exercise.isCardio ? "TIME" : "REPS"}</div>
                           <div className="col-span-2"></div>
                         </div>
                       </div>
@@ -297,20 +303,20 @@ const CreateWorkoutPage = () => {
                             </button>
                             <div className="col-span-4">
                               <Input
-                                placeholder="lbs"
-                                value={set.weight}
-                                onChange={(e) => updateSet(exercise.id, set.id, "weight", e.target.value)}
+                                placeholder={exercise.isCardio ? "miles" : "lbs"}
+                                value={exercise.isCardio ? set.distance : set.weight}
+                                onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "distance" : "weight", e.target.value)}
                                 className="text-center h-9 bg-background border-border"
-                                type="number"
+                                type={exercise.isCardio ? "text" : "number"}
                               />
                             </div>
                             <div className="col-span-4">
                               <Input
-                                placeholder="reps"
-                                value={set.reps}
-                                onChange={(e) => updateSet(exercise.id, set.id, "reps", e.target.value)}
+                                placeholder={exercise.isCardio ? "mm:ss" : "reps"}
+                                value={exercise.isCardio ? set.time : set.reps}
+                                onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "time" : "reps", e.target.value)}
                                 className="text-center h-9 bg-background border-border"
-                                type="number"
+                                type={exercise.isCardio ? "text" : "number"}
                               />
                             </div>
                             <div className="col-span-2 flex justify-center">
