@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Heart, MessageCircle, Bookmark, Share2, MoreHorizontal, Users, UserPlus, ChevronRight } from "lucide-react";
+import { Search, HandMetal, MessageCircle, ClipboardList, Share2, MoreHorizontal, Users, UserPlus, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -142,8 +142,10 @@ const PostCard = ({ post, onLike, onSave }: { post: FeedPost; onLike: () => void
 
     {/* Image */}
     {post.image && (
-      <div className="relative aspect-square bg-muted">
-        <img src={post.image} alt="Post" className="w-full h-full object-cover" />
+      <div className="px-4 py-2">
+        <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
+          <img src={post.image} alt="Post" className="w-full h-full object-cover" />
+        </div>
       </div>
     )}
 
@@ -151,9 +153,9 @@ const PostCard = ({ post, onLike, onSave }: { post: FeedPost; onLike: () => void
     <div className="flex items-center justify-between p-4">
       <div className="flex items-center gap-4">
         <button onClick={onLike} className="flex items-center gap-1.5 group">
-          <Heart
+          <HandMetal
             size={24}
-            className={`transition-colors ${post.liked ? "fill-destructive text-destructive" : "text-foreground group-hover:text-destructive"}`}
+            className={`transition-colors ${post.liked ? "fill-primary text-primary" : "text-foreground group-hover:text-primary"}`}
           />
         </button>
         <button className="flex items-center gap-1.5 group">
@@ -164,9 +166,9 @@ const PostCard = ({ post, onLike, onSave }: { post: FeedPost; onLike: () => void
         </button>
       </div>
       <button onClick={onSave}>
-        <Bookmark
+        <ClipboardList
           size={24}
-          className={`transition-colors ${post.saved ? "fill-foreground text-foreground" : "text-foreground hover:text-primary"}`}
+          className={`transition-colors ${post.saved ? "text-primary" : "text-foreground hover:text-primary"}`}
         />
       </button>
     </div>
