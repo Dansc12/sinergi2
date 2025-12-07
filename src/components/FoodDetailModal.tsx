@@ -13,6 +13,8 @@ export interface FoodItem {
   carbs: number;
   fats: number;
   servingSize?: string;
+  servingSizeValue?: number;
+  servingSizeUnit?: string;
 }
 
 interface FoodDetailModalProps {
@@ -22,12 +24,34 @@ interface FoodDetailModalProps {
   onConfirm: (food: FoodItem, servings: number, servingSize: string) => void;
 }
 
-const servingSizeOptions = [
-  { value: "serving", label: "1 serving" },
-  { value: "100g", label: "100g" },
-  { value: "1oz", label: "1 oz (28g)" },
-  { value: "cup", label: "1 cup" },
-];
+// Parse serving size from string like "100g" to { value: 100, unit: "g" }
+const parseServingSize = (servingSizeStr?: string): { value: number; unit: string } => {
+  if (!servingSizeStr) return { value: 100, unit: "g" };
+  const match = servingSizeStr.match(/^([\d.]+)\s*(.*)$/);
+  if (match) {
+    return { value: parseFloat(match[1]) || 100, unit: match[2] || "g" };
+  }
+  return { value: 100, unit: "g" };
+};
+
+// Multiplier for different serving size selections relative to base (which is usually per 100g from USDA)
+const getServingSizeMultiplier = (selectedSize: string, baseServing: { value: number; unit: string }): number => {
+  // USDA data is typically per 100g, so we calculate based on that
+  const baseGrams = baseServing.unit.toLowerCase() === "g" ? baseServing.value : 100;
+  
+  switch (selectedSize) {
+    case "serving":
+      return baseGrams / 100; // Use the original serving size
+    case "100g":
+      return 1; // 100g is the standard
+    case "1oz":
+      return 28 / 100; // 1 oz = 28g
+    case "cup":
+      return 240 / 100; // Approximate 1 cup = 240g for most foods
+    default:
+      return 1;
+  }
+};
 
 export const FoodDetailModal = ({
   isOpen,
@@ -38,6 +62,15 @@ export const FoodDetailModal = ({
   const [servings, setServings] = useState(1);
   const [servingSize, setServingSize] = useState("serving");
 
+  const baseServing = food ? parseServingSize(food.servingSize) : { value: 100, unit: "g" };
+
+  const servingSizeOptions = [
+    { value: "serving", label: food?.servingSize || "1 serving" },
+    { value: "100g", label: "100g" },
+    { value: "1oz", label: "1 oz (28g)" },
+    { value: "cup", label: "1 cup" },
+  ];
+
   useEffect(() => {
     if (isOpen) {
       setServings(1);
@@ -47,10 +80,13 @@ export const FoodDetailModal = ({
 
   if (!food) return null;
 
-  const adjustedCalories = Math.round(food.calories * servings);
-  const adjustedProtein = food.protein * servings;
-  const adjustedCarbs = food.carbs * servings;
-  const adjustedFats = food.fats * servings;
+  const sizeMultiplier = getServingSizeMultiplier(servingSize, baseServing);
+  const totalMultiplier = servings * sizeMultiplier;
+
+  const adjustedCalories = Math.round(food.calories * totalMultiplier);
+  const adjustedProtein = food.protein * totalMultiplier;
+  const adjustedCarbs = food.carbs * totalMultiplier;
+  const adjustedFats = food.fats * totalMultiplier;
 
   const totalMacros = adjustedProtein + adjustedCarbs + adjustedFats;
   const proteinPercentage = totalMacros > 0 ? (adjustedProtein / totalMacros) * 100 : 0;
@@ -112,59 +148,84 @@ export const FoodDetailModal = ({
             {/* Content */}
             <div className="flex-1 p-6 overflow-y-auto">
               <div className="flex items-start gap-6">
-                {/* Calorie Circle with Macro Ring */}
-                <div className="relative flex-shrink-0">
-                  <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-                    {/* Background circle */}
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r={radius}
-                      fill="none"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="12"
-                    />
-                    {/* Protein segment (blue) */}
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r={radius}
-                      fill="none"
-                      stroke="hsl(220 90% 56%)"
-                      strokeWidth="12"
-                      strokeDasharray={`${proteinDash} ${circumference}`}
-                      strokeDashoffset="0"
-                      strokeLinecap="round"
-                    />
-                    {/* Carbs segment (yellow/orange) */}
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r={radius}
-                      fill="none"
-                      stroke="hsl(45 93% 47%)"
-                      strokeWidth="12"
-                      strokeDasharray={`${carbsDash} ${circumference}`}
-                      strokeDashoffset={-proteinDash}
-                      strokeLinecap="round"
-                    />
-                    {/* Fats segment (pink/red) */}
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r={radius}
-                      fill="none"
-                      stroke="hsl(340 82% 52%)"
-                      strokeWidth="12"
-                      strokeDasharray={`${fatsDash} ${circumference}`}
-                      strokeDashoffset={-(proteinDash + carbsDash)}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  {/* Center calorie text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold">{adjustedCalories}</span>
-                    <span className="text-xs text-muted-foreground">cal</span>
+                {/* Left Column: Circle + Compact Macros */}
+                <div className="flex flex-col items-center flex-shrink-0">
+                  {/* Calorie Circle with Macro Ring */}
+                  <div className="relative">
+                    <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
+                      {/* Background circle */}
+                      <circle
+                        cx="70"
+                        cy="70"
+                        r={radius}
+                        fill="none"
+                        stroke="hsl(var(--muted))"
+                        strokeWidth="12"
+                      />
+                      {/* Protein segment (blue) */}
+                      <circle
+                        cx="70"
+                        cy="70"
+                        r={radius}
+                        fill="none"
+                        stroke="hsl(220 90% 56%)"
+                        strokeWidth="12"
+                        strokeDasharray={`${proteinDash} ${circumference}`}
+                        strokeDashoffset="0"
+                        strokeLinecap="round"
+                      />
+                      {/* Carbs segment (yellow/orange) */}
+                      <circle
+                        cx="70"
+                        cy="70"
+                        r={radius}
+                        fill="none"
+                        stroke="hsl(45 93% 47%)"
+                        strokeWidth="12"
+                        strokeDasharray={`${carbsDash} ${circumference}`}
+                        strokeDashoffset={-proteinDash}
+                        strokeLinecap="round"
+                      />
+                      {/* Fats segment (pink/red) */}
+                      <circle
+                        cx="70"
+                        cy="70"
+                        r={radius}
+                        fill="none"
+                        stroke="hsl(340 82% 52%)"
+                        strokeWidth="12"
+                        strokeDasharray={`${fatsDash} ${circumference}`}
+                        strokeDashoffset={-(proteinDash + carbsDash)}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    {/* Center calorie text */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold">{adjustedCalories}</span>
+                      <span className="text-xs text-muted-foreground">cal</span>
+                    </div>
+                  </div>
+
+                  {/* Compact Macro Breakdown - Under Circle */}
+                  <div className="flex justify-between w-[140px] mt-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-[hsl(220,90%,56%)] mb-1" />
+                      <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}g</span>
+                      <span className="text-[10px] text-muted-foreground">{proteinPercentage.toFixed(0)}%</span>
+                      <span className="text-[10px] text-muted-foreground">Protein</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-[hsl(45,93%,47%)] mb-1" />
+                      <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}g</span>
+                      <span className="text-[10px] text-muted-foreground">{carbsPercentage.toFixed(0)}%</span>
+                      <span className="text-[10px] text-muted-foreground">Carbs</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-[hsl(340,82%,52%)] mb-1" />
+                      <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}g</span>
+                      <span className="text-[10px] text-muted-foreground">{fatsPercentage.toFixed(0)}%</span>
+                      <span className="text-[10px] text-muted-foreground">Fats</span>
+                    </div>
                   </div>
                 </div>
 
@@ -216,44 +277,6 @@ export const FoodDetailModal = ({
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              </div>
-
-              {/* Macro Breakdown */}
-              <div className="mt-8 space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">Nutrition Facts</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-4 rounded-xl bg-card border border-border text-center">
-                    <div className="w-3 h-3 rounded-full bg-[hsl(220,90%,56%)] mx-auto mb-2" />
-                    <div className="text-lg font-bold">{adjustedProtein.toFixed(1)}g</div>
-                    <div className="text-xs text-muted-foreground">Protein</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-card border border-border text-center">
-                    <div className="w-3 h-3 rounded-full bg-[hsl(45,93%,47%)] mx-auto mb-2" />
-                    <div className="text-lg font-bold">{adjustedCarbs.toFixed(1)}g</div>
-                    <div className="text-xs text-muted-foreground">Carbs</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-card border border-border text-center">
-                    <div className="w-3 h-3 rounded-full bg-[hsl(340,82%,52%)] mx-auto mb-2" />
-                    <div className="text-lg font-bold">{adjustedFats.toFixed(1)}g</div>
-                    <div className="text-xs text-muted-foreground">Fats</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Macro Legend */}
-              <div className="mt-6 flex justify-center gap-6 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(220,90%,56%)]" />
-                  <span className="text-muted-foreground">{proteinPercentage.toFixed(0)}% Protein</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(45,93%,47%)]" />
-                  <span className="text-muted-foreground">{carbsPercentage.toFixed(0)}% Carbs</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(340,82%,52%)]" />
-                  <span className="text-muted-foreground">{fatsPercentage.toFixed(0)}% Fats</span>
                 </div>
               </div>
             </div>
