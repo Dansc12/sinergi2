@@ -15,6 +15,7 @@ interface LocationState {
   contentType: string;
   contentData: Record<string, unknown>;
   images?: string[];
+  returnTo?: string;
 }
 
 const visibilityOptions = [
@@ -107,7 +108,18 @@ const SharePostScreen = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => {
+              // Navigate back to the create page with the current state preserved
+              const returnTo = state?.returnTo || "/";
+              navigate(returnTo, {
+                state: {
+                  restored: true,
+                  contentData: state?.contentData,
+                  images: images,
+                },
+                replace: true,
+              });
+            }}>
               <ArrowLeft size={24} />
             </Button>
             <div className="flex items-center gap-3">

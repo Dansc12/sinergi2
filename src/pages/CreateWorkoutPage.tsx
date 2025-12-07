@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, MoreHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,32 @@ interface Exercise {
   isCardio: boolean;
 }
 
+interface RestoredState {
+  restored?: boolean;
+  contentData?: { title?: string; exercises?: Exercise[] };
+  images?: string[];
+}
+
 const CreateWorkoutPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredState = location.state as RestoredState | null;
+  
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  // Restore state if coming back from share screen
+  useEffect(() => {
+    if (restoredState?.restored) {
+      if (restoredState.contentData?.title) setTitle(restoredState.contentData.title);
+      if (restoredState.contentData?.exercises) setExercises(restoredState.contentData.exercises);
+      if (restoredState.images) setPhotos(restoredState.images);
+      // Clear the state to prevent re-restoration on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
 
   const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string; isCardio?: boolean }) => {
     const newExercise: Exercise = {
@@ -130,9 +152,9 @@ const CreateWorkoutPage = () => {
     );
   };
 
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-
+  const handleBack = () => {
+    navigate("/");
+  };
   const handleCapturePhoto = (imageUrl: string) => {
     setPhotos([...photos, imageUrl]);
     toast({ title: "Photo added!", description: "Photo captured successfully." });
@@ -158,6 +180,7 @@ const CreateWorkoutPage = () => {
         contentType: "workout",
         contentData: { title, exercises },
         images: photos,
+        returnTo: "/create/workout",
       },
     });
   };
@@ -172,7 +195,7 @@ const CreateWorkoutPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={handleBack}>
               <ArrowLeft size={24} />
             </Button>
             <div className="flex items-center gap-3">

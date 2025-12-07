@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,12 @@ interface SelectedFood {
   fats: number;
 }
 
+interface RestoredState {
+  restored?: boolean;
+  contentData?: { mealType?: string; foods?: SelectedFood[] };
+  images?: string[];
+}
+
 // Mock recent foods - in production, this would come from the database
 const recentFoods: FoodItem[] = [
   { fdcId: 1, description: "Grilled Chicken Breast", calories: 165, protein: 31, carbs: 0, fats: 3.6 },
@@ -28,12 +34,29 @@ const recentFoods: FoodItem[] = [
 
 const CreateMealPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredState = location.state as RestoredState | null;
+  
   const [mealType, setMealType] = useState("");
   const [searchValue, setSearchValue] = useState("");
   const [selectedFoods, setSelectedFoods] = useState<SelectedFood[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showFoodsList, setShowFoodsList] = useState(false);
+
+  // Restore state if coming back from share screen
+  useEffect(() => {
+    if (restoredState?.restored) {
+      if (restoredState.contentData?.mealType) setMealType(restoredState.contentData.mealType);
+      if (restoredState.contentData?.foods) setSelectedFoods(restoredState.contentData.foods);
+      if (restoredState.images) setPhotos(restoredState.images);
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  const handleBack = () => {
+    navigate("/");
+  };
 
   const handleFoodSelect = (food: FoodItem) => {
     const newFood: SelectedFood = {
@@ -86,6 +109,7 @@ const CreateMealPage = () => {
         contentType: "meal",
         contentData: { mealType, foods: selectedFoods, totalCalories, totalProtein, totalCarbs, totalFats },
         images: photos,
+        returnTo: "/create/meal",
       },
     });
   };
@@ -100,7 +124,7 @@ const CreateMealPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={handleBack}>
               <ArrowLeft size={24} />
             </Button>
             <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, RotateCcw, Plus, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,25 @@ interface RoutineExercise {
   restTime: string;
 }
 
+interface RestoredState {
+  restored?: boolean;
+  contentData?: { 
+    name?: string; 
+    description?: string;
+    difficulty?: string;
+    selectedDays?: string[];
+    exercises?: RoutineExercise[];
+  };
+  images?: string[];
+}
+
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const CreateRoutinePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredState = location.state as RestoredState | null;
+  
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("");
@@ -29,6 +44,23 @@ const CreateRoutinePage = () => {
   const [exercises, setExercises] = useState<RoutineExercise[]>([
     { id: "1", name: "", sets: "", reps: "", restTime: "" }
   ]);
+
+  // Restore state if coming back from share screen
+  useEffect(() => {
+    if (restoredState?.restored && restoredState.contentData) {
+      const data = restoredState.contentData;
+      if (data.name) setName(data.name);
+      if (data.description) setDescription(data.description);
+      if (data.difficulty) setDifficulty(data.difficulty);
+      if (data.selectedDays) setSelectedDays(data.selectedDays);
+      if (data.exercises) setExercises(data.exercises);
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  const handleBack = () => {
+    navigate("/");
+  };
 
   const toggleDay = (day: string) => {
     setSelectedDays(prev => 
@@ -65,6 +97,7 @@ const CreateRoutinePage = () => {
         contentType: "routine",
         contentData: { name, description, difficulty, selectedDays, exercises },
         images: [],
+        returnTo: "/create/routine",
       },
     });
   };
@@ -78,7 +111,7 @@ const CreateRoutinePage = () => {
       >
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft size={24} />
           </Button>
           <div className="flex items-center gap-3">

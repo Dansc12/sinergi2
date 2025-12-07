@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, PenSquare, X, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,33 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { CameraCapture } from "@/components/CameraCapture";
 
+interface RestoredState {
+  restored?: boolean;
+  contentData?: { content?: string };
+  images?: string[];
+}
+
 const CreatePostPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredState = location.state as RestoredState | null;
+  
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  // Restore state if coming back from share screen
+  useEffect(() => {
+    if (restoredState?.restored) {
+      if (restoredState.contentData?.content) setContent(restoredState.contentData.content);
+      if (restoredState.images) setImages(restoredState.images);
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  const handleBack = () => {
+    navigate("/");
+  };
 
   const handleCapturePhoto = (imageUrl: string) => {
     setImages([...images, imageUrl]);
@@ -33,6 +55,7 @@ const CreatePostPage = () => {
         contentType: "post",
         contentData: { content },
         images: images,
+        returnTo: "/create/post",
       },
     });
   };
@@ -47,7 +70,7 @@ const CreatePostPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={handleBack}>
               <ArrowLeft size={24} />
             </Button>
             <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChefHat, Plus, Trash2, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,25 @@ interface Ingredient {
   fats: number;
 }
 
+interface RestoredState {
+  restored?: boolean;
+  contentData?: { 
+    title?: string; 
+    description?: string;
+    prepTime?: string;
+    cookTime?: string;
+    servings?: string;
+    ingredients?: Ingredient[];
+    instructions?: string[];
+  };
+  images?: string[];
+}
+
 const CreateRecipePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredState = location.state as RestoredState | null;
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [prepTime, setPrepTime] = useState("");
@@ -30,6 +47,25 @@ const CreateRecipePage = () => {
     { id: "1", name: "", quantity: "", calories: 0, protein: 0, carbs: 0, fats: 0 }
   ]);
   const [instructions, setInstructions] = useState<string[]>([""]);
+
+  // Restore state if coming back from share screen
+  useEffect(() => {
+    if (restoredState?.restored && restoredState.contentData) {
+      const data = restoredState.contentData;
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.prepTime) setPrepTime(data.prepTime);
+      if (data.cookTime) setCookTime(data.cookTime);
+      if (data.servings) setServings(data.servings);
+      if (data.ingredients) setIngredients(data.ingredients);
+      if (data.instructions) setInstructions(data.instructions);
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  const handleBack = () => {
+    navigate("/");
+  };
 
   const addIngredient = () => {
     setIngredients([...ingredients, { 
@@ -102,6 +138,7 @@ const CreateRecipePage = () => {
         contentType: "recipe",
         contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
         images: [],
+        returnTo: "/create/recipe",
       },
     });
   };
@@ -115,7 +152,7 @@ const CreateRecipePage = () => {
       >
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft size={24} />
           </Button>
           <div className="flex items-center gap-3">

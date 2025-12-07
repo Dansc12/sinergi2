@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Users, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,42 @@ import { toast } from "@/hooks/use-toast";
 
 const interests = ["Weightlifting", "Yoga", "Running", "Cycling", "CrossFit", "Swimming", "Hiking", "Nutrition"];
 
+interface RestoredState {
+  restored?: boolean;
+  contentData?: { 
+    name?: string; 
+    description?: string;
+    category?: string;
+    privacy?: string;
+  };
+  images?: string[];
+}
+
 const CreateGroupPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const restoredState = location.state as RestoredState | null;
+  
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [privacy, setPrivacy] = useState("");
+
+  // Restore state if coming back from share screen
+  useEffect(() => {
+    if (restoredState?.restored && restoredState.contentData) {
+      const data = restoredState.contentData;
+      if (data.name) setName(data.name);
+      if (data.description) setDescription(data.description);
+      if (data.category) setCategory(data.category);
+      if (data.privacy) setPrivacy(data.privacy);
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  const handleBack = () => {
+    navigate("/");
+  };
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -33,6 +63,7 @@ const CreateGroupPage = () => {
         contentType: "group",
         contentData: { name, description, category, privacy },
         images: [],
+        returnTo: "/create/group",
       },
     });
   };
@@ -46,7 +77,7 @@ const CreateGroupPage = () => {
       >
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft size={24} />
           </Button>
           <div className="flex items-center gap-3">
