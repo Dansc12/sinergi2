@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { ProgressCharts } from "@/components/home/ProgressCharts";
 import { AgendaSection } from "@/components/home/AgendaSection";
-import { FriendFeed } from "@/components/home/FriendFeed";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -19,7 +18,6 @@ const HomePage = () => {
       <div className="animate-fade-in">
         <ProgressCharts />
         <AgendaSection />
-        <FriendFeed />
       </div>
     </div>
   );
