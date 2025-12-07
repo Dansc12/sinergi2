@@ -59,8 +59,14 @@ const CreateRoutinePage = () => {
       toast({ title: "Please select at least one day", variant: "destructive" });
       return;
     }
-    toast({ title: "Routine created!", description: "Your workout routine is ready." });
-    navigate("/");
+    // Navigate to share screen with routine data
+    navigate("/share", {
+      state: {
+        contentType: "routine",
+        contentData: { name, description, difficulty, selectedDays, exercises },
+        images: [],
+      },
+    });
   };
 
   return (

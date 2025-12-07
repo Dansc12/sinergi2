@@ -123,8 +123,13 @@ const CreateWorkoutPage = () => {
     );
   };
 
+  const [photos, setPhotos] = useState<string[]>([]);
+
   const handleTakePhoto = () => {
-    toast({ title: "Camera", description: "Camera feature coming soon!" });
+    // Simulated photo capture
+    const mockPhoto = `https://images.unsplash.com/photo-${Date.now()}?w=400`;
+    setPhotos([...photos, mockPhoto]);
+    toast({ title: "Photo added!", description: "Photo captured successfully." });
   };
 
   const handleSubmit = () => {
@@ -132,8 +137,14 @@ const CreateWorkoutPage = () => {
       toast({ title: "Please add at least one exercise", variant: "destructive" });
       return;
     }
-    toast({ title: "Workout logged!", description: "Your workout has been saved." });
-    navigate("/");
+    // Navigate to share screen with workout data
+    navigate("/share", {
+      state: {
+        contentType: "workout",
+        contentData: { title, exercises },
+        images: photos,
+      },
+    });
   };
 
   return (
