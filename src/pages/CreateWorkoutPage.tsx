@@ -1,46 +1,135 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import ExerciseSearchInput from "@/components/ExerciseSearchInput";
+
+interface Set {
+  id: string;
+  weight: string;
+  reps: string;
+  completed: boolean;
+}
 
 interface Exercise {
   id: string;
   name: string;
-  sets: string;
-  reps: string;
-  weight: string;
+  category: string;
+  muscleGroup: string;
+  notes: string;
+  sets: Set[];
+  isExpanded: boolean;
 }
 
 const CreateWorkoutPage = () => {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [exercises, setExercises] = useState<Exercise[]>([
-    { id: "1", name: "", sets: "", reps: "", weight: "" }
-  ]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
 
-  const addExercise = () => {
-    setExercises([...exercises, { id: Date.now().toString(), name: "", sets: "", reps: "", weight: "" }]);
+  const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string }) => {
+    const newExercise: Exercise = {
+      id: Date.now().toString(),
+      name: exercise.name,
+      category: exercise.category,
+      muscleGroup: exercise.muscleGroup,
+      notes: "",
+      sets: [{ id: "1", weight: "", reps: "", completed: false }],
+      isExpanded: true,
+    };
+    setExercises([...exercises, newExercise]);
   };
 
-  const removeExercise = (id: string) => {
-    if (exercises.length > 1) {
-      setExercises(exercises.filter(e => e.id !== id));
-    }
+  const removeExercise = (exerciseId: string) => {
+    setExercises(exercises.filter((e) => e.id !== exerciseId));
   };
 
-  const updateExercise = (id: string, field: keyof Exercise, value: string) => {
-    setExercises(exercises.map(e => e.id === id ? { ...e, [field]: value } : e));
+  const toggleExerciseExpand = (exerciseId: string) => {
+    setExercises(
+      exercises.map((e) =>
+        e.id === exerciseId ? { ...e, isExpanded: !e.isExpanded } : e
+      )
+    );
+  };
+
+  const updateExerciseNotes = (exerciseId: string, notes: string) => {
+    setExercises(
+      exercises.map((e) =>
+        e.id === exerciseId ? { ...e, notes } : e
+      )
+    );
+  };
+
+  const addSet = (exerciseId: string) => {
+    setExercises(
+      exercises.map((e) => {
+        if (e.id === exerciseId) {
+          const newSet: Set = {
+            id: Date.now().toString(),
+            weight: "",
+            reps: "",
+            completed: false,
+          };
+          return { ...e, sets: [...e.sets, newSet] };
+        }
+        return e;
+      })
+    );
+  };
+
+  const removeSet = (exerciseId: string, setId: string) => {
+    setExercises(
+      exercises.map((e) => {
+        if (e.id === exerciseId && e.sets.length > 1) {
+          return { ...e, sets: e.sets.filter((s) => s.id !== setId) };
+        }
+        return e;
+      })
+    );
+  };
+
+  const updateSet = (exerciseId: string, setId: string, field: keyof Set, value: string | boolean) => {
+    setExercises(
+      exercises.map((e) => {
+        if (e.id === exerciseId) {
+          return {
+            ...e,
+            sets: e.sets.map((s) =>
+              s.id === setId ? { ...s, [field]: value } : s
+            ),
+          };
+        }
+        return e;
+      })
+    );
+  };
+
+  const toggleSetComplete = (exerciseId: string, setId: string) => {
+    setExercises(
+      exercises.map((e) => {
+        if (e.id === exerciseId) {
+          return {
+            ...e,
+            sets: e.sets.map((s) =>
+              s.id === setId ? { ...s, completed: !s.completed } : s
+            ),
+          };
+        }
+        return e;
+      })
+    );
+  };
+
+  const handleTakePhoto = () => {
+    toast({ title: "Camera", description: "Camera feature coming soon!" });
   };
 
   const handleSubmit = () => {
-    if (!title.trim()) {
-      toast({ title: "Please enter a workout title", variant: "destructive" });
+    if (exercises.length === 0) {
+      toast({ title: "Please add at least one exercise", variant: "destructive" });
       return;
     }
     toast({ title: "Workout logged!", description: "Your workout has been saved." });
@@ -48,108 +137,219 @@ const CreateWorkoutPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-32">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="p-4"
       >
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={24} />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Dumbbell size={20} className="text-primary-foreground" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft size={24} />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Dumbbell size={20} className="text-primary-foreground" />
+              </div>
+              <h1 className="text-2xl font-bold">Log Workout</h1>
             </div>
-            <h1 className="text-2xl font-bold">Log Workout</h1>
           </div>
+          <Button onClick={handleSubmit} className="rounded-full px-6">
+            Finish
+          </Button>
         </div>
 
-        {/* Form */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="title">Workout Title</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Morning Push Day"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
+        {/* Workout Title */}
+        <div className="mb-6">
+          <Input
+            placeholder="Workout name (optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-lg font-semibold bg-transparent border-0 border-b border-border rounded-none px-0 focus-visible:ring-0"
+          />
+        </div>
 
-          <div className="space-y-4">
-            <Label>Exercises</Label>
-            {exercises.map((exercise, index) => (
+        {/* Exercise Search */}
+        <div className="mb-6">
+          <ExerciseSearchInput
+            onSelect={addExercise}
+            placeholder="Add exercise..."
+          />
+        </div>
+
+        {/* Exercises List */}
+        <div className="space-y-4">
+          <AnimatePresence>
+            {exercises.map((exercise) => (
               <motion.div
                 key={exercise.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-4 rounded-2xl bg-card border border-border space-y-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                className="rounded-2xl bg-card border border-border overflow-hidden"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Exercise {index + 1}</span>
-                  {exercises.length > 1 && (
-                    <Button variant="ghost" size="icon-sm" onClick={() => removeExercise(exercise.id)}>
-                      <Trash2 size={16} className="text-destructive" />
+                {/* Exercise Header */}
+                <div className="p-4 flex items-center justify-between">
+                  <button
+                    onClick={() => toggleExerciseExpand(exercise.id)}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <Dumbbell size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">{exercise.name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {exercise.category} • {exercise.muscleGroup}
+                      </p>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleExerciseExpand(exercise.id)}
+                    >
+                      {exercise.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeExercise(exercise.id)}
+                    >
+                      <Trash2 size={18} className="text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Exercise Content */}
+                <AnimatePresence>
+                  {exercise.isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Notes */}
+                      <div className="px-4 pb-3">
+                        <Textarea
+                          placeholder="Add notes..."
+                          value={exercise.notes}
+                          onChange={(e) => updateExerciseNotes(exercise.id, e.target.value)}
+                          className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
+                          rows={2}
+                        />
+                      </div>
+
+                      {/* Sets Header */}
+                      <div className="px-4 pb-2">
+                        <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
+                          <div className="col-span-2 text-center">SET</div>
+                          <div className="col-span-4 text-center">WEIGHT</div>
+                          <div className="col-span-4 text-center">REPS</div>
+                          <div className="col-span-2"></div>
+                        </div>
+                      </div>
+
+                      {/* Sets List */}
+                      <div className="px-4 pb-3 space-y-2">
+                        {exercise.sets.map((set, index) => (
+                          <motion.div
+                            key={set.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className={`grid grid-cols-12 gap-2 items-center p-2 rounded-lg transition-colors ${
+                              set.completed ? "bg-primary/20" : "bg-muted/30"
+                            }`}
+                          >
+                            <button
+                              onClick={() => toggleSetComplete(exercise.id, set.id)}
+                              className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors ${
+                                set.completed
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {index + 1}
+                            </button>
+                            <div className="col-span-4">
+                              <Input
+                                placeholder="lbs"
+                                value={set.weight}
+                                onChange={(e) => updateSet(exercise.id, set.id, "weight", e.target.value)}
+                                className="text-center h-9 bg-background border-border"
+                                type="number"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <Input
+                                placeholder="reps"
+                                value={set.reps}
+                                onChange={(e) => updateSet(exercise.id, set.id, "reps", e.target.value)}
+                                className="text-center h-9 bg-background border-border"
+                                type="number"
+                              />
+                            </div>
+                            <div className="col-span-2 flex justify-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => removeSet(exercise.id, set.id)}
+                                disabled={exercise.sets.length === 1}
+                              >
+                                <MoreHorizontal size={16} className="text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Add Set Button */}
+                      <div className="px-4 pb-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-primary hover:text-primary hover:bg-primary/10"
+                          onClick={() => addSet(exercise.id)}
+                        >
+                          <Plus size={16} className="mr-1" />
+                          Add Set
+                        </Button>
+                      </div>
+                    </motion.div>
                   )}
-                </div>
-                <Input
-                  placeholder="Exercise name"
-                  value={exercise.name}
-                  onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                />
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-xs">Sets</Label>
-                    <Input
-                      placeholder="3"
-                      value={exercise.sets}
-                      onChange={(e) => updateExercise(exercise.id, "sets", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Reps</Label>
-                    <Input
-                      placeholder="10"
-                      value={exercise.reps}
-                      onChange={(e) => updateExercise(exercise.id, "reps", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Weight</Label>
-                    <Input
-                      placeholder="135 lbs"
-                      value={exercise.weight}
-                      onChange={(e) => updateExercise(exercise.id, "weight", e.target.value)}
-                    />
-                  </div>
-                </div>
+                </AnimatePresence>
               </motion.div>
             ))}
-            <Button variant="outline" className="w-full" onClick={addExercise}>
-              <Plus size={18} /> Add Exercise
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="How did it feel? Any PRs?"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <Button className="w-full" size="lg" onClick={handleSubmit}>
-            Save Workout
-          </Button>
+          </AnimatePresence>
         </div>
+
+        {/* Empty State */}
+        {exercises.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <Dumbbell size={48} className="mb-4 opacity-50" />
+            <p className="text-lg font-medium">No exercises yet</p>
+            <p className="text-sm">Search and add exercises above</p>
+          </div>
+        )}
       </motion.div>
+
+      {/* Bottom Camera Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full gap-2 rounded-xl border-border bg-card hover:bg-muted"
+          onClick={handleTakePhoto}
+        >
+          <Camera size={20} />
+          Take a Photo
+        </Button>
+      </div>
     </div>
   );
 };
