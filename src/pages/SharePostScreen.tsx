@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Image, X, Globe, Users, Lock, Check } from "lucide-react";
+import { ArrowLeft, Image, X, Globe, Users, Lock, Check, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { CameraCapture } from "@/components/CameraCapture";
+import { usePhotoPicker } from "@/hooks/useCamera";
 
 type Visibility = "public" | "friends" | "private";
 
@@ -29,6 +31,11 @@ const SharePostScreen = () => {
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<Visibility>("friends");
   const [images, setImages] = useState<string[]>(state?.images || []);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
+    setImages([...images, ...urls]);
+  });
 
   useEffect(() => {
     if (!state?.contentType) {
@@ -36,10 +43,8 @@ const SharePostScreen = () => {
     }
   }, [state, navigate]);
 
-  const handleImageUpload = () => {
-    // Simulated image upload - in production this would open file picker
-    const mockImage = `https://images.unsplash.com/photo-${Date.now()}?w=400`;
-    setImages([...images, mockImage]);
+  const handleCapturePhoto = (imageUrl: string) => {
+    setImages([...images, imageUrl]);
   };
 
   const removeImage = (index: number) => {
@@ -140,6 +145,17 @@ const SharePostScreen = () => {
         {/* Photos Section */}
         <div className="space-y-3 mb-6">
           <Label>Photos</Label>
+          
+          {/* Hidden file input */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
           <div className="grid grid-cols-3 gap-2">
             <AnimatePresence>
               {images.map((img, index) => (
@@ -150,7 +166,7 @@ const SharePostScreen = () => {
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="relative aspect-square rounded-xl overflow-hidden bg-muted"
                 >
-                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20" />
+                  <img src={img} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
                   <Button
                     variant="ghost"
                     size="icon"
@@ -162,14 +178,27 @@ const SharePostScreen = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
+            
+            {/* Camera button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={handleImageUpload}
+              onClick={() => setIsCameraOpen(true)}
+              className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+            >
+              <Camera size={24} />
+              <span className="text-xs">Camera</span>
+            </motion.button>
+
+            {/* Gallery button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={openPicker}
               className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
             >
               <Image size={24} />
-              <span className="text-xs">Add Photo</span>
+              <span className="text-xs">Gallery</span>
             </motion.button>
           </div>
           {visibility === "public" && images.length === 0 && (
@@ -239,6 +268,14 @@ const SharePostScreen = () => {
           {visibility === "private" ? "Save Privately" : "Share Now"}
         </Button>
       </motion.div>
+
+      {/* Camera Capture Modal */}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCapturePhoto}
+        onSelectFromGallery={(urls) => setImages([...images, ...urls])}
+      />
     </div>
   );
 };
