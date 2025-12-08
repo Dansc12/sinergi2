@@ -29,8 +29,10 @@ const SharePostScreen = () => {
   const location = useLocation();
   const state = location.state as LocationState | null;
 
+  const isPostType = state?.contentType === "post";
+
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("friends");
+  const [visibility, setVisibility] = useState<Visibility>(isPostType ? "public" : "private");
   const [images, setImages] = useState<string[]>(state?.images || []);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
@@ -131,7 +133,47 @@ const SharePostScreen = () => {
           </div>
         </div>
 
-        {/* Content Summary */}
+        {/* Visibility Selection */}
+        <div className="space-y-3 mb-6">
+          <Label>Who can see this?</Label>
+          <div className="space-y-2">
+            {visibilityOptions
+              .filter((option) => !isPostType || option.value !== "private")
+              .map((option) => {
+                const Icon = option.icon;
+                const isSelected = visibility === option.value;
+                return (
+                  <motion.button
+                    key={option.value}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setVisibility(option.value)}
+                    className={`w-full p-4 rounded-xl flex items-center gap-4 transition-all ${
+                      isSelected
+                        ? "bg-primary/20 border-2 border-primary"
+                        : "bg-card border border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>
+                      <Icon size={20} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className={`font-medium ${isSelected ? "text-foreground" : "text-foreground"}`}>
+                        {option.label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
+                    </div>
+                    {isSelected && (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                        <Check size={14} className="text-primary-foreground" />
+                      </div>
+                    )}
+                  </motion.button>
+                );
+              })}
+          </div>
+        </div>
 
         {/* Photos Section */}
         <div className="space-y-3 mb-6">
@@ -196,7 +238,7 @@ const SharePostScreen = () => {
         </div>
 
         {/* Description */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3 mb-8">
           <Label htmlFor="description">Description</Label>
           <Textarea
             id="description"
@@ -208,53 +250,13 @@ const SharePostScreen = () => {
           />
         </div>
 
-        {/* Visibility Selection */}
-        <div className="space-y-3 mb-8">
-          <Label>Who can see this?</Label>
-          <div className="space-y-2">
-            {visibilityOptions.map((option) => {
-              const Icon = option.icon;
-              const isSelected = visibility === option.value;
-              return (
-                <motion.button
-                  key={option.value}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setVisibility(option.value)}
-                  className={`w-full p-4 rounded-xl flex items-center gap-4 transition-all ${
-                    isSelected
-                      ? "bg-primary/20 border-2 border-primary"
-                      : "bg-card border border-border hover:bg-muted/50"
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}>
-                    <Icon size={20} />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={`font-medium ${isSelected ? "text-foreground" : "text-foreground"}`}>
-                      {option.label}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{option.description}</p>
-                  </div>
-                  {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                      <Check size={14} className="text-primary-foreground" />
-                    </div>
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Submit Button */}
         <Button 
           className="w-full glow-primary" 
           size="lg" 
           onClick={handleSubmit}
         >
-          {visibility === "private" ? "Save Privately" : "Share Now"}
+          {visibility === "private" ? "Save Privately" : "Save & Share"}
         </Button>
       </motion.div>
 
