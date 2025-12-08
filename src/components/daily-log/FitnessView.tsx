@@ -1,23 +1,5 @@
-import { Footprints, Flame, Clock, Dumbbell, Check } from "lucide-react";
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-  color: string;
-}
-
-const StatCard = ({ icon, value, label, color }: StatCardProps) => (
-  <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
-      {icon}
-    </div>
-    <div>
-      <p className="font-bold text-lg">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  </div>
-);
+import { useState } from "react";
+import { Footprints, Clock, Dumbbell, Check, ChevronRight } from "lucide-react";
 
 interface WorkoutItemProps {
   title: string;
@@ -29,8 +11,8 @@ interface WorkoutItemProps {
 
 const WorkoutItem = ({ title, time, duration, exercises, completed }: WorkoutItemProps) => (
   <div className={`bg-card border rounded-xl p-4 ${completed ? 'border-success/50' : 'border-border'}`}>
-    <div className="flex items-start justify-between mb-2">
-      <div>
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2">
         <h4 className="font-semibold flex items-center gap-2">
           {title}
           {completed && (
@@ -39,7 +21,7 @@ const WorkoutItem = ({ title, time, duration, exercises, completed }: WorkoutIte
             </span>
           )}
         </h4>
-        <p className="text-sm text-muted-foreground">{time}</p>
+        <span className="text-sm text-muted-foreground">{time}</span>
       </div>
       <span className={`text-xs px-2 py-1 rounded-full ${completed ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
         {completed ? 'Completed' : 'Scheduled'}
@@ -63,14 +45,26 @@ interface FitnessViewProps {
 }
 
 export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  
   const steps = 7842;
   const stepsGoal = 10000;
   const stepsLeft = stepsGoal - steps;
 
+  // Sample workouts - in real app, this would come from database
+  const workouts = [
+    { title: "Morning HIIT", time: "8:00 AM", duration: "30 min", exercises: 8, completed: true },
+    { title: "Upper Body Strength", time: "5:00 PM", duration: "45 min", exercises: 6, completed: false },
+    { title: "Evening Cardio", time: "7:00 PM", duration: "20 min", exercises: 4, completed: false },
+    { title: "Core Workout", time: "8:30 PM", duration: "15 min", exercises: 5, completed: false },
+  ];
+
+  const displayedWorkouts = showAllWorkouts ? workouts : workouts.slice(0, 3);
+
   return (
     <div className="space-y-6">
-      {/* Steps Progress */}
-      <div className="bg-card border border-border rounded-2xl p-6 text-center">
+      {/* Steps Progress - No Frame */}
+      <div className="text-center">
         <div className="relative w-40 h-40 mx-auto mb-4">
           <svg className="w-full h-full -rotate-90">
             <circle
@@ -106,41 +100,31 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard 
-          icon={<Flame className="text-streak" size={20} />}
-          value="486"
-          label="Calories burned"
-          color="bg-streak/20"
-        />
-        <StatCard 
-          icon={<Clock className="text-primary" size={20} />}
-          value="45 min"
-          label="Active time"
-          color="bg-primary/20"
-        />
-      </div>
-
-      {/* Today's Workouts */}
+      {/* Scheduled Workouts */}
       <div>
-        <h3 className="font-semibold mb-3">Today's Workouts</h3>
+        <h3 className="font-semibold mb-3">Scheduled Workouts</h3>
         <div className="space-y-3">
-          <WorkoutItem 
-            title="Morning HIIT"
-            time="8:00 AM"
-            duration="30 min"
-            exercises={8}
-            completed={true}
-          />
-          <WorkoutItem 
-            title="Upper Body Strength"
-            time="5:00 PM"
-            duration="45 min"
-            exercises={6}
-            completed={false}
-          />
+          {displayedWorkouts.map((workout, index) => (
+            <WorkoutItem 
+              key={index}
+              title={workout.title}
+              time={workout.time}
+              duration={workout.duration}
+              exercises={workout.exercises}
+              completed={workout.completed}
+            />
+          ))}
         </div>
+        
+        {workouts.length > 3 && (
+          <button
+            onClick={() => setShowAllWorkouts(!showAllWorkouts)}
+            className="w-full mt-3 py-2 text-sm text-primary flex items-center justify-center gap-1 hover:opacity-80 transition-opacity"
+          >
+            {showAllWorkouts ? 'Show Less' : `View All ${workouts.length} Workouts`}
+            <ChevronRight size={16} className={`transition-transform ${showAllWorkouts ? 'rotate-90' : ''}`} />
+          </button>
+        )}
       </div>
     </div>
   );
