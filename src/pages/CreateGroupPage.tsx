@@ -57,15 +57,12 @@ const CreateGroupPage = () => {
       toast({ title: "Please select a category", variant: "destructive" });
       return;
     }
-    // Navigate to share screen with group data
-    navigate("/share", {
-      state: {
-        contentType: "group",
-        contentData: { name, description, category, privacy },
-        images: [],
-        returnTo: "/create/group",
-      },
+    // Directly create the group without going to share screen
+    toast({ 
+      title: "Group created!", 
+      description: "Your group is now live." 
     });
+    navigate("/");
   };
 
   return (

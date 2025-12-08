@@ -132,17 +132,6 @@ const SharePostScreen = () => {
         </div>
 
         {/* Content Summary */}
-        <div className="mb-6 p-4 rounded-2xl bg-card border border-border">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getContentTypeIcon()} flex items-center justify-center`}>
-              <Check size={24} className="text-primary-foreground" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">{getContentTypeLabel()} ready to share</p>
-              <p className="text-sm text-muted-foreground">Add photos and description below</p>
-            </div>
-          </div>
-        </div>
 
         {/* Photos Section */}
         <div className="space-y-3 mb-6">
