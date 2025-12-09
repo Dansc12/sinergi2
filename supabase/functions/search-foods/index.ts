@@ -5,7 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const FATSECRET_TOKEN_URL = "https://oauth.fatsecret.com/connect/token";
+// Use proxy for token exchange, direct API for data requests
+const PROXY_TOKEN_URL = "http://157.245.113.89/connect/token";
 const FATSECRET_API_URL = "https://platform.fatsecret.com/rest/server.api";
 
 interface TokenResponse {
@@ -33,7 +34,8 @@ async function getAccessToken(): Promise<string> {
 
   const credentials = btoa(`${clientId}:${clientSecret}`);
   
-  const response = await fetch(FATSECRET_TOKEN_URL, {
+  // Use proxy for token exchange
+  const response = await fetch(PROXY_TOKEN_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,
@@ -44,15 +46,17 @@ async function getAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Token request failed:', response.status, errorText);
-    throw new Error('Failed to obtain FatSecret access token');
+    console.error('Proxy token request failed:', response.status, errorText);
+    throw new Error('Failed to obtain FatSecret access token via proxy');
   }
 
   const data: TokenResponse = await response.json();
   cachedToken = data.access_token;
   tokenExpiry = Date.now() + (data.expires_in * 1000);
   
-  console.log('Obtained new FatSecret access token');
+  // Success log with token preview
+  const tokenPreview = cachedToken.substring(0, 10) + '...';
+  console.log(`Proxy Token Exchange Successful: ${tokenPreview}`);
   return cachedToken;
 }
 
