@@ -216,9 +216,30 @@ const CreateRoutinePage = () => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
+  const validateExercises = (): boolean => {
+    for (const exercise of exercises) {
+      for (const set of exercise.sets) {
+        if (exercise.isCardio) {
+          if (!set.distance.trim() || !set.time.trim()) {
+            return false;
+          }
+        } else {
+          if (!set.weight.trim() || !set.repsMin.trim() || !set.repsMax.trim()) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = () => {
     if (!name.trim()) {
       toast({ title: "Please enter a routine name", variant: "destructive" });
+      return;
+    }
+    if (exercises.length > 0 && !validateExercises()) {
+      toast({ title: "Please fill in all weights and reps for each set", variant: "destructive" });
       return;
     }
     // Navigate to share screen with routine data (days are optional now)
@@ -264,69 +285,66 @@ const CreateRoutinePage = () => {
           {/* Routine Name */}
           <div className="mb-6">
             <Input
-              placeholder="Routine name (e.g., Push Pull Legs)"
+              placeholder="Routine name (e.g., Push Day, Pull Day, etc.)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="text-lg font-semibold bg-transparent border-0 border-b border-border rounded-none px-0 focus-visible:ring-0"
             />
           </div>
 
-          {/* Days Selection - Pill Shaped */}
-          <div className="space-y-4">
+          {/* Days Selection - Stacked Pills */}
+          <div className="space-y-3">
             <Label className="text-base font-medium">Schedule (Optional)</Label>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="space-y-2">
               {schedule.map((daySchedule) => (
-                <button
-                  key={daySchedule.day}
-                  onClick={() => toggleDay(daySchedule.day)}
-                  className={`px-5 py-3 rounded-full text-base font-medium transition-all ${
-                    daySchedule.selected 
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
-                      : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {daySchedule.day.slice(0, 3)}
-                </button>
+                <div key={daySchedule.day} className="flex items-center gap-3">
+                  <button
+                    onClick={() => toggleDay(daySchedule.day)}
+                    className={`px-5 py-3 rounded-full text-base font-medium transition-all min-w-[100px] text-left ${
+                      daySchedule.selected 
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {daySchedule.day.slice(0, 3)}
+                  </button>
+                  
+                  {/* Time Picker - appears to the right when selected */}
+                  <AnimatePresence>
+                    {daySchedule.selected && (
+                      <motion.div
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: "auto", opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        className="flex items-center gap-2 overflow-hidden"
+                      >
+                        <Clock size={16} className="text-muted-foreground flex-shrink-0" />
+                        <Input
+                          type="time"
+                          value={daySchedule.time}
+                          onChange={(e) => updateTime(daySchedule.day, e.target.value)}
+                          className="h-9 bg-background text-sm w-32 [&::-webkit-calendar-picker-indicator]:opacity-50"
+                          placeholder="Time"
+                        />
+                        {daySchedule.time && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={() => updateTime(daySchedule.day, "")}
+                          >
+                            <X size={14} className="text-muted-foreground" />
+                          </Button>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               ))}
             </div>
             
-            {/* Time Pickers for Selected Days */}
-            <AnimatePresence>
-              {schedule.filter(d => d.selected).map((daySchedule) => (
-                <motion.div
-                  key={`time-${daySchedule.day}`}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-muted/50">
-                    <span className="text-sm font-medium text-foreground min-w-[80px]">{daySchedule.day}</span>
-                    <Clock size={16} className="text-muted-foreground" />
-                    <Input
-                      type="time"
-                      value={daySchedule.time}
-                      onChange={(e) => updateTime(daySchedule.day, e.target.value)}
-                      className="flex-1 h-9 bg-background text-sm"
-                      placeholder="Set time (optional)"
-                    />
-                    {daySchedule.time && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateTime(daySchedule.day, "")}
-                      >
-                        <X size={14} className="text-muted-foreground" />
-                      </Button>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            
             {selectedDaysCount > 0 && (
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-sm text-muted-foreground">
                 {selectedDaysCount} day{selectedDaysCount > 1 ? "s" : ""} selected
               </p>
             )}
@@ -394,7 +412,7 @@ const CreateRoutinePage = () => {
                         </p>
                       </div>
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -407,7 +425,7 @@ const CreateRoutinePage = () => {
                         size="icon"
                         onClick={() => removeExercise(exercise.id)}
                       >
-                        <Trash2 size={18} className="text-destructive" />
+                        <Trash2 size={20} className="text-destructive" />
                       </Button>
                     </div>
                   </div>
@@ -459,7 +477,7 @@ const CreateRoutinePage = () => {
                                   placeholder={exercise.isCardio ? "miles" : "lbs"}
                                   value={exercise.isCardio ? set.distance : set.weight}
                                   onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "distance" : "weight", e.target.value)}
-                                  className="text-center h-9 bg-background border-border"
+                                  className="text-center h-9 bg-background border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   type={exercise.isCardio ? "text" : "number"}
                                 />
                               </div>
@@ -479,7 +497,7 @@ const CreateRoutinePage = () => {
                                     placeholder="8"
                                     value={set.repsMin}
                                     onChange={(e) => updateSet(exercise.id, set.id, "repsMin", e.target.value)}
-                                    className="text-center h-9 bg-background border-border flex-1"
+                                    className="text-center h-9 bg-background border-border flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     type="number"
                                   />
                                   <span className="text-muted-foreground text-sm">-</span>
@@ -487,7 +505,7 @@ const CreateRoutinePage = () => {
                                     placeholder="12"
                                     value={set.repsMax}
                                     onChange={(e) => updateSet(exercise.id, set.id, "repsMax", e.target.value)}
-                                    className="text-center h-9 bg-background border-border flex-1"
+                                    className="text-center h-9 bg-background border-border flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     type="number"
                                   />
                                 </div>
@@ -500,7 +518,7 @@ const CreateRoutinePage = () => {
                                   onClick={() => removeSet(exercise.id, set.id)}
                                   disabled={exercise.sets.length === 1}
                                 >
-                                  <MoreHorizontal size={16} className="text-muted-foreground" />
+                                  <Trash2 size={14} className={exercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
                                 </Button>
                               </div>
                             </motion.div>
