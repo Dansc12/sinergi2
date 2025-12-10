@@ -204,49 +204,45 @@ const ReactionButton = ({
 const ImageCarousel = ({ images }: { images: string[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const touchStartRef = useRef<number | null>(null);
 
-  const goToNext = () => {
-    if (currentIndex < images.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
+  // Image dimensions - consistent for all posts
+  const imageWidthPercent = 80;
+  const gapPercent = 4;
 
-  const goToPrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
+  const goToNext = useCallback(() => {
+    setCurrentIndex(prev => Math.min(prev + 1, images.length - 1));
+  }, [images.length]);
+
+  const goToPrev = useCallback(() => {
+    setCurrentIndex(prev => Math.max(prev - 1, 0));
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
+    touchStartRef.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart === null) return;
+    if (touchStartRef.current === null) return;
     
     const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchStart - touchEnd;
+    const diff = touchStartRef.current - touchEnd;
     
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) {
+    if (Math.abs(diff) > 30) {
+      if (diff > 0 && currentIndex < images.length - 1) {
         goToNext();
-      } else {
+      } else if (diff < 0 && currentIndex > 0) {
         goToPrev();
       }
     }
-    setTouchStart(null);
+    touchStartRef.current = null;
   };
-
-  // Image dimensions - consistent for all posts
-  const imageWidth = 80; // percentage
-  const gapWidth = 3; // percentage gap between images
   
   // For single image, still use the same centered layout
   if (images.length === 1) {
     return (
-      <div className="relative overflow-hidden flex justify-center">
-        <div style={{ width: `${imageWidth}%` }}>
+      <div className="flex justify-center">
+        <div style={{ width: `${imageWidthPercent}%` }}>
           <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
             <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
           </div>
@@ -255,10 +251,11 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     );
   }
 
-  // Calculate offset to center current image with peek on sides
-  // Center offset: (100 - imageWidth) / 2 = 10% on each side
-  const centerOffset = (100 - imageWidth) / 2;
-  const offset = currentIndex * (imageWidth + gapWidth) - centerOffset;
+  // Calculate the translate value to center the current image
+  // Each image takes imageWidthPercent% of container, plus gapPercent% gap
+  // To center: we need to offset by (100 - imageWidthPercent) / 2 = 10%
+  const sideOffset = (100 - imageWidthPercent) / 2;
+  const translateX = currentIndex * (imageWidthPercent + gapPercent) - sideOffset;
 
   return (
     <div 
@@ -270,15 +267,16 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
       <div 
         className="flex transition-transform duration-300 ease-out"
         style={{ 
-          transform: `translateX(-${offset}%)`,
-          gap: `${gapWidth}%`
+          transform: `translateX(calc(-${translateX}%))`,
+          gap: `${gapPercent}%`,
+          paddingLeft: `${sideOffset}%`,
         }}
       >
         {images.map((image, index) => (
           <div 
             key={index} 
             className="flex-shrink-0"
-            style={{ width: `${imageWidth}%` }}
+            style={{ width: `${imageWidthPercent}%` }}
           >
             <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
               <img src={image} alt={`Post ${index + 1}`} className="w-full h-full object-cover" />
@@ -440,7 +438,7 @@ const DiscoverPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-elevated">
         <div className="px-4 py-3">
