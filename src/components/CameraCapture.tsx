@@ -81,7 +81,7 @@ export const CameraCapture = ({
           </div>
 
           {/* Camera View */}
-          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+          <div className="absolute inset-0 flex items-center justify-center bg-background">
             {error ? (
               <div className="text-center p-4">
                 <p className="text-destructive mb-4">{error}</p>
@@ -91,22 +91,26 @@ export const CameraCapture = ({
                 </Button>
               </div>
             ) : (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
+              <>
+                {/* Loading indicator - shown until camera is ready */}
+                {!isCameraReady && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {/* Video element - opacity transition for smooth appearance */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    isCameraReady ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </>
             )}
           </div>
-
-          {/* Loading indicator */}
-          {!isCameraReady && !error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
 
           {/* Bottom Controls */}
           <div className="absolute bottom-0 left-0 right-0 p-6 pb-10 bg-gradient-to-t from-background via-background/90 to-transparent">
