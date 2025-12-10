@@ -238,18 +238,27 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     setTouchStart(null);
   };
 
+  // Image dimensions - consistent for all posts
+  const imageWidth = 80; // percentage
+  const gapWidth = 3; // percentage gap between images
+  
+  // For single image, still use the same centered layout
   if (images.length === 1) {
     return (
-      <div className="relative aspect-[4/3] bg-muted rounded-xl overflow-hidden">
-        <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
+      <div className="relative overflow-hidden flex justify-center">
+        <div style={{ width: `${imageWidth}%` }}>
+          <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
+            <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
+          </div>
+        </div>
       </div>
     );
   }
 
   // Calculate offset to center current image with peek on sides
-  const imageWidth = 80; // percentage
-  const gapWidth = 3; // percentage gap between images
-  const offset = currentIndex * (imageWidth + gapWidth) - (100 - imageWidth) / 2 + gapWidth / 2;
+  // Center offset: (100 - imageWidth) / 2 = 10% on each side
+  const centerOffset = (100 - imageWidth) / 2;
+  const offset = currentIndex * (imageWidth + gapWidth) - centerOffset;
 
   return (
     <div 
