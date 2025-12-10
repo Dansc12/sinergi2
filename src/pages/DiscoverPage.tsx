@@ -210,7 +210,7 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
   // Image dimensions - consistent for all posts
   const imageWidthPercent = 80;
   const gapPercent = 4;
-  const sideOffset = (100 - imageWidthPercent) / 2;
+  const sideOffset = (100 - imageWidthPercent) / 2; // 10%
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.targetTouches[0].clientX;
@@ -247,9 +247,11 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     );
   }
 
-  // Calculate translateX: for index 0, we want 0 offset (centered by paddingLeft)
-  // For each subsequent index, move by (imageWidth + gap)
-  const translateX = currentIndex * (imageWidthPercent + gapPercent);
+  // Calculate the position for each image to be centered
+  // Using CSS calc to ensure proper viewport-relative positioning
+  // Each image position: sideOffset + index * (imageWidth + gap)
+  // To center current image, shift left by: currentIndex * (imageWidth + gap)
+  const shiftAmount = currentIndex * (imageWidthPercent + gapPercent);
 
   return (
     <div 
@@ -262,16 +264,16 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
       <div 
         className="flex transition-transform duration-300 ease-out"
         style={{ 
-          transform: `translateX(-${translateX}%)`,
+          marginLeft: `${sideOffset}%`,
           gap: `${gapPercent}%`,
-          paddingLeft: `${sideOffset}%`,
+          transform: `translateX(calc(-${shiftAmount}% * (100vw - 32px) / 100))`,
         }}
       >
         {images.map((image, index) => (
           <div 
             key={index} 
             className="flex-shrink-0"
-            style={{ width: `${imageWidthPercent}%` }}
+            style={{ width: `calc(${imageWidthPercent}% * (100vw - 32px) / 100)` }}
           >
             <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
               <img src={image} alt={`Post ${index + 1}`} className="w-full h-full object-cover" />
