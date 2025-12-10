@@ -48,7 +48,7 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-elevated safe-area-bottom">
-      <div className="flex items-center justify-around px-2 py-1 max-w-md mx-auto">
+      <div className="flex items-end justify-around px-2 py-1 max-w-md mx-auto">
         {/* First two nav items */}
         {navItems.slice(0, 2).map((item) => (
           <NavItem
@@ -60,13 +60,11 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
         ))}
 
         {/* Central Create Button */}
-        <div className="relative -mt-6">
-          <div className="absolute inset-0 gradient-primary rounded-full blur-xl opacity-50" />
+        <div className="relative -mt-4 flex items-center justify-center">
           <Button
             variant="create"
             size="create"
             onClick={onCreateClick}
-            className="relative z-10"
           >
             <Plus size={28} strokeWidth={2.5} />
           </Button>
