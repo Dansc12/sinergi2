@@ -13,7 +13,8 @@ import { CameraCapture } from "@/components/CameraCapture";
 interface Set {
   id: string;
   weight: string;
-  reps: string;
+  repsMin: string;
+  repsMax: string;
   distance: string;
   time: string;
   completed: boolean;
@@ -43,9 +44,19 @@ interface RestoredState {
     name?: string; 
     schedule?: DaySchedule[];
     exercises?: RoutineExercise[];
+    repeatDuration?: string;
   };
   images?: string[];
 }
+
+const repeatDurationOptions = [
+  { value: "2-weeks", label: "2 Weeks" },
+  { value: "1-month", label: "1 Month" },
+  { value: "2-months", label: "2 Months" },
+  { value: "3-months", label: "3 Months" },
+  { value: "6-months", label: "6 Months" },
+  { value: "indefinitely", label: "Indefinitely" },
+];
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -61,6 +72,7 @@ const CreateRoutinePage = () => {
   const [exercises, setExercises] = useState<RoutineExercise[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [repeatDuration, setRepeatDuration] = useState("indefinitely");
 
   // Restore state if coming back from share screen
   useEffect(() => {
@@ -69,6 +81,7 @@ const CreateRoutinePage = () => {
       if (data.name) setName(data.name);
       if (data.schedule) setSchedule(data.schedule);
       if (data.exercises) setExercises(data.exercises);
+      if (data.repeatDuration) setRepeatDuration(data.repeatDuration);
       if (restoredState.images) setPhotos(restoredState.images);
       window.history.replaceState({}, document.title);
     }
@@ -115,7 +128,7 @@ const CreateRoutinePage = () => {
       category: exercise.category,
       muscleGroup: exercise.muscleGroup,
       notes: "",
-      sets: [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false }],
+      sets: [{ id: "1", weight: "", repsMin: "", repsMax: "", distance: "", time: "", completed: false }],
       isExpanded: true,
       isCardio: exercise.isCardio || false,
     };
@@ -149,7 +162,8 @@ const CreateRoutinePage = () => {
           const newSet: Set = {
             id: Date.now().toString(),
             weight: "",
-            reps: "",
+            repsMin: "",
+            repsMax: "",
             distance: "",
             time: "",
             completed: false,
@@ -207,16 +221,11 @@ const CreateRoutinePage = () => {
       toast({ title: "Please enter a routine name", variant: "destructive" });
       return;
     }
-    const selectedDays = schedule.filter(d => d.selected);
-    if (selectedDays.length === 0) {
-      toast({ title: "Please select at least one day", variant: "destructive" });
-      return;
-    }
-    // Navigate to share screen with routine data
+    // Navigate to share screen with routine data (days are optional now)
     navigate("/share", {
       state: {
         contentType: "routine",
-        contentData: { name, schedule, exercises },
+        contentData: { name, schedule, exercises, repeatDuration },
         images: photos,
         returnTo: "/create/routine",
       },
@@ -262,84 +271,92 @@ const CreateRoutinePage = () => {
             />
           </div>
 
-          {/* Days Selection - Full Width */}
-          <div className="space-y-3 -mx-4">
-            <div className="px-4">
-              <Label className="text-base font-medium">Schedule</Label>
-            </div>
-            <div className="flex flex-col">
+          {/* Days Selection - Pill Shaped */}
+          <div className="space-y-4">
+            <Label className="text-base font-medium">Schedule (Optional)</Label>
+            <div className="flex flex-wrap justify-center gap-3">
               {schedule.map((daySchedule) => (
-                <div key={daySchedule.day}>
-                  <button
-                    onClick={() => toggleDay(daySchedule.day)}
-                    className={`w-full py-4 px-4 flex items-center justify-between transition-colors ${
-                      daySchedule.selected 
-                        ? "bg-primary/20 border-l-4 border-l-primary" 
-                        : "bg-card hover:bg-muted/50 border-l-4 border-l-transparent"
-                    }`}
-                  >
-                    <span className={`text-base font-medium ${daySchedule.selected ? "text-primary" : "text-foreground"}`}>
-                      {daySchedule.day}
-                    </span>
-                    {daySchedule.selected && (
-                      <div className="flex items-center gap-2">
-                        {daySchedule.time && (
-                          <span className="text-sm text-muted-foreground">{daySchedule.time}</span>
-                        )}
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="w-3 h-3 bg-primary-foreground rounded-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                  
-                  {/* Time Picker for Selected Day */}
-                  <AnimatePresence>
-                    {daySchedule.selected && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-muted/30"
-                      >
-                        <div className="px-4 py-3 flex items-center gap-3">
-                          <Clock size={18} className="text-muted-foreground" />
-                          <Input
-                            type="time"
-                            value={daySchedule.time}
-                            onChange={(e) => updateTime(daySchedule.day, e.target.value)}
-                            className="flex-1 h-10 bg-background"
-                            placeholder="Set time (optional)"
-                          />
-                          {daySchedule.time && (
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateTime(daySchedule.day, "");
-                              }}
-                            >
-                              <X size={16} className="text-muted-foreground" />
-                            </Button>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <button
+                  key={daySchedule.day}
+                  onClick={() => toggleDay(daySchedule.day)}
+                  className={`px-5 py-3 rounded-full text-base font-medium transition-all ${
+                    daySchedule.selected 
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+                      : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {daySchedule.day.slice(0, 3)}
+                </button>
               ))}
             </div>
+            
+            {/* Time Pickers for Selected Days */}
+            <AnimatePresence>
+              {schedule.filter(d => d.selected).map((daySchedule) => (
+                <motion.div
+                  key={`time-${daySchedule.day}`}
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-muted/50">
+                    <span className="text-sm font-medium text-foreground min-w-[80px]">{daySchedule.day}</span>
+                    <Clock size={16} className="text-muted-foreground" />
+                    <Input
+                      type="time"
+                      value={daySchedule.time}
+                      onChange={(e) => updateTime(daySchedule.day, e.target.value)}
+                      className="flex-1 h-9 bg-background text-sm"
+                      placeholder="Set time (optional)"
+                    />
+                    {daySchedule.time && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => updateTime(daySchedule.day, "")}
+                      >
+                        <X size={14} className="text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            
             {selectedDaysCount > 0 && (
-              <p className="text-sm text-muted-foreground px-4">
+              <p className="text-sm text-muted-foreground text-center">
                 {selectedDaysCount} day{selectedDaysCount > 1 ? "s" : ""} selected
               </p>
             )}
           </div>
+
+          {/* Repeat Duration */}
+          {selectedDaysCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
+              <Label className="text-base font-medium">Repeat For</Label>
+              <div className="flex flex-wrap gap-2">
+                {repeatDurationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setRepeatDuration(option.value)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      repeatDuration === option.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* Exercise Search */}
           <div>
@@ -417,10 +434,10 @@ const CreateRoutinePage = () => {
 
                         {/* Sets Header */}
                         <div className="px-4 pb-2">
-                          <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
+                          <div className={`grid ${exercise.isCardio ? "grid-cols-12" : "grid-cols-11"} gap-2 text-xs text-muted-foreground font-medium`}>
                             <div className="col-span-2 text-center">SET</div>
-                            <div className="col-span-4 text-center">{exercise.isCardio ? "DISTANCE" : "WEIGHT"}</div>
-                            <div className="col-span-4 text-center">{exercise.isCardio ? "TIME" : "REPS"}</div>
+                            <div className={`${exercise.isCardio ? "col-span-4" : "col-span-3"} text-center`}>{exercise.isCardio ? "DISTANCE" : "WEIGHT"}</div>
+                            <div className={`${exercise.isCardio ? "col-span-4" : "col-span-4"} text-center`}>{exercise.isCardio ? "TIME" : "REP RANGE"}</div>
                             <div className="col-span-2"></div>
                           </div>
                         </div>
@@ -432,12 +449,12 @@ const CreateRoutinePage = () => {
                               key={set.id}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
-                              className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-muted/30"
+                              className={`grid ${exercise.isCardio ? "grid-cols-12" : "grid-cols-11"} gap-2 items-center p-2 rounded-lg bg-muted/30`}
                             >
                               <div className="col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm bg-muted text-muted-foreground">
                                 {index + 1}
                               </div>
-                              <div className="col-span-4">
+                              <div className={`${exercise.isCardio ? "col-span-4" : "col-span-3"}`}>
                                 <Input
                                   placeholder={exercise.isCardio ? "miles" : "lbs"}
                                   value={exercise.isCardio ? set.distance : set.weight}
@@ -446,15 +463,35 @@ const CreateRoutinePage = () => {
                                   type={exercise.isCardio ? "text" : "number"}
                                 />
                               </div>
-                              <div className="col-span-4">
-                                <Input
-                                  placeholder={exercise.isCardio ? "mm:ss" : "reps"}
-                                  value={exercise.isCardio ? set.time : set.reps}
-                                  onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "time" : "reps", e.target.value)}
-                                  className="text-center h-9 bg-background border-border"
-                                  type={exercise.isCardio ? "text" : "number"}
-                                />
-                              </div>
+                              {exercise.isCardio ? (
+                                <div className="col-span-4">
+                                  <Input
+                                    placeholder="mm:ss"
+                                    value={set.time}
+                                    onChange={(e) => updateSet(exercise.id, set.id, "time", e.target.value)}
+                                    className="text-center h-9 bg-background border-border"
+                                    type="text"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="col-span-4 flex items-center gap-1">
+                                  <Input
+                                    placeholder="8"
+                                    value={set.repsMin}
+                                    onChange={(e) => updateSet(exercise.id, set.id, "repsMin", e.target.value)}
+                                    className="text-center h-9 bg-background border-border flex-1"
+                                    type="number"
+                                  />
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                  <Input
+                                    placeholder="12"
+                                    value={set.repsMax}
+                                    onChange={(e) => updateSet(exercise.id, set.id, "repsMax", e.target.value)}
+                                    className="text-center h-9 bg-background border-border flex-1"
+                                    type="number"
+                                  />
+                                </div>
+                              )}
                               <div className="col-span-2 flex justify-center">
                                 <Button
                                   variant="ghost"
