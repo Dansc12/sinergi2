@@ -41,12 +41,11 @@ const CreateRecipePage = () => {
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [servings, setServings] = useState("");
-  const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { id: "1", name: "", calories: 0, protein: 0, carbs: 0, fats: 0 }
-  ]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [instructions, setInstructions] = useState<string[]>([""]);
   const [images, setImages] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [ingredientSearch, setIngredientSearch] = useState("");
 
   // Restore state if coming back from share screen
   useEffect(() => {
@@ -67,36 +66,21 @@ const CreateRecipePage = () => {
     navigate("/");
   };
 
-  const addIngredient = () => {
-    setIngredients([...ingredients, { 
-      id: Date.now().toString(), 
-      name: "", 
-      calories: 0, 
-      protein: 0, 
-      carbs: 0, 
-      fats: 0 
-    }]);
-  };
-
   const removeIngredient = (id: string) => {
-    if (ingredients.length > 1) {
-      setIngredients(ingredients.filter((i) => i.id !== id));
-    }
+    setIngredients(ingredients.filter((i) => i.id !== id));
   };
 
-  const updateIngredientName = (id: string, value: string) => {
-    setIngredients(ingredients.map(i => i.id === id ? { ...i, name: value } : i));
-  };
-
-  const handleIngredientSelect = (id: string, food: FoodItem) => {
-    setIngredients(ingredients.map(i => i.id === id ? {
-      ...i,
+  const handleIngredientSelect = (food: FoodItem) => {
+    const newIngredient: Ingredient = {
+      id: Date.now().toString(),
       name: food.description,
       calories: food.calories,
       protein: food.protein,
       carbs: food.carbs,
       fats: food.fats,
-    } : i));
+    };
+    setIngredients([...ingredients, newIngredient]);
+    setIngredientSearch("");
   };
 
   const addInstruction = () => setInstructions([...instructions, ""]);
@@ -168,7 +152,7 @@ const CreateRecipePage = () => {
               <h1 className="text-2xl font-bold">Create Recipe</h1>
             </div>
           </div>
-          <Button variant="ghost" onClick={handleFinish} className="text-primary font-semibold">
+          <Button variant="default" size="sm" onClick={handleFinish}>
             Finish
           </Button>
         </div>
@@ -228,40 +212,39 @@ const CreateRecipePage = () => {
           {/* Ingredients */}
           <div className="space-y-3">
             <Label>Ingredients</Label>
-            {ingredients.map((ingredient, index) => (
-              <motion.div 
-                key={ingredient.id} 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                className="p-3 rounded-xl bg-card border border-border space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Ingredient {index + 1}</span>
-                  {ingredients.length > 1 && (
-                    <Button variant="ghost" size="icon-sm" onClick={() => removeIngredient(ingredient.id)}>
-                      <Trash2 size={16} className="text-destructive" />
-                    </Button>
-                  )}
-                </div>
-                <FoodSearchInput
-                  value={ingredient.name}
-                  onChange={(value) => updateIngredientName(ingredient.id, value)}
-                  onSelect={(food) => handleIngredientSelect(ingredient.id, food)}
-                  placeholder="Search ingredient..."
-                />
-                {ingredient.calories > 0 && (
-                  <div className="flex gap-3 text-xs text-muted-foreground">
-                    <span>{ingredient.calories} cal</span>
-                    <span>P: {ingredient.protein}g</span>
-                    <span>C: {ingredient.carbs}g</span>
-                    <span>F: {ingredient.fats}g</span>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-            <Button variant="outline" size="sm" onClick={addIngredient}>
-              <Plus size={16} /> Add Ingredient
-            </Button>
+            <FoodSearchInput
+              value={ingredientSearch}
+              onChange={setIngredientSearch}
+              onSelect={handleIngredientSelect}
+              placeholder="Search for an ingredient..."
+            />
+            {ingredients.length > 0 && (
+              <div className="space-y-2">
+                {ingredients.map((ingredient, index) => (
+                  <motion.div 
+                    key={ingredient.id} 
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className="p-3 rounded-xl bg-card border border-border"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <span className="font-medium text-sm">{ingredient.name}</span>
+                        <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                          <span>{ingredient.calories} cal</span>
+                          <span>P: {ingredient.protein}g</span>
+                          <span>C: {ingredient.carbs}g</span>
+                          <span>F: {ingredient.fats}g</span>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeIngredient(ingredient.id)}>
+                        <Trash2 size={16} className="text-destructive" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Instructions */}
