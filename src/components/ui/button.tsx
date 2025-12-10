@@ -17,7 +17,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         glass: "glass text-foreground hover:bg-card/90",
         icon: "bg-muted/50 text-foreground hover:bg-muted rounded-full",
-        create: "gradient-primary text-primary-foreground shadow-xl glow-primary animate-pulse-glow",
+        create: "gradient-primary text-primary-foreground shadow-lg",
         pill: "bg-card border border-border text-foreground hover:border-primary hover:bg-muted rounded-2xl",
       },
       size: {
