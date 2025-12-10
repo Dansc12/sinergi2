@@ -58,14 +58,14 @@ export const ProgressCharts = () => {
     { value: 177 },
   ];
 
-  const strengthData = [
-    { value: 135 },
-    { value: 145 },
-    { value: 150 },
-    { value: 155 },
-    { value: 160 },
-    { value: 165 },
-    { value: 175 },
+  const totalWeightData = [
+    { value: 2500 },
+    { value: 3200 },
+    { value: 4100 },
+    { value: 4800 },
+    { value: 5500 },
+    { value: 6200 },
+    { value: 7400 },
   ];
 
   return (
@@ -81,11 +81,11 @@ export const ProgressCharts = () => {
           color="hsl(270, 91%, 65%)"
         />
         <ChartCard
-          title="Bench Press"
-          value="175 lbs"
-          change="+40 lbs"
+          title="Total Weight"
+          value="7,400 lbs"
+          change="+4,900 lbs"
           isPositive={true}
-          data={strengthData}
+          data={totalWeightData}
           color="hsl(142, 76%, 45%)"
         />
       </div>

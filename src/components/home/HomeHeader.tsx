@@ -10,47 +10,33 @@ interface HomeHeaderProps {
 }
 
 export const HomeHeader = ({ userName, streakCount, avatarUrl, onProfileClick }: HomeHeaderProps) => {
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
   return (
     <header className="sticky top-0 z-40">
-      {/* Top Bar */}
       <div className="glass-elevated px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Left: Avatar & Streak */}
-          <button onClick={onProfileClick} className="flex items-center gap-3">
-            <div className="relative">
-              <Avatar className="h-11 w-11 border-2 border-primary/50">
+          {/* Left: Streak Badge */}
+          <div className="flex items-center gap-1.5 bg-streak text-primary-foreground px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">
+            <Flame size={18} />
+            <span>{streakCount}</span>
+          </div>
+
+          {/* Right: Notifications & Avatar */}
+          <div className="flex items-center gap-3">
+            <Button variant="icon" size="icon" className="relative h-10 w-10">
+              <Bell size={22} />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-destructive rounded-full" />
+            </Button>
+            
+            <button onClick={onProfileClick}>
+              <Avatar className="h-10 w-10 border-2 border-primary/50">
                 <AvatarImage src={avatarUrl} alt={userName} />
                 <AvatarFallback className="bg-primary/20 text-primary font-semibold">
                   {userName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {/* Streak Badge */}
-              <div className="absolute -top-1 -right-1 flex items-center gap-0.5 bg-streak text-primary-foreground px-1.5 py-0.5 rounded-full text-xs font-bold shadow-lg">
-                <Flame size={10} />
-                <span>{streakCount}</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Right: Notifications */}
-          <Button variant="icon" size="icon">
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
-          </Button>
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Greeting Section */}
-      <div className="px-4 py-5">
-        <p className="text-muted-foreground text-sm">{getGreeting()}</p>
-        <h1 className="text-3xl font-bold">{userName} 💪</h1>
       </div>
     </header>
   );
