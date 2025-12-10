@@ -103,23 +103,44 @@ const typeLabels = {
 
 const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
 
+interface FloatingReaction {
+  id: number;
+  emoji: string;
+}
+
 const ReactionButton = ({ 
   emoji, 
+  count,
   onReact 
 }: { 
   emoji: string; 
+  count: number;
   onReact: () => void;
 }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isPressed, setIsPressed] = useState(false);
+  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
+  const reactionIdRef = useRef(0);
+
+  const triggerAnimation = useCallback(() => {
+    const id = reactionIdRef.current++;
+    setFloatingReactions(prev => [...prev, { id, emoji }]);
+    
+    // Remove the reaction after animation completes
+    setTimeout(() => {
+      setFloatingReactions(prev => prev.filter(r => r.id !== id));
+    }, 800);
+  }, [emoji]);
 
   const startReacting = useCallback(() => {
     setIsPressed(true);
     onReact();
+    triggerAnimation();
     intervalRef.current = setInterval(() => {
       onReact();
+      triggerAnimation();
     }, 100);
-  }, [onReact]);
+  }, [onReact, triggerAnimation]);
 
   const stopReacting = useCallback(() => {
     setIsPressed(false);
@@ -130,19 +151,53 @@ const ReactionButton = ({
   }, []);
 
   return (
-    <motion.button
-      className={`flex items-center justify-center w-12 h-12 rounded-full transition-colors select-none ${
-        isPressed ? "bg-primary/20" : "hover:bg-muted"
-      }`}
-      onMouseDown={startReacting}
-      onMouseUp={stopReacting}
-      onMouseLeave={stopReacting}
-      onTouchStart={startReacting}
-      onTouchEnd={stopReacting}
-      whileTap={{ scale: 1.2 }}
-    >
-      <span className="text-2xl opacity-80 hover:opacity-100 transition-opacity">{emoji}</span>
-    </motion.button>
+    <div className="relative">
+      {/* Floating animations */}
+      <AnimatePresence>
+        {floatingReactions.map((reaction) => (
+          <motion.span
+            key={reaction.id}
+            className="absolute left-1/2 -translate-x-1/2 text-xl pointer-events-none z-10"
+            initial={{ opacity: 1, y: 0, scale: 0.8 }}
+            animate={{ 
+              opacity: 0, 
+              y: -40, 
+              scale: 1.2,
+              x: Math.random() * 20 - 10 
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            {reaction.emoji}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+      
+      {/* Counter badge */}
+      {count > 0 && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-xs font-medium rounded-full flex items-center justify-center px-1 z-10"
+        >
+          {count > 99 ? "99+" : count}
+        </motion.span>
+      )}
+      
+      <motion.button
+        className={`flex items-center justify-center w-14 h-14 rounded-full transition-colors select-none ${
+          isPressed ? "bg-primary/20" : "hover:bg-muted"
+        }`}
+        onMouseDown={startReacting}
+        onMouseUp={stopReacting}
+        onMouseLeave={stopReacting}
+        onTouchStart={startReacting}
+        onTouchEnd={stopReacting}
+        whileTap={{ scale: 1.2 }}
+      >
+        <span className="text-2xl opacity-80 hover:opacity-100 transition-opacity">{emoji}</span>
+      </motion.button>
+    </div>
   );
 };
 
@@ -191,6 +246,11 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     );
   }
 
+  // Calculate offset to center current image with peek on sides
+  const imageWidth = 80; // percentage
+  const gapWidth = 3; // percentage gap between images
+  const offset = currentIndex * (imageWidth + gapWidth) - (100 - imageWidth) / 2 + gapWidth / 2;
+
   return (
     <div 
       ref={containerRef}
@@ -200,13 +260,16 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     >
       <div 
         className="flex transition-transform duration-300 ease-out"
-        style={{ transform: `translateX(-${currentIndex * 85}%)` }}
+        style={{ 
+          transform: `translateX(-${offset}%)`,
+          gap: `${gapWidth}%`
+        }}
       >
         {images.map((image, index) => (
           <div 
             key={index} 
-            className="flex-shrink-0 pr-2"
-            style={{ width: '85%' }}
+            className="flex-shrink-0"
+            style={{ width: `${imageWidth}%` }}
           >
             <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
               <img src={image} alt={`Post ${index + 1}`} className="w-full h-full object-cover" />
@@ -214,27 +277,23 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
           </div>
         ))}
       </div>
-      
-      {/* Pagination dots */}
-      <div className="flex justify-center gap-1.5 mt-3">
-        {images.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              index === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
-            }`}
-          />
-        ))}
-      </div>
     </div>
   );
 };
 
+type ReactionCounts = Record<string, number>;
+
 const PostCard = ({ post }: { post: FeedPost }) => {
-  const handleReact = () => {
-    // Reaction logic - can be connected to backend later
-  };
+  const [reactionCounts, setReactionCounts] = useState<ReactionCounts>(() => 
+    reactionEmojis.reduce((acc, emoji) => ({ ...acc, [emoji]: 0 }), {})
+  );
+
+  const handleReact = useCallback((emoji: string) => {
+    setReactionCounts(prev => ({
+      ...prev,
+      [emoji]: prev[emoji] + 1
+    }));
+  }, []);
   
   return (
     <motion.article
@@ -270,12 +329,13 @@ const PostCard = ({ post }: { post: FeedPost }) => {
       )}
 
       {/* Reactions */}
-      <div className="flex items-center justify-center gap-4 p-4">
+      <div className="flex items-center justify-center gap-6 p-4">
         {reactionEmojis.map((emoji) => (
           <ReactionButton
             key={emoji}
             emoji={emoji}
-            onReact={handleReact}
+            count={reactionCounts[emoji]}
+            onReact={() => handleReact(emoji)}
           />
         ))}
       </div>
