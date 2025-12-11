@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // Use proxy for token exchange, direct API for data requests
@@ -25,37 +25,34 @@ async function getAccessToken(): Promise<string> {
     return cachedToken;
   }
 
-  const clientId = Deno.env.get('FATSECRET_CLIENT_ID');
-  const clientSecret = Deno.env.get('FATSECRET_CLIENT_SECRET');
+  const clientId = Deno.env.get("FATSECRET_CLIENT_ID");
+  const clientSecret = Deno.env.get("FATSECRET_CLIENT_SECRET");
 
   if (!clientId || !clientSecret) {
-    throw new Error('FatSecret credentials not configured');
+    throw new Error("FatSecret credentials not configured");
   }
 
-  const credentials = btoa(`${clientId}:${clientSecret}`);
-  
   // Use proxy for token exchange
   const response = await fetch(PROXY_TOKEN_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: 'grant_type=client_credentials&scope=basic',
+    body: `grant_type=client_credentials&scope=basic&client_id=${clientId}&client_secret=${clientSecret}`, // <-- ADD credentials to the body
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Proxy token request failed:', response.status, errorText);
-    throw new Error('Failed to obtain FatSecret access token via proxy');
+    console.error("Proxy token request failed:", response.status, errorText);
+    throw new Error("Failed to obtain FatSecret access token via proxy");
   }
 
   const data: TokenResponse = await response.json();
   cachedToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in * 1000);
-  
+  tokenExpiry = Date.now() + data.expires_in * 1000;
+
   // Success log with token preview
-  const tokenPreview = cachedToken.substring(0, 10) + '...';
+  const tokenPreview = cachedToken.substring(0, 10) + "...";
   console.log(`Proxy Token Exchange Successful: ${tokenPreview}`);
   return cachedToken;
 }
@@ -103,54 +100,54 @@ interface FatSecretFoodGetResponse {
 }
 
 // Parse nutrition from food_description string (e.g., "Per 100g - Calories: 89kcal | Fat: 0.33g | Carbs: 22.84g | Protein: 1.09g")
-function parseNutritionFromDescription(description: string): { 
-  calories: number; 
-  protein: number; 
-  carbs: number; 
+function parseNutritionFromDescription(description: string): {
+  calories: number;
+  protein: number;
+  carbs: number;
   fats: number;
   servingSize: string;
 } {
-  const result = { calories: 0, protein: 0, carbs: 0, fats: 0, servingSize: '100g' };
-  
+  const result = { calories: 0, protein: 0, carbs: 0, fats: 0, servingSize: "100g" };
+
   // Extract serving size (e.g., "Per 100g" or "Per 1 cup")
   const servingMatch = description.match(/Per\s+([^-]+)/i);
   if (servingMatch) {
     result.servingSize = servingMatch[1].trim();
   }
-  
+
   // Extract calories
   const caloriesMatch = description.match(/Calories:\s*([\d.]+)/i);
   if (caloriesMatch) result.calories = Math.round(parseFloat(caloriesMatch[1]));
-  
+
   // Extract fat
   const fatMatch = description.match(/Fat:\s*([\d.]+)/i);
   if (fatMatch) result.fats = parseFloat(fatMatch[1]);
-  
+
   // Extract carbs
   const carbsMatch = description.match(/Carbs:\s*([\d.]+)/i);
   if (carbsMatch) result.carbs = parseFloat(carbsMatch[1]);
-  
+
   // Extract protein
   const proteinMatch = description.match(/Protein:\s*([\d.]+)/i);
   if (proteinMatch) result.protein = parseFloat(proteinMatch[1]);
-  
+
   return result;
 }
 
 // Transform FatSecret search results to our format
 function transformSearchResults(data: FatSecretSearchResponse): any[] {
   if (!data.foods?.food) return [];
-  
+
   // FatSecret returns single item as object, multiple as array
   const foods = Array.isArray(data.foods.food) ? data.foods.food : [data.foods.food];
-  
+
   return foods.map((food) => {
     const nutrition = parseNutritionFromDescription(food.food_description);
-    
+
     return {
       fdcId: parseInt(food.food_id, 10),
       description: food.food_name,
-      brandName: food.brand_name || (food.food_type === 'Brand' ? 'Branded' : undefined),
+      brandName: food.brand_name || (food.food_type === "Brand" ? "Branded" : undefined),
       calories: nutrition.calories,
       protein: nutrition.protein,
       carbs: nutrition.carbs,
@@ -163,19 +160,18 @@ function transformSearchResults(data: FatSecretSearchResponse): any[] {
 // Transform FatSecret food details to our format
 function transformFoodDetails(data: FatSecretFoodGetResponse): any | null {
   if (!data.food) return null;
-  
+
   const food = data.food;
-  const servings = Array.isArray(food.servings.serving) 
-    ? food.servings.serving 
-    : [food.servings.serving];
-  
+  const servings = Array.isArray(food.servings.serving) ? food.servings.serving : [food.servings.serving];
+
   // Use the first serving (usually the default/100g)
   const serving = servings[0];
-  
-  const servingSize = serving.metric_serving_amount && serving.metric_serving_unit
-    ? `${serving.metric_serving_amount}${serving.metric_serving_unit}`
-    : serving.serving_description || '100g';
-  
+
+  const servingSize =
+    serving.metric_serving_amount && serving.metric_serving_unit
+      ? `${serving.metric_serving_amount}${serving.metric_serving_unit}`
+      : serving.serving_description || "100g";
+
   return {
     fdcId: parseInt(food.food_id, 10),
     description: food.food_name,
@@ -186,8 +182,8 @@ function transformFoodDetails(data: FatSecretFoodGetResponse): any | null {
     fats: parseFloat(serving.fat) || 0,
     servingSize,
     servingSizeValue: serving.metric_serving_amount ? parseFloat(serving.metric_serving_amount) : 100,
-    servingSizeUnit: serving.metric_serving_unit || 'g',
-    allServings: servings.map(s => ({
+    servingSizeUnit: serving.metric_serving_unit || "g",
+    allServings: servings.map((s) => ({
       servingId: s.serving_id,
       description: s.serving_description,
       calories: Math.round(parseFloat(s.calories) || 0),
@@ -202,26 +198,25 @@ function transformFoodDetails(data: FatSecretFoodGetResponse): any | null {
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { query, action = 'search', foodId } = await req.json();
+    const { query, action = "search", foodId } = await req.json();
 
     // Validate inputs
-    if (action === 'search' && (!query || query.trim().length < 2)) {
-      return new Response(
-        JSON.stringify({ foods: [] }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (action === "search" && (!query || query.trim().length < 2)) {
+      return new Response(JSON.stringify({ foods: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    if (action === 'get_details' && !foodId) {
-      return new Response(
-        JSON.stringify({ error: 'foodId is required for get_details action' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (action === "get_details" && !foodId) {
+      return new Response(JSON.stringify({ error: "foodId is required for get_details action" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log(`FatSecret API - Action: ${action}, Query: ${query || foodId}`);
@@ -229,52 +224,50 @@ serve(async (req) => {
     const accessToken = await getAccessToken();
 
     let apiUrl: string;
-    if (action === 'search') {
+    if (action === "search") {
       apiUrl = `${FATSECRET_API_URL}?method=foods.search&search_expression=${encodeURIComponent(query)}&max_results=15&format=json`;
     } else {
       apiUrl = `${FATSECRET_API_URL}?method=food.get.v2&food_id=${foodId}&format=json`;
     }
 
     const response = await fetch(apiUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('FatSecret API error:', response.status, errorText);
-      throw new Error('Failed to fetch from FatSecret API');
+      console.error("FatSecret API error:", response.status, errorText);
+      throw new Error("Failed to fetch from FatSecret API");
     }
 
     const data = await response.json();
-    
+
     if (data.error) {
-      console.error('FatSecret API returned error:', data.error);
-      throw new Error(data.error.message || 'FatSecret API error');
+      console.error("FatSecret API returned error:", data.error);
+      throw new Error(data.error.message || "FatSecret API error");
     }
 
-    if (action === 'search') {
+    if (action === "search") {
       const foods = transformSearchResults(data as FatSecretSearchResponse);
       console.log(`Found ${foods.length} foods`);
-      return new Response(
-        JSON.stringify({ foods }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ foods }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     } else {
       const food = transformFoodDetails(data as FatSecretFoodGetResponse);
-      return new Response(
-        JSON.stringify({ food }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ food }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
   } catch (error) {
-    console.error('Error in search-foods function:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: message, foods: [] }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error("Error in search-foods function:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message, foods: [] }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
