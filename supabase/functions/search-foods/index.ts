@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const FATSECRET_TOKEN_URL = "https://oauth.fatsecret.com/connect/token";
+const PROXY_TOKEN_URL = "https://lovable.proxy.mooo.com/connect/token";
 const FATSECRET_API_URL = "https://platform.fatsecret.com/rest/server.api";
 
 interface TokenResponse {
@@ -31,15 +31,15 @@ async function getAccessToken(): Promise<string> {
     throw new Error('FatSecret credentials not configured');
   }
 
-  const credentials = btoa(`${clientId}:${clientSecret}`);
+  // Send credentials in body (URL encoded), NOT as Basic Auth header
+  const body = `grant_type=client_credentials&scope=basic&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`;
   
-  const response = await fetch(FATSECRET_TOKEN_URL, {
+  const response = await fetch(PROXY_TOKEN_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: 'grant_type=client_credentials&scope=basic',
+    body,
   });
 
   if (!response.ok) {
@@ -52,7 +52,8 @@ async function getAccessToken(): Promise<string> {
   cachedToken = data.access_token;
   tokenExpiry = Date.now() + (data.expires_in * 1000);
   
-  console.log('Obtained new FatSecret access token');
+  const tokenPreview = cachedToken.substring(0, 10) + '...';
+  console.log(`Proxy Token Exchange Successful: ${tokenPreview}`);
   return cachedToken;
 }
 
