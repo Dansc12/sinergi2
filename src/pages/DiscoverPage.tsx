@@ -108,15 +108,23 @@ interface FloatingEmoji {
   id: number;
   emoji: string;
   originX: number;
+  originY: number;
 }
 
-const LONG_PRESS_THRESHOLD = 300; // ms before reactions start
+const LONG_PRESS_THRESHOLD = 300;
+const DOUBLE_TAP_DELAY = 300;
 
-const ImageCarousel = ({ images }: { images: string[] }) => {
+const ImageCarousel = ({ 
+  images, 
+  onDoubleTap 
+}: { 
+  images: string[]; 
+  onDoubleTap: () => void;
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
+  const lastTapRef = useRef<number>(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -131,18 +139,36 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     const threshold = 50;
 
     if (Math.abs(diff) > threshold) {
-      if (diff > 0 && currentIndex < images.length - 1) {
-        setCurrentIndex((prev) => prev + 1);
-      } else if (diff < 0 && currentIndex > 0) {
-        setCurrentIndex((prev) => prev - 1);
+      if (diff > 0) {
+        // Swipe left - go to next (circular)
+        setCurrentIndex((prev) => (prev + 1) % images.length);
+      } else {
+        // Swipe right - go to previous (circular)
+        setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
       }
     }
   };
 
+  const handleClick = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      onDoubleTap();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
+  // Consistent image size for all posts
+  const imageContainerClass = "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
+
   if (images.length === 1) {
     return (
-      <div className="px-4 py-1">
-        <div className="relative aspect-[4/3] bg-muted rounded-xl overflow-hidden">
+      <div className="px-4 py-1 flex justify-center">
+        <div 
+          className={imageContainerClass}
+          onClick={handleClick}
+        >
           <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
         </div>
       </div>
@@ -152,30 +178,28 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
   return (
     <div className="relative py-1 px-2">
       <div 
-        ref={containerRef}
-        className="flex items-center justify-center gap-2 overflow-hidden touch-pan-y"
+        className="flex items-center justify-center gap-3 overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {/* Previous image preview */}
-        {images.length > 2 && (
-          <div className="w-12 h-24 rounded-lg overflow-hidden opacity-40 flex-shrink-0">
-            <img 
-              src={images[(currentIndex - 1 + images.length) % images.length]} 
-              alt="Previous" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
+          <img 
+            src={images[(currentIndex - 1 + images.length) % images.length]} 
+            alt="Previous" 
+            className="w-full h-full object-cover"
+          />
+        </div>
 
         {/* Current image */}
         <motion.div 
           key={currentIndex}
-          initial={{ opacity: 0.8, scale: 0.95 }}
+          initial={{ opacity: 0.9, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2 }}
-          className="relative aspect-[4/3] w-full max-w-[280px] bg-muted rounded-xl overflow-hidden flex-shrink-0"
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className={imageContainerClass}
+          onClick={handleClick}
         >
           <img 
             src={images[currentIndex]} 
@@ -185,15 +209,13 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
         </motion.div>
 
         {/* Next image preview */}
-        {images.length > 2 && (
-          <div className="w-12 h-24 rounded-lg overflow-hidden opacity-40 flex-shrink-0">
-            <img 
-              src={images[(currentIndex + 1) % images.length]} 
-              alt="Next" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
+          <img 
+            src={images[(currentIndex + 1) % images.length]} 
+            alt="Next" 
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
     </div>
   );
@@ -206,21 +228,24 @@ const PostCard = ({ post }: { post: FeedPost }) => {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const isLongPressActiveRef = useRef(false);
+  const cardRef = useRef<HTMLElement>(null);
 
-  const addReaction = useCallback((emoji: string) => {
+  const addReaction = useCallback((emoji: string, originX?: number, originY?: number) => {
     setReactions((prev) => ({
       ...prev,
       [emoji]: (prev[emoji] || 0) + 1,
     }));
 
-    // Get button position for animation origin
+    // Get button position for animation origin (or use provided coords for double-tap)
     const button = buttonRefs.current[emoji];
-    const originX = button ? button.getBoundingClientRect().left + button.offsetWidth / 2 : 0;
+    const finalOriginX = originX ?? (button ? button.getBoundingClientRect().left + button.offsetWidth / 2 : window.innerWidth / 2);
+    const finalOriginY = originY ?? (button ? button.getBoundingClientRect().top : 200);
 
     const newEmoji: FloatingEmoji = {
       id: Date.now() + Math.random(),
       emoji,
-      originX,
+      originX: finalOriginX,
+      originY: finalOriginY,
     };
     setFloatingEmojis((prev) => [...prev, newEmoji]);
 
@@ -228,6 +253,14 @@ const PostCard = ({ post }: { post: FeedPost }) => {
       setFloatingEmojis((prev) => prev.filter((e) => e.id !== newEmoji.id));
     }, 1000);
   }, []);
+
+  const handleDoubleTap = useCallback(() => {
+    // Double-tap triggers ❤️ reaction from center of card
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    const centerX = cardRect ? cardRect.left + cardRect.width / 2 : window.innerWidth / 2;
+    const centerY = cardRect ? cardRect.top + cardRect.height / 2 : 300;
+    addReaction("❤️", centerX, centerY);
+  }, [addReaction]);
 
   const startContinuousReactions = useCallback((emoji: string) => {
     addReaction(emoji);
@@ -239,7 +272,6 @@ const PostCard = ({ post }: { post: FeedPost }) => {
   const handlePointerDown = useCallback((emoji: string) => {
     isLongPressActiveRef.current = false;
     
-    // Start long-press timer
     longPressTimerRef.current = setTimeout(() => {
       isLongPressActiveRef.current = true;
       startContinuousReactions(emoji);
@@ -247,13 +279,11 @@ const PostCard = ({ post }: { post: FeedPost }) => {
   }, [startContinuousReactions]);
 
   const handlePointerUp = useCallback(() => {
-    // Clear long-press timer
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
     
-    // Clear continuous reactions
     if (holdIntervalRef.current) {
       clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
@@ -264,8 +294,10 @@ const PostCard = ({ post }: { post: FeedPost }) => {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 20 }}
+      ref={cardRef}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       className="bg-card border-b border-border"
     >
       {/* Header */}
@@ -288,31 +320,35 @@ const PostCard = ({ post }: { post: FeedPost }) => {
         </Button>
       </div>
 
-      {/* Images */}
+      {/* Images with double-tap support */}
       {post.images && post.images.length > 0 && (
-        <ImageCarousel images={post.images} />
+        <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
       )}
 
-      {/* Reaction Buttons - Tighter spacing */}
-      <div className="relative px-4 py-2">
-        {/* Floating Emojis - Origin from specific button */}
+      {/* Reaction Buttons - Tighter container */}
+      <div className="relative px-4 py-1.5">
+        {/* Floating Emojis - Origin from specific button position */}
         <AnimatePresence>
           {floatingEmojis.map((floating) => (
             <motion.span
               key={floating.id}
               initial={{ opacity: 1, y: 0, scale: 1 }}
-              animate={{ opacity: 0, y: -50, scale: 1.2 }}
+              animate={{ opacity: 0, y: -60, scale: 1.3 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="fixed text-2xl pointer-events-none z-50"
-              style={{ left: floating.originX, top: "auto", transform: "translateX(-50%)" }}
+              style={{ 
+                left: floating.originX, 
+                top: floating.originY, 
+                transform: "translate(-50%, -50%)" 
+              }}
             >
               {floating.emoji}
             </motion.span>
           ))}
         </AnimatePresence>
 
-        <div className="flex items-center justify-center gap-5">
+        <div className="flex items-center justify-center gap-4">
           {reactionEmojis.map((emoji) => (
             <button
               key={emoji}
@@ -321,11 +357,11 @@ const PostCard = ({ post }: { post: FeedPost }) => {
               onPointerUp={handlePointerUp}
               onPointerLeave={handlePointerUp}
               onPointerCancel={handlePointerUp}
-              className="relative text-2xl p-2.5 rounded-full hover:bg-muted/50 transition-colors select-none touch-none"
+              className="relative text-xl p-2 rounded-full hover:bg-muted/50 transition-colors select-none touch-none"
             >
               {emoji}
               {reactions[emoji] > 0 && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 min-w-[20px] h-[20px] rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shadow-md">
+                <span className="absolute -top-1 left-1/2 -translate-x-1/2 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-lg border border-background">
                   {reactions[emoji]}
                 </span>
               )}
@@ -427,14 +463,9 @@ const DiscoverPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header - Search bar only, no "Connect" text */}
       <header className="sticky top-0 z-40 glass-elevated">
         <div className="px-4 py-3">
-          <h1 className="text-2xl font-bold">Connect</h1>
-        </div>
-        
-        {/* Search Bar */}
-        <div className="px-4 pb-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <input
@@ -448,8 +479,8 @@ const DiscoverPage = () => {
         </div>
       </header>
 
-      {/* Feed */}
-      <div className="animate-fade-in">
+      {/* Feed with smooth scroll */}
+      <div className="animate-fade-in scroll-smooth">
         {renderFeedWithSuggestions()}
       </div>
     </div>
