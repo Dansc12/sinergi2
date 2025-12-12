@@ -1,9 +1,8 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Search, MoreHorizontal, Users, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { Search, HandMetal, MessageCircle, ClipboardList, Share2, MoreHorizontal, Users, UserPlus, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface FeedPost {
   id: string;
@@ -13,8 +12,14 @@ interface FeedPost {
     handle: string;
   };
   content: string;
-  images?: string[];
+  image?: string;
   type: "workout" | "meal" | "recipe" | "post";
+  stats: {
+    likes: number;
+    comments: number;
+  };
+  liked: boolean;
+  saved: boolean;
   timeAgo: string;
 }
 
@@ -36,47 +41,55 @@ const feedPosts: FeedPost[] = [
     id: "1",
     user: { name: "Sarah Chen", handle: "@sarahfitness", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
     content: "Just crushed my first 5K in under 25 minutes! 🏃‍♀️ All those morning runs are finally paying off. Who else is training for a race?",
-    images: [
-      "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600",
-      "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600",
-      "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600"
-    ],
+    image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600",
     type: "workout",
+    stats: { likes: 142, comments: 28 },
+    liked: false,
+    saved: false,
     timeAgo: "2h"
   },
   {
     id: "2",
     user: { name: "Mike Johnson", handle: "@mikej", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
     content: "Meal prep Sunday complete! 🥗 Got my protein-packed lunches ready for the week. Sharing the recipe in my stories!",
-    images: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600"],
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600",
     type: "meal",
+    stats: { likes: 89, comments: 15 },
+    liked: true,
+    saved: false,
     timeAgo: "4h"
   },
   {
     id: "3",
     user: { name: "Emma Wilson", handle: "@emmawellness", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" },
     content: "Morning yoga flow to start the day right ☀️🧘‍♀️ Remember: progress, not perfection!",
-    images: [
-      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600",
-      "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600"
-    ],
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600",
     type: "post",
+    stats: { likes: 234, comments: 42 },
+    liked: false,
+    saved: true,
     timeAgo: "5h"
   },
   {
     id: "4",
     user: { name: "Alex Rivera", handle: "@alexlifts", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100" },
     content: "New PR on deadlift today! 💪 315 lbs felt smooth. Thanks to everyone in the powerlifting group for the tips!",
-    images: ["https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600"],
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600",
     type: "workout",
+    stats: { likes: 312, comments: 67 },
+    liked: false,
+    saved: false,
     timeAgo: "6h"
   },
   {
     id: "5",
     user: { name: "Sofia Garcia", handle: "@sofiacooks", avatar: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=100" },
     content: "Made this high-protein overnight oats recipe! Perfect for busy mornings. Full recipe in my profile 🥣",
-    images: ["https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=600"],
+    image: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=600",
     type: "recipe",
+    stats: { likes: 178, comments: 34 },
+    liked: false,
+    saved: false,
     timeAgo: "8h"
   },
 ];
@@ -101,269 +114,80 @@ const typeLabels = {
   post: { label: "Post", color: "bg-accent/20 text-accent" },
 };
 
-const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
-
-interface FloatingReaction {
-  id: number;
-  emoji: string;
-}
-
-const ReactionButton = ({ 
-  emoji, 
-  count,
-  onReact 
-}: { 
-  emoji: string; 
-  count: number;
-  onReact: () => void;
-}) => {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [isPressed, setIsPressed] = useState(false);
-  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
-  const reactionIdRef = useRef(0);
-
-  const triggerAnimation = useCallback(() => {
-    const id = reactionIdRef.current++;
-    setFloatingReactions(prev => [...prev, { id, emoji }]);
-    
-    // Remove the reaction after animation completes
-    setTimeout(() => {
-      setFloatingReactions(prev => prev.filter(r => r.id !== id));
-    }, 800);
-  }, [emoji]);
-
-  const startReacting = useCallback(() => {
-    setIsPressed(true);
-    onReact();
-    triggerAnimation();
-    intervalRef.current = setInterval(() => {
-      onReact();
-      triggerAnimation();
-    }, 100);
-  }, [onReact, triggerAnimation]);
-
-  const stopReacting = useCallback(() => {
-    setIsPressed(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  return (
-    <div className="relative">
-      {/* Floating animations */}
-      <AnimatePresence>
-        {floatingReactions.map((reaction) => (
-          <motion.span
-            key={reaction.id}
-            className="absolute left-1/2 -translate-x-1/2 text-xl pointer-events-none z-10"
-            initial={{ opacity: 1, y: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: 0, 
-              y: -40, 
-              scale: 1.2,
-              x: Math.random() * 20 - 10 
-            }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            {reaction.emoji}
-          </motion.span>
-        ))}
-      </AnimatePresence>
-      
-      {/* Counter badge */}
-      {count > 0 && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-xs font-medium rounded-full flex items-center justify-center px-1 z-10"
-        >
-          {count > 99 ? "99+" : count}
-        </motion.span>
-      )}
-      
-      <motion.button
-        className={`flex items-center justify-center w-14 h-14 rounded-full transition-colors select-none ${
-          isPressed ? "bg-primary/20" : "hover:bg-muted"
-        }`}
-        onMouseDown={startReacting}
-        onMouseUp={stopReacting}
-        onMouseLeave={stopReacting}
-        onTouchStart={startReacting}
-        onTouchEnd={stopReacting}
-        whileTap={{ scale: 1.2 }}
-      >
-        <span className="text-2xl opacity-80 hover:opacity-100 transition-opacity">{emoji}</span>
-      </motion.button>
+const PostCard = ({ post, onLike, onSave }: { post: FeedPost; onLike: () => void; onSave: () => void }) => (
+  <motion.article
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-card border-b border-border"
+  >
+    {/* Header */}
+    <div className="flex items-center gap-3 p-4">
+      <Avatar className="w-10 h-10 border border-border">
+        <AvatarImage src={post.user.avatar} />
+        <AvatarFallback className="bg-muted">{post.user.name.charAt(0)}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-sm">{post.user.name}</p>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}>
+            {typeLabels[post.type].label}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">{post.user.handle} • {post.timeAgo}</p>
+      </div>
+      <Button variant="ghost" size="icon" className="h-8 w-8">
+        <MoreHorizontal size={18} />
+      </Button>
     </div>
-  );
-};
 
-const ImageCarousel = ({ images }: { images: string[] }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const touchStartXRef = useRef<number>(0);
-  const touchEndXRef = useRef<number>(0);
-
-  // Image dimensions
-  const imageWidthRatio = 0.8; // 80% of container
-  const gapRatio = 0.04; // 4% gap
-
-  // Measure container width
-  useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-      }
-    };
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, []);
-
-  const imageWidth = containerWidth * imageWidthRatio;
-  const gap = containerWidth * gapRatio;
-  const sideOffset = (containerWidth - imageWidth) / 2;
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.targetTouches[0].clientX;
-    touchEndXRef.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndXRef.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const diff = touchStartXRef.current - touchEndXRef.current;
-    const threshold = 50;
-    
-    if (diff > threshold && currentIndex < images.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else if (diff < -threshold && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-    }
-  };
-  
-  // For single image, use same centered layout
-  if (images.length === 1) {
-    return (
-      <div className="flex justify-center">
-        <div className="w-[80%]">
-          <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
-            <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
-          </div>
+    {/* Image */}
+    {post.image && (
+      <div className="px-4 py-2">
+        <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
+          <img src={post.image} alt="Post" className="w-full h-full object-cover" />
         </div>
       </div>
-    );
-  }
+    )}
 
-  // Calculate translation to center current image
-  const translateX = currentIndex * (imageWidth + gap) - sideOffset;
-
-  return (
-    <div 
-      ref={containerRef}
-      className="relative overflow-hidden"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div 
-        className="flex transition-transform duration-300 ease-out"
-        style={{ 
-          transform: `translateX(${-translateX}px)`,
-          gap: `${gap}px`,
-        }}
-      >
-        {images.map((image, index) => (
-          <div 
-            key={index} 
-            className="flex-shrink-0"
-            style={{ width: `${imageWidth}px` }}
-          >
-            <div className="aspect-[4/3] bg-muted rounded-xl overflow-hidden">
-              <img src={image} alt={`Post ${index + 1}`} className="w-full h-full object-cover" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-type ReactionCounts = Record<string, number>;
-
-const PostCard = ({ post }: { post: FeedPost }) => {
-  const [reactionCounts, setReactionCounts] = useState<ReactionCounts>(() => 
-    reactionEmojis.reduce((acc, emoji) => ({ ...acc, [emoji]: 0 }), {})
-  );
-
-  const handleReact = useCallback((emoji: string) => {
-    setReactionCounts(prev => ({
-      ...prev,
-      [emoji]: prev[emoji] + 1
-    }));
-  }, []);
-  
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-card border-b border-border"
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4">
-        <Avatar className="w-10 h-10 border border-border">
-          <AvatarImage src={post.user.avatar} />
-          <AvatarFallback className="bg-muted">{post.user.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm">{post.user.name}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}>
-              {typeLabels[post.type].label}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">{post.user.handle} • {post.timeAgo}</p>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreHorizontal size={18} />
-        </Button>
-      </div>
-
-      {/* Images */}
-      {post.images && post.images.length > 0 && (
-        <div className="px-4 py-2">
-          <ImageCarousel images={post.images} />
-        </div>
-      )}
-
-      {/* Reactions */}
-      <div className="flex items-center justify-center gap-6 p-4">
-        {reactionEmojis.map((emoji) => (
-          <ReactionButton
-            key={emoji}
-            emoji={emoji}
-            count={reactionCounts[emoji]}
-            onReact={() => handleReact(emoji)}
+    {/* Actions */}
+    <div className="flex items-center justify-between p-4">
+      <div className="flex items-center gap-4">
+        <button onClick={onLike} className="flex items-center gap-1.5 group">
+          <HandMetal
+            size={24}
+            className={`transition-colors ${post.liked ? "fill-primary text-primary" : "text-foreground group-hover:text-primary"}`}
           />
-        ))}
+        </button>
+        <button className="flex items-center gap-1.5 group">
+          <MessageCircle size={24} className="text-foreground group-hover:text-primary transition-colors" />
+        </button>
+        <button className="flex items-center gap-1.5 group">
+          <Share2 size={24} className="text-foreground group-hover:text-primary transition-colors" />
+        </button>
       </div>
+      <button onClick={onSave}>
+        <ClipboardList
+          size={24}
+          className={`transition-colors ${post.saved ? "text-primary" : "text-foreground hover:text-primary"}`}
+        />
+      </button>
+    </div>
 
-      {/* Content */}
-      <div className="px-4 pb-4">
-        <p className="text-sm">
-          <span className="font-semibold">{post.user.name}</span>{" "}
-          {post.content}
-        </p>
-      </div>
-    </motion.article>
-  );
-};
+    {/* Stats & Content */}
+    <div className="px-4 pb-4">
+      <p className="font-semibold text-sm mb-1">{post.stats.likes.toLocaleString()} likes</p>
+      <p className="text-sm">
+        <span className="font-semibold">{post.user.name}</span>{" "}
+        {post.content}
+      </p>
+      {post.stats.comments > 0 && (
+        <button className="text-sm text-muted-foreground mt-1">
+          View all {post.stats.comments} comments
+        </button>
+      )}
+    </div>
+  </motion.article>
+);
 
 const SuggestedGroupsSection = () => (
   <section className="bg-card border-b border-border py-4">
@@ -415,8 +239,22 @@ const SuggestedUsersSection = () => (
 );
 
 const DiscoverPage = () => {
-  const [posts] = useState(feedPosts);
+  const [posts, setPosts] = useState(feedPosts);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleLike = (postId: string) => {
+    setPosts(posts.map(post =>
+      post.id === postId
+        ? { ...post, liked: !post.liked, stats: { ...post.stats, likes: post.liked ? post.stats.likes - 1 : post.stats.likes + 1 } }
+        : post
+    ));
+  };
+
+  const handleSave = (postId: string) => {
+    setPosts(posts.map(post =>
+      post.id === postId ? { ...post, saved: !post.saved } : post
+    ));
+  };
 
   // Insert suggestion sections after certain posts
   const renderFeedWithSuggestions = () => {
@@ -427,6 +265,8 @@ const DiscoverPage = () => {
         <PostCard
           key={post.id}
           post={post}
+          onLike={() => handleLike(post.id)}
+          onSave={() => handleSave(post.id)}
         />
       );
       
@@ -445,7 +285,7 @@ const DiscoverPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 glass-elevated">
         <div className="px-4 py-3">
