@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Search, MoreHorizontal, Users, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Search, MoreHorizontal, Users, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -107,16 +107,41 @@ const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
 interface FloatingEmoji {
   id: number;
   emoji: string;
-  x: number;
+  originX: number;
 }
+
+const LONG_PRESS_THRESHOLD = 300; // ms before reactions start
 
 const ImageCarousel = ({ images }: { images: string[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0 && currentIndex < images.length - 1) {
+        setCurrentIndex((prev) => prev + 1);
+      } else if (diff < 0 && currentIndex > 0) {
+        setCurrentIndex((prev) => prev - 1);
+      }
+    }
+  };
 
   if (images.length === 1) {
     return (
-      <div className="px-4 py-2">
+      <div className="px-4 py-1">
         <div className="relative aspect-[4/3] bg-muted rounded-xl overflow-hidden">
           <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
         </div>
@@ -124,26 +149,18 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
     );
   }
 
-  const goToPrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
   return (
-    <div className="relative py-2 px-2">
+    <div className="relative py-1 px-2">
       <div 
         ref={containerRef}
-        className="flex items-center justify-center gap-2 overflow-hidden"
+        className="flex items-center justify-center gap-2 overflow-hidden touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Previous image preview */}
         {images.length > 2 && (
-          <div 
-            className="w-12 h-24 rounded-lg overflow-hidden opacity-40 flex-shrink-0 cursor-pointer"
-            onClick={goToPrev}
-          >
+          <div className="w-12 h-24 rounded-lg overflow-hidden opacity-40 flex-shrink-0">
             <img 
               src={images[(currentIndex - 1 + images.length) % images.length]} 
               alt="Previous" 
@@ -153,34 +170,23 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
         )}
 
         {/* Current image */}
-        <div className="relative aspect-[4/3] w-full max-w-[280px] bg-muted rounded-xl overflow-hidden flex-shrink-0">
+        <motion.div 
+          key={currentIndex}
+          initial={{ opacity: 0.8, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+          className="relative aspect-[4/3] w-full max-w-[280px] bg-muted rounded-xl overflow-hidden flex-shrink-0"
+        >
           <img 
             src={images[currentIndex]} 
             alt="Post" 
             className="w-full h-full object-cover"
           />
-          
-          {/* Navigation arrows */}
-          <button 
-            onClick={goToPrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/60 flex items-center justify-center"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button 
-            onClick={goToNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/60 flex items-center justify-center"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
+        </motion.div>
 
         {/* Next image preview */}
         {images.length > 2 && (
-          <div 
-            className="w-12 h-24 rounded-lg overflow-hidden opacity-40 flex-shrink-0 cursor-pointer"
-            onClick={goToNext}
-          >
+          <div className="w-12 h-24 rounded-lg overflow-hidden opacity-40 flex-shrink-0">
             <img 
               src={images[(currentIndex + 1) % images.length]} 
               alt="Next" 
@@ -197,40 +203,64 @@ const PostCard = ({ post }: { post: FeedPost }) => {
   const [reactions, setReactions] = useState<Record<string, number>>({});
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const isLongPressActiveRef = useRef(false);
 
-  const addReaction = (emoji: string) => {
+  const addReaction = useCallback((emoji: string) => {
     setReactions((prev) => ({
       ...prev,
       [emoji]: (prev[emoji] || 0) + 1,
     }));
 
-    // Add floating emoji animation
+    // Get button position for animation origin
+    const button = buttonRefs.current[emoji];
+    const originX = button ? button.getBoundingClientRect().left + button.offsetWidth / 2 : 0;
+
     const newEmoji: FloatingEmoji = {
       id: Date.now() + Math.random(),
       emoji,
-      x: Math.random() * 40 - 20,
+      originX,
     };
     setFloatingEmojis((prev) => [...prev, newEmoji]);
 
-    // Remove floating emoji after animation
     setTimeout(() => {
       setFloatingEmojis((prev) => prev.filter((e) => e.id !== newEmoji.id));
     }, 1000);
-  };
+  }, []);
 
-  const handlePointerDown = (emoji: string) => {
+  const startContinuousReactions = useCallback((emoji: string) => {
     addReaction(emoji);
     holdIntervalRef.current = setInterval(() => {
       addReaction(emoji);
     }, 150);
-  };
+  }, [addReaction]);
 
-  const handlePointerUp = () => {
+  const handlePointerDown = useCallback((emoji: string) => {
+    isLongPressActiveRef.current = false;
+    
+    // Start long-press timer
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressActiveRef.current = true;
+      startContinuousReactions(emoji);
+    }, LONG_PRESS_THRESHOLD);
+  }, [startContinuousReactions]);
+
+  const handlePointerUp = useCallback(() => {
+    // Clear long-press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    
+    // Clear continuous reactions
     if (holdIntervalRef.current) {
       clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
     }
-  };
+    
+    isLongPressActiveRef.current = false;
+  }, []);
 
   return (
     <motion.article
@@ -263,37 +293,39 @@ const PostCard = ({ post }: { post: FeedPost }) => {
         <ImageCarousel images={post.images} />
       )}
 
-      {/* Reaction Buttons */}
-      <div className="relative px-4 py-3">
-        {/* Floating Emojis */}
+      {/* Reaction Buttons - Tighter spacing */}
+      <div className="relative px-4 py-2">
+        {/* Floating Emojis - Origin from specific button */}
         <AnimatePresence>
           {floatingEmojis.map((floating) => (
             <motion.span
               key={floating.id}
-              initial={{ opacity: 1, y: 0, x: floating.x }}
-              animate={{ opacity: 0, y: -60, x: floating.x }}
+              initial={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ opacity: 0, y: -50, scale: 1.2 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="absolute text-2xl pointer-events-none"
-              style={{ left: "50%" }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="fixed text-2xl pointer-events-none z-50"
+              style={{ left: floating.originX, top: "auto", transform: "translateX(-50%)" }}
             >
               {floating.emoji}
             </motion.span>
           ))}
         </AnimatePresence>
 
-        <div className="flex items-center justify-center gap-6">
+        <div className="flex items-center justify-center gap-5">
           {reactionEmojis.map((emoji) => (
             <button
               key={emoji}
+              ref={(el) => (buttonRefs.current[emoji] = el)}
               onPointerDown={() => handlePointerDown(emoji)}
               onPointerUp={handlePointerUp}
               onPointerLeave={handlePointerUp}
-              className="relative text-2xl p-2 rounded-full hover:bg-muted/50 transition-colors select-none touch-none"
+              onPointerCancel={handlePointerUp}
+              className="relative text-2xl p-2.5 rounded-full hover:bg-muted/50 transition-colors select-none touch-none"
             >
               {emoji}
               {reactions[emoji] > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center">
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 min-w-[20px] h-[20px] rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shadow-md">
                   {reactions[emoji]}
                 </span>
               )}
