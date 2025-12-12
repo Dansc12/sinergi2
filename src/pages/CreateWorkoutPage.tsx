@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, MoreHorizontal, X } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -174,6 +174,24 @@ const CreateWorkoutPage = () => {
       toast({ title: "Please add at least one exercise", variant: "destructive" });
       return;
     }
+    
+    // Validate all sets have weight/distance and reps/time filled in
+    for (const exercise of exercises) {
+      for (const set of exercise.sets) {
+        if (exercise.isCardio) {
+          if (!set.distance.trim() || !set.time.trim()) {
+            toast({ title: "Please fill in all sets", description: "Each set needs distance and time.", variant: "destructive" });
+            return;
+          }
+        } else {
+          if (!set.weight.trim() || !set.reps.trim()) {
+            toast({ title: "Please fill in all sets", description: "Each set needs weight and reps.", variant: "destructive" });
+            return;
+          }
+        }
+      }
+    }
+    
     // Navigate to share screen with workout data
     navigate("/share", {
       state: {
@@ -316,13 +334,25 @@ const CreateWorkoutPage = () => {
                           >
                             <button
                               onClick={() => toggleSetComplete(exercise.id, set.id)}
-                              className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors ${
+                              className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors relative ${
                                 set.completed
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted text-muted-foreground"
                               }`}
                             >
-                              {index + 1}
+                              <span className={set.completed ? "opacity-0" : "opacity-100"}>{index + 1}</span>
+                              <AnimatePresence>
+                                {set.completed && (
+                                  <motion.div
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    className="absolute inset-0 flex items-center justify-center"
+                                  >
+                                    <Check size={16} className="text-primary-foreground" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </button>
                             <div className="col-span-4">
                               <Input
@@ -350,7 +380,7 @@ const CreateWorkoutPage = () => {
                                 onClick={() => removeSet(exercise.id, set.id)}
                                 disabled={exercise.sets.length === 1}
                               >
-                                <MoreHorizontal size={16} className="text-muted-foreground" />
+                                <Trash2 size={14} className={exercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
                               </Button>
                             </div>
                           </motion.div>
