@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 // Use proxy for token exchange, direct API for data requests
-const PROXY_TOKEN_URL = "https://lovable.proxy.mooo.com/connect/toke";
+const PROXY_TOKEN_URL = "https://lovable.proxy.mooo.com/connect/token";
 const FATSECRET_API_URL = "https://platform.fatsecret.com/rest/server.api";
 
 interface TokenResponse {
