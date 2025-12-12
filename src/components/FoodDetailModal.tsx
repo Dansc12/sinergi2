@@ -54,6 +54,18 @@ const getServingSizeMultiplier = (selectedSize: string, baseServing: { value: nu
   }
 };
 
+// Deduplicate serving size options by normalized label
+const deduplicateServingSizeOptions = (options: { value: string; label: string }[]): { value: string; label: string }[] => {
+  const seen = new Map<string, { value: string; label: string }>();
+  for (const option of options) {
+    const normalizedLabel = option.label.toLowerCase().replace(/\s+/g, '').replace(/\(.*\)/, '');
+    if (!seen.has(normalizedLabel)) {
+      seen.set(normalizedLabel, option);
+    }
+  }
+  return Array.from(seen.values());
+};
+
 export const FoodDetailModal = ({
   isOpen,
   food,
@@ -61,6 +73,8 @@ export const FoodDetailModal = ({
   onConfirm,
 }: FoodDetailModalProps) => {
   const [servings, setServings] = useState(1);
+  const [servingsInput, setServingsInput] = useState("1");
+  const [isEditingServings, setIsEditingServings] = useState(false);
   const [servingSize, setServingSize] = useState("serving");
   const [manualOverride, setManualOverride] = useState(false);
   const [manualCalories, setManualCalories] = useState(0);
@@ -70,12 +84,15 @@ export const FoodDetailModal = ({
 
   const baseServing = food ? parseServingSize(food.servingSize) : { value: 100, unit: "g" };
 
-  const servingSizeOptions = [
+  const rawServingSizeOptions = [
     { value: "serving", label: food?.servingSize || "1 serving" },
     { value: "100g", label: "100g" },
     { value: "1oz", label: "1 oz (28g)" },
     { value: "cup", label: "1 cup" },
   ];
+  
+  // Deduplicate serving size options
+  const servingSizeOptions = deduplicateServingSizeOptions(rawServingSizeOptions);
 
   const sizeMultiplier = food ? getServingSizeMultiplier(servingSize, baseServing) : 1;
   const totalMultiplier = servings * sizeMultiplier;
@@ -89,6 +106,8 @@ export const FoodDetailModal = ({
   useEffect(() => {
     if (isOpen && food) {
       setServings(1);
+      setServingsInput("1");
+      setIsEditingServings(false);
       setServingSize("serving");
       setManualOverride(false);
       // Initialize manual values with calculated values
@@ -159,14 +178,46 @@ export const FoodDetailModal = ({
     setManualOverride(!manualOverride);
   };
 
+  // Decrement by whole number (1)
   const decrementServings = () => {
-    if (servings > 0.5) {
-      setServings(prev => Math.round((prev - 0.5) * 10) / 10);
+    const newValue = Math.max(0.1, servings - 1);
+    setServings(newValue);
+    setServingsInput(String(newValue));
+  };
+
+  // Increment by whole number (1)
+  const incrementServings = () => {
+    const newValue = servings + 1;
+    setServings(newValue);
+    setServingsInput(String(newValue));
+  };
+
+  // Handle manual serving input
+  const handleServingsInputChange = (value: string) => {
+    setServingsInput(value);
+  };
+
+  const handleServingsInputBlur = () => {
+    const parsed = parseFloat(servingsInput);
+    if (!isNaN(parsed) && parsed > 0) {
+      setServings(Math.round(parsed * 100) / 100); // Allow decimals up to 2 places
+    } else {
+      // Reset to current valid value if invalid
+      setServingsInput(String(servings));
+    }
+    setIsEditingServings(false);
+  };
+
+  const handleServingsInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleServingsInputBlur();
     }
   };
 
-  const incrementServings = () => {
-    setServings(prev => Math.round((prev + 0.5) * 10) / 10);
+  // Clamp macro values to minimum 0
+  const handleMacroChange = (setter: (value: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
+    setter(Math.max(0, value) || 0);
   };
 
   return (
@@ -295,12 +346,33 @@ export const FoodDetailModal = ({
                         size="icon"
                         className="h-10 w-10 rounded-full"
                         onClick={decrementServings}
+                        disabled={servings <= 0.1}
                       >
                         <Minus size={18} />
                       </Button>
-                      <span className="text-2xl font-bold min-w-[3rem] text-center">
-                        {servings}
-                      </span>
+                      {isEditingServings ? (
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          value={servingsInput}
+                          onChange={(e) => handleServingsInputChange(e.target.value)}
+                          onBlur={handleServingsInputBlur}
+                          onKeyDown={handleServingsInputKeyDown}
+                          autoFocus
+                          className="text-2xl font-bold w-20 text-center h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setIsEditingServings(true);
+                            setServingsInput(String(servings));
+                          }}
+                          className="text-2xl font-bold min-w-[3rem] text-center hover:text-primary transition-colors"
+                        >
+                          {servings}
+                        </button>
+                      )}
                       <Button
                         variant="outline"
                         size="icon"
@@ -354,8 +426,9 @@ export const FoodDetailModal = ({
                       <label className="text-xs text-muted-foreground mb-1 block">Calories</label>
                       <Input
                         type="number"
+                        min="0"
                         value={manualCalories}
-                        onChange={(e) => setManualCalories(Number(e.target.value) || 0)}
+                        onChange={handleMacroChange(setManualCalories)}
                         className="text-center"
                       />
                     </div>
@@ -364,8 +437,9 @@ export const FoodDetailModal = ({
                       <Input
                         type="number"
                         step="0.1"
+                        min="0"
                         value={manualProtein}
-                        onChange={(e) => setManualProtein(Number(e.target.value) || 0)}
+                        onChange={handleMacroChange(setManualProtein)}
                         className="text-center"
                       />
                     </div>
@@ -374,8 +448,9 @@ export const FoodDetailModal = ({
                       <Input
                         type="number"
                         step="0.1"
+                        min="0"
                         value={manualCarbs}
-                        onChange={(e) => setManualCarbs(Number(e.target.value) || 0)}
+                        onChange={handleMacroChange(setManualCarbs)}
                         className="text-center"
                       />
                     </div>
@@ -384,8 +459,9 @@ export const FoodDetailModal = ({
                       <Input
                         type="number"
                         step="0.1"
+                        min="0"
                         value={manualFats}
-                        onChange={(e) => setManualFats(Number(e.target.value) || 0)}
+                        onChange={handleMacroChange(setManualFats)}
                         className="text-center"
                       />
                     </div>
