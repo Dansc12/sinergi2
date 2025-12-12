@@ -18,7 +18,35 @@ interface FoodResult {
   carbs: number;
   fats: number;
   servingSize?: string;
+  servingSizeValue?: number;
+  servingSizeUnit?: string;
 }
+
+// Rank foods based on search term relevance
+const rankFoods = (foods: FoodResult[], searchTerm: string): FoodResult[] => {
+  const lowerSearch = searchTerm.toLowerCase().trim();
+  
+  return foods.sort((a, b) => {
+    const aDesc = a.description.toLowerCase();
+    const bDesc = b.description.toLowerCase();
+    
+    // Priority 1: Exact match
+    const aExact = aDesc === lowerSearch;
+    const bExact = bDesc === lowerSearch;
+    if (aExact && !bExact) return -1;
+    if (bExact && !aExact) return 1;
+    
+    // Priority 2: Starts with search term
+    const aStarts = aDesc.startsWith(lowerSearch);
+    const bStarts = bDesc.startsWith(lowerSearch);
+    if (aStarts && !bStarts) return -1;
+    if (bStarts && !aStarts) return 1;
+    
+    // Priority 3: Contains search term (already filtered)
+    // Sort by description length (shorter = more relevant)
+    return aDesc.length - bDesc.length;
+  });
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -38,8 +66,9 @@ serve(async (req) => {
 
     console.log(`Searching foods for: ${query}`);
 
+    // Only search Foundation and SR Legacy data types (exclude Branded)
     const response = await fetch(
-      `${USDA_API_URL}?api_key=${USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=10&dataType=Foundation,SR Legacy,Branded`,
+      `${USDA_API_URL}?api_key=${USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=50&dataType=Foundation,SR Legacy`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
@@ -52,32 +81,52 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    const lowerQuery = query.toLowerCase().trim();
     
-    const foods: FoodResult[] = (data.foods || []).map((food: any) => {
-      // Extract nutrients from the food data
-      const nutrients = food.foodNutrients || [];
-      
-      const getnutrient = (name: string): number => {
-        const nutrient = nutrients.find((n: any) => 
-          n.nutrientName?.toLowerCase().includes(name.toLowerCase()) ||
-          n.nutrientNumber === name
-        );
-        return Math.round(nutrient?.value || 0);
-      };
+    let foods: FoodResult[] = (data.foods || [])
+      // Filter: description must contain the search term
+      .filter((food: any) => 
+        food.description?.toLowerCase().includes(lowerQuery)
+      )
+      .map((food: any) => {
+        // Extract nutrients from the food data
+        const nutrients = food.foodNutrients || [];
+        
+        const getnutrient = (name: string): number => {
+          const nutrient = nutrients.find((n: any) => 
+            n.nutrientName?.toLowerCase().includes(name.toLowerCase()) ||
+            n.nutrientNumber === name
+          );
+          return Math.round(nutrient?.value || 0);
+        };
 
-      return {
-        fdcId: food.fdcId,
-        description: food.description,
-        brandName: food.brandName || food.brandOwner,
-        calories: getnutrient('energy') || getnutrient('1008'),
-        protein: getnutrient('protein') || getnutrient('1003'),
-        carbs: getnutrient('carbohydrate') || getnutrient('1005'),
-        fats: getnutrient('fat') || getnutrient('1004'),
-        servingSize: food.servingSize ? `${food.servingSize}${food.servingSizeUnit || 'g'}` : '100g',
-      };
-    });
+        // Parse serving size into value and unit
+        const servingSizeValue = food.servingSize ? parseFloat(food.servingSize) : 100;
+        const servingSizeUnit = food.servingSizeUnit || 'g';
+        const servingDescription = food.householdServingFullText || 
+          (food.servingSize ? `${food.servingSize} ${servingSizeUnit}` : '100 g');
 
-    console.log(`Found ${foods.length} foods`);
+        return {
+          fdcId: food.fdcId,
+          description: food.description,
+          brandName: food.brandName || food.brandOwner,
+          calories: getnutrient('energy') || getnutrient('1008'),
+          protein: getnutrient('protein') || getnutrient('1003'),
+          carbs: getnutrient('carbohydrate') || getnutrient('1005'),
+          fats: getnutrient('fat') || getnutrient('1004'),
+          servingSize: servingDescription,
+          servingSizeValue: servingSizeValue,
+          servingSizeUnit: servingSizeUnit,
+        };
+      });
+
+    // Rank results by relevance
+    foods = rankFoods(foods, query);
+    
+    // Limit to 15 results
+    foods = foods.slice(0, 15);
+
+    console.log(`Found ${foods.length} foods after filtering and ranking`);
 
     return new Response(
       JSON.stringify({ foods }),

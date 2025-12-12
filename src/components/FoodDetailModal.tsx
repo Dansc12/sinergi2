@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Check, Minus, Plus, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface FoodItem {
@@ -61,6 +62,11 @@ export const FoodDetailModal = ({
 }: FoodDetailModalProps) => {
   const [servings, setServings] = useState(1);
   const [servingSize, setServingSize] = useState("serving");
+  const [manualOverride, setManualOverride] = useState(false);
+  const [manualCalories, setManualCalories] = useState(0);
+  const [manualProtein, setManualProtein] = useState(0);
+  const [manualCarbs, setManualCarbs] = useState(0);
+  const [manualFats, setManualFats] = useState(0);
 
   const baseServing = food ? parseServingSize(food.servingSize) : { value: 100, unit: "g" };
 
@@ -71,22 +77,46 @@ export const FoodDetailModal = ({
     { value: "cup", label: "1 cup" },
   ];
 
+  const sizeMultiplier = food ? getServingSizeMultiplier(servingSize, baseServing) : 1;
+  const totalMultiplier = servings * sizeMultiplier;
+
+  // Calculate values based on servings
+  const calculatedCalories = food ? Math.round(food.calories * totalMultiplier) : 0;
+  const calculatedProtein = food ? food.protein * totalMultiplier : 0;
+  const calculatedCarbs = food ? food.carbs * totalMultiplier : 0;
+  const calculatedFats = food ? food.fats * totalMultiplier : 0;
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && food) {
       setServings(1);
       setServingSize("serving");
+      setManualOverride(false);
+      // Initialize manual values with calculated values
+      const initialMultiplier = getServingSizeMultiplier("serving", parseServingSize(food.servingSize));
+      setManualCalories(Math.round(food.calories * initialMultiplier));
+      setManualProtein(Math.round(food.protein * initialMultiplier * 10) / 10);
+      setManualCarbs(Math.round(food.carbs * initialMultiplier * 10) / 10);
+      setManualFats(Math.round(food.fats * initialMultiplier * 10) / 10);
     }
   }, [isOpen, food]);
 
+  // Update manual values when servings change (only if not in manual override mode)
+  useEffect(() => {
+    if (!manualOverride && food) {
+      setManualCalories(calculatedCalories);
+      setManualProtein(Math.round(calculatedProtein * 10) / 10);
+      setManualCarbs(Math.round(calculatedCarbs * 10) / 10);
+      setManualFats(Math.round(calculatedFats * 10) / 10);
+    }
+  }, [servings, servingSize, manualOverride, food, calculatedCalories, calculatedProtein, calculatedCarbs, calculatedFats]);
+
   if (!food) return null;
 
-  const sizeMultiplier = getServingSizeMultiplier(servingSize, baseServing);
-  const totalMultiplier = servings * sizeMultiplier;
-
-  const adjustedCalories = Math.round(food.calories * totalMultiplier);
-  const adjustedProtein = food.protein * totalMultiplier;
-  const adjustedCarbs = food.carbs * totalMultiplier;
-  const adjustedFats = food.fats * totalMultiplier;
+  // Use manual values if override is enabled, otherwise use calculated
+  const adjustedCalories = manualOverride ? manualCalories : calculatedCalories;
+  const adjustedProtein = manualOverride ? manualProtein : calculatedProtein;
+  const adjustedCarbs = manualOverride ? manualCarbs : calculatedCarbs;
+  const adjustedFats = manualOverride ? manualFats : calculatedFats;
 
   const totalMacros = adjustedProtein + adjustedCarbs + adjustedFats;
   const proteinPercentage = totalMacros > 0 ? (adjustedProtein / totalMacros) * 100 : 0;
@@ -103,7 +133,30 @@ export const FoodDetailModal = ({
   const fatsDash = (fatsPercentage / 100) * circumference;
 
   const handleConfirm = () => {
-    onConfirm(food, servings, servingSize);
+    // If manual override is enabled, pass the modified food with manual values
+    if (manualOverride) {
+      const modifiedFood: FoodItem = {
+        ...food,
+        calories: manualCalories,
+        protein: manualProtein,
+        carbs: manualCarbs,
+        fats: manualFats,
+      };
+      onConfirm(modifiedFood, 1, servingSize); // Pass servings as 1 since macros are already adjusted
+    } else {
+      onConfirm(food, servings, servingSize);
+    }
+  };
+
+  const toggleManualOverride = () => {
+    if (!manualOverride) {
+      // When enabling override, copy current calculated values
+      setManualCalories(calculatedCalories);
+      setManualProtein(Math.round(calculatedProtein * 10) / 10);
+      setManualCarbs(Math.round(calculatedCarbs * 10) / 10);
+      setManualFats(Math.round(calculatedFats * 10) / 10);
+    }
+    setManualOverride(!manualOverride);
   };
 
   const decrementServings = () => {
@@ -264,7 +317,7 @@ export const FoodDetailModal = ({
                     <label className="text-sm text-muted-foreground mb-2 block">
                       Serving Size
                     </label>
-                    <Select value={servingSize} onValueChange={setServingSize}>
+                    <Select value={servingSize} onValueChange={setServingSize} disabled={manualOverride}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
@@ -278,6 +331,66 @@ export const FoodDetailModal = ({
                     </Select>
                   </div>
                 </div>
+              </div>
+
+              {/* Manual Override Section */}
+              <div className="mt-6 pt-4 border-t border-border">
+                <button
+                  onClick={toggleManualOverride}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                >
+                  <Edit2 size={14} />
+                  <span>{manualOverride ? "Using manual values" : "Edit macros manually"}</span>
+                </button>
+
+                {manualOverride && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="grid grid-cols-4 gap-3"
+                  >
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Calories</label>
+                      <Input
+                        type="number"
+                        value={manualCalories}
+                        onChange={(e) => setManualCalories(Number(e.target.value) || 0)}
+                        className="text-center"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Protein (g)</label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={manualProtein}
+                        onChange={(e) => setManualProtein(Number(e.target.value) || 0)}
+                        className="text-center"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Carbs (g)</label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={manualCarbs}
+                        onChange={(e) => setManualCarbs(Number(e.target.value) || 0)}
+                        className="text-center"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Fat (g)</label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={manualFats}
+                        onChange={(e) => setManualFats(Number(e.target.value) || 0)}
+                        className="text-center"
+                      />
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
           </motion.div>
