@@ -15,7 +15,7 @@ const NavItem = ({ icon, label, isActive, onClick }: NavItemProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "flex flex-col items-center gap-1 py-2 px-4 transition-all duration-200",
+      "flex flex-col items-center justify-center gap-1 py-2 px-3 transition-all duration-200",
       isActive 
         ? "text-primary" 
         : "text-muted-foreground hover:text-foreground"
@@ -59,9 +59,8 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
           />
         ))}
 
-        {/* Central Create Button */}
+        {/* Central Create Button - no glow effect */}
         <div className="relative -mt-6">
-          <div className="absolute inset-0 gradient-primary rounded-full blur-xl opacity-50" />
           <Button
             variant="create"
             size="create"

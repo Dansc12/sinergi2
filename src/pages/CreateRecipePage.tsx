@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChefHat, Plus, Trash2, Image } from "lucide-react";
+import { ArrowLeft, ChefHat, Trash2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
+import { CameraCapture } from "@/components/CameraCapture";
 
 interface Ingredient {
   id: string;
   name: string;
-  quantity: string;
   calories: number;
   protein: number;
   carbs: number;
@@ -23,7 +23,6 @@ interface RestoredState {
   restored?: boolean;
   contentData?: { 
     title?: string; 
-    description?: string;
     prepTime?: string;
     cookTime?: string;
     servings?: string;
@@ -39,26 +38,26 @@ const CreateRecipePage = () => {
   const restoredState = location.state as RestoredState | null;
   
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [servings, setServings] = useState("");
-  const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { id: "1", name: "", quantity: "", calories: 0, protein: 0, carbs: 0, fats: 0 }
-  ]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [instructions, setInstructions] = useState<string[]>([""]);
+  const [ingredientSearchValue, setIngredientSearchValue] = useState("");
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
 
   // Restore state if coming back from share screen
   useEffect(() => {
     if (restoredState?.restored && restoredState.contentData) {
       const data = restoredState.contentData;
       if (data.title) setTitle(data.title);
-      if (data.description) setDescription(data.description);
       if (data.prepTime) setPrepTime(data.prepTime);
       if (data.cookTime) setCookTime(data.cookTime);
       if (data.servings) setServings(data.servings);
       if (data.ingredients) setIngredients(data.ingredients);
       if (data.instructions) setInstructions(data.instructions);
+      if (restoredState.images) setImages(restoredState.images);
       window.history.replaceState({}, document.title);
     }
   }, []);
@@ -67,41 +66,21 @@ const CreateRecipePage = () => {
     navigate("/");
   };
 
-  const addIngredient = () => {
-    setIngredients([...ingredients, { 
-      id: Date.now().toString(), 
-      name: "", 
-      quantity: "",
-      calories: 0, 
-      protein: 0, 
-      carbs: 0, 
-      fats: 0 
-    }]);
-  };
-
-  const removeIngredient = (id: string) => {
-    if (ingredients.length > 1) {
-      setIngredients(ingredients.filter((i) => i.id !== id));
-    }
-  };
-
-  const updateIngredientName = (id: string, value: string) => {
-    setIngredients(ingredients.map(i => i.id === id ? { ...i, name: value } : i));
-  };
-
-  const updateIngredientQuantity = (id: string, value: string) => {
-    setIngredients(ingredients.map(i => i.id === id ? { ...i, quantity: value } : i));
-  };
-
-  const handleIngredientSelect = (id: string, food: FoodItem) => {
-    setIngredients(ingredients.map(i => i.id === id ? {
-      ...i,
+  const handleIngredientSelect = (food: FoodItem) => {
+    const newIngredient: Ingredient = {
+      id: Date.now().toString(),
       name: food.description,
       calories: food.calories,
       protein: food.protein,
       carbs: food.carbs,
       fats: food.fats,
-    } : i));
+    };
+    setIngredients([...ingredients, newIngredient]);
+    setIngredientSearchValue("");
+  };
+
+  const removeIngredient = (id: string) => {
+    setIngredients(ingredients.filter((i) => i.id !== id));
   };
 
   const addInstruction = () => setInstructions([...instructions, ""]);
@@ -127,7 +106,7 @@ const CreateRecipePage = () => {
     { calories: 0, protein: 0, carbs: 0, fats: 0 }
   );
 
-  const handleSubmit = () => {
+  const handleFinish = () => {
     if (!title.trim()) {
       toast({ title: "Please enter a recipe title", variant: "destructive" });
       return;
@@ -136,40 +115,49 @@ const CreateRecipePage = () => {
     navigate("/share", {
       state: {
         contentType: "recipe",
-        contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
-        images: [],
+        contentData: { title, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
+        images,
         returnTo: "/create/recipe",
       },
     });
   };
 
+  const handleCapturePhoto = (imageUrl: string) => {
+    setImages([...images, imageUrl]);
+    setIsCameraOpen(false);
+  };
+
+  const handleSelectFromGallery = (imageUrls: string[]) => {
+    setImages([...images, ...imageUrls]);
+  };
+
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-32">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="p-4"
       >
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
-            <ArrowLeft size={24} />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-400 flex items-center justify-center">
-              <ChefHat size={20} className="text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold">Share Recipe</h1>
-          </div>
-        </div>
-
-        {/* Cover Photo */}
-        <div className="mb-6">
-          <div className="h-40 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-400/20 border-2 border-dashed border-border flex items-center justify-center">
-            <Button variant="ghost">
-              <Image size={20} className="mr-2" /> Add Photo
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={handleBack}>
+              <ArrowLeft size={24} />
             </Button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-400 flex items-center justify-center">
+                <ChefHat size={20} className="text-primary-foreground" />
+              </div>
+              <h1 className="text-2xl font-bold">Create Recipe</h1>
+            </div>
           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleFinish}
+            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          >
+            Finish
+          </Button>
         </div>
 
         {/* Form */}
@@ -181,17 +169,6 @@ const CreateRecipePage = () => {
               placeholder="e.g., High Protein Overnight Oats"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="What makes this recipe special?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
             />
           </div>
 
@@ -235,53 +212,42 @@ const CreateRecipePage = () => {
             </div>
           )}
 
-          {/* Ingredients */}
+          {/* Ingredients Search */}
           <div className="space-y-3">
             <Label>Ingredients</Label>
-            {ingredients.map((ingredient, index) => (
-              <motion.div 
-                key={ingredient.id} 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                className="p-3 rounded-xl bg-card border border-border space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Ingredient {index + 1}</span>
-                  {ingredients.length > 1 && (
-                    <Button variant="ghost" size="icon-sm" onClick={() => removeIngredient(ingredient.id)}>
+            <FoodSearchInput
+              value={ingredientSearchValue}
+              onChange={setIngredientSearchValue}
+              onSelect={handleIngredientSelect}
+              placeholder="Search ingredient to add..."
+            />
+            
+            {/* Ingredient List */}
+            {ingredients.length > 0 && (
+              <div className="space-y-2 mt-3">
+                {ingredients.map((ingredient) => (
+                  <motion.div 
+                    key={ingredient.id} 
+                    initial={{ opacity: 0, x: -10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-card border border-border"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{ingredient.name}</p>
+                      <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                        <span>{ingredient.calories} cal</span>
+                        <span>P: {ingredient.protein}g</span>
+                        <span>C: {ingredient.carbs}g</span>
+                        <span>F: {ingredient.fats}g</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => removeIngredient(ingredient.id)}>
                       <Trash2 size={16} className="text-destructive" />
                     </Button>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <FoodSearchInput
-                      value={ingredient.name}
-                      onChange={(value) => updateIngredientName(ingredient.id, value)}
-                      onSelect={(food) => handleIngredientSelect(ingredient.id, food)}
-                      placeholder="Search ingredient..."
-                    />
-                  </div>
-                  <Input 
-                    className="w-24"
-                    placeholder="Qty"
-                    value={ingredient.quantity}
-                    onChange={(e) => updateIngredientQuantity(ingredient.id, e.target.value)}
-                  />
-                </div>
-                {ingredient.calories > 0 && (
-                  <div className="flex gap-3 text-xs text-muted-foreground">
-                    <span>{ingredient.calories} cal</span>
-                    <span>P: {ingredient.protein}g</span>
-                    <span>C: {ingredient.carbs}g</span>
-                    <span>F: {ingredient.fats}g</span>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-            <Button variant="outline" size="sm" onClick={addIngredient}>
-              <Plus size={16} /> Add Ingredient
-            </Button>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Instructions */}
@@ -309,15 +275,31 @@ const CreateRecipePage = () => {
               </motion.div>
             ))}
             <Button variant="outline" size="sm" onClick={addInstruction}>
-              <Plus size={16} /> Add Step
+              + Add Step
             </Button>
           </div>
-
-          <Button className="w-full" size="lg" onClick={handleSubmit}>
-            Share Recipe
-          </Button>
         </div>
       </motion.div>
+
+      {/* Fixed Bottom Camera Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
+        <Button 
+          variant="outline" 
+          className="w-full h-14 gap-2 border-border"
+          onClick={() => setIsCameraOpen(true)}
+        >
+          <Camera size={20} />
+          Take a Photo
+        </Button>
+      </div>
+
+      {/* Camera Modal */}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCapturePhoto}
+        onSelectFromGallery={handleSelectFromGallery}
+      />
     </div>
   );
 };

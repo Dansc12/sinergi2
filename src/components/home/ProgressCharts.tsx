@@ -18,7 +18,7 @@ const ChartCard = ({ title, value, change, isPositive, data, color }: ChartCardP
         <p className="text-2xl font-bold">{value}</p>
       </div>
       <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
-        {isPositive ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+        {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
         <span>{change}</span>
       </div>
     </div>
@@ -58,14 +58,15 @@ export const ProgressCharts = () => {
     { value: 177 },
   ];
 
-  const strengthData = [
-    { value: 135 },
-    { value: 145 },
-    { value: 150 },
-    { value: 155 },
-    { value: 160 },
-    { value: 165 },
-    { value: 175 },
+  // Total weight lifted across all workouts (in lbs)
+  const totalLiftedData = [
+    { value: 12500 },
+    { value: 14200 },
+    { value: 15800 },
+    { value: 16400 },
+    { value: 18200 },
+    { value: 19500 },
+    { value: 21000 },
   ];
 
   return (
@@ -81,11 +82,11 @@ export const ProgressCharts = () => {
           color="hsl(270, 91%, 65%)"
         />
         <ChartCard
-          title="Bench Press"
-          value="175 lbs"
-          change="+40 lbs"
+          title="Total Lifted"
+          value="21K lbs"
+          change="+8.5K"
           isPositive={true}
-          data={strengthData}
+          data={totalLiftedData}
           color="hsl(142, 76%, 45%)"
         />
       </div>

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Check, Utensils, Dumbbell, Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,21 +22,11 @@ const typeStyles = {
   water: "bg-blue-500/20 text-blue-400",
 };
 
-export const TasksSection = () => {
-  const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+interface TasksSectionProps {
+  completedTasks?: Set<string>;
+}
 
-  const toggleTask = (taskId: string) => {
-    setCompletedTasks((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
-    });
-  };
-
+export const TasksSection = ({ completedTasks = new Set() }: TasksSectionProps) => {
   return (
     <section className="px-4 py-4">
       <h2 className="text-lg font-semibold mb-3">Today's Tasks</h2>
@@ -47,9 +36,8 @@ export const TasksSection = () => {
           const isCompleted = completedTasks.has(task.id);
           
           return (
-            <button
+            <div
               key={task.id}
-              onClick={() => toggleTask(task.id)}
               className={cn(
                 "w-full bg-card border border-border rounded-2xl p-4 shadow-card flex items-center gap-4 transition-all duration-200",
                 isCompleted && "opacity-60"
@@ -77,7 +65,7 @@ export const TasksSection = () => {
               )}>
                 {isCompleted && <Check size={14} className="text-primary-foreground" />}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
