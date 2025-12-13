@@ -1,21 +1,32 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, RotateCcw, Trash2, Camera, Image, X } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2, Camera, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import ExerciseSearchInput from "@/components/ExerciseSearchInput";
 import { CameraCapture } from "@/components/CameraCapture";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface RoutineSet {
+  id: string;
+  minReps: string;
+  maxReps: string;
+}
 
 interface RoutineExercise {
   id: string;
   name: string;
-  sets: string;
-  minReps: string;
-  maxReps: string;
+  sets: RoutineSet[];
 }
 
 interface DaySchedule {
@@ -26,7 +37,8 @@ interface DaySchedule {
 interface RestoredState {
   restored?: boolean;
   contentData?: { 
-    name?: string; 
+    name?: string;
+    description?: string;
     selectedDays?: Record<string, DaySchedule>;
     exercises?: RoutineExercise[];
     recurring?: string;
@@ -34,7 +46,15 @@ interface RestoredState {
   images?: string[];
 }
 
-const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const daysOfWeek = [
+  { short: "M", full: "Monday" },
+  { short: "T", full: "Tuesday" },
+  { short: "W", full: "Wednesday" },
+  { short: "T", full: "Thursday" },
+  { short: "F", full: "Friday" },
+  { short: "S", full: "Saturday" },
+  { short: "S", full: "Sunday" },
+];
 
 const recurringOptions = [
   { value: "none", label: "Currently not recurring" },
@@ -52,8 +72,9 @@ const CreateRoutinePage = () => {
   const restoredState = location.state as RestoredState | null;
   
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedDays, setSelectedDays] = useState<Record<string, DaySchedule>>(
-    daysOfWeek.reduce((acc, day) => ({ ...acc, [day]: { selected: false, time: "" } }), {})
+    daysOfWeek.reduce((acc, day) => ({ ...acc, [day.full]: { selected: false, time: "" } }), {})
   );
   const [exercises, setExercises] = useState<RoutineExercise[]>([]);
   const [recurring, setRecurring] = useState("none");
@@ -65,6 +86,7 @@ const CreateRoutinePage = () => {
     if (restoredState?.restored && restoredState.contentData) {
       const data = restoredState.contentData;
       if (data.name) setName(data.name);
+      if (data.description) setDescription(data.description);
       if (data.selectedDays) setSelectedDays(data.selectedDays);
       if (data.exercises) setExercises(data.exercises);
       if (data.recurring) setRecurring(data.recurring);
@@ -77,17 +99,17 @@ const CreateRoutinePage = () => {
     navigate("/");
   };
 
-  const toggleDay = (day: string) => {
+  const toggleDay = (dayFull: string) => {
     setSelectedDays(prev => ({
       ...prev,
-      [day]: { ...prev[day], selected: !prev[day].selected, time: !prev[day].selected ? prev[day].time : "" }
+      [dayFull]: { ...prev[dayFull], selected: !prev[dayFull].selected, time: !prev[dayFull].selected ? prev[dayFull].time : "" }
     }));
   };
 
-  const updateDayTime = (day: string, time: string) => {
+  const updateDayTime = (dayFull: string, time: string) => {
     setSelectedDays(prev => ({
       ...prev,
-      [day]: { ...prev[day], time }
+      [dayFull]: { ...prev[dayFull], time }
     }));
   };
 
@@ -95,9 +117,7 @@ const CreateRoutinePage = () => {
     setExercises([...exercises, { 
       id: Date.now().toString(), 
       name: exerciseName, 
-      sets: "", 
-      minReps: "", 
-      maxReps: "" 
+      sets: [{ id: Date.now().toString(), minReps: "", maxReps: "" }]
     }]);
   };
 
@@ -105,8 +125,28 @@ const CreateRoutinePage = () => {
     setExercises(exercises.filter(e => e.id !== id));
   };
 
-  const updateExercise = (id: string, field: keyof RoutineExercise, value: string) => {
-    setExercises(exercises.map(e => e.id === id ? { ...e, [field]: value } : e));
+  const addSet = (exerciseId: string) => {
+    setExercises(exercises.map(e => 
+      e.id === exerciseId 
+        ? { ...e, sets: [...e.sets, { id: Date.now().toString(), minReps: "", maxReps: "" }] }
+        : e
+    ));
+  };
+
+  const removeSet = (exerciseId: string, setId: string) => {
+    setExercises(exercises.map(e => 
+      e.id === exerciseId 
+        ? { ...e, sets: e.sets.filter(s => s.id !== setId) }
+        : e
+    ));
+  };
+
+  const updateSet = (exerciseId: string, setId: string, field: "minReps" | "maxReps", value: string) => {
+    setExercises(exercises.map(e => 
+      e.id === exerciseId 
+        ? { ...e, sets: e.sets.map(s => s.id === setId ? { ...s, [field]: value } : s) }
+        : e
+    ));
   };
 
   const handleCapturePhoto = (imageUrl: string) => {
@@ -118,17 +158,15 @@ const CreateRoutinePage = () => {
     setPhotos(prev => [...prev, ...imageUrls]);
   };
 
-  const removePhoto = (index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-  };
-
   // Validation check
   const isValid = () => {
     if (!name.trim()) return false;
     if (exercises.length === 0) return false;
     for (const exercise of exercises) {
-      if (!exercise.name.trim() || !exercise.sets.trim() || !exercise.minReps.trim() || !exercise.maxReps.trim()) {
-        return false;
+      if (!exercise.name.trim()) return false;
+      if (exercise.sets.length === 0) return false;
+      for (const set of exercise.sets) {
+        if (!set.minReps.trim() || !set.maxReps.trim()) return false;
       }
     }
     return true;
@@ -143,7 +181,7 @@ const CreateRoutinePage = () => {
     navigate("/share", {
       state: {
         contentType: "routine",
-        contentData: { name, selectedDays, exercises, recurring },
+        contentData: { name, description, selectedDays, exercises, recurring },
         images: photos,
         returnTo: "/create/routine",
       },
@@ -151,7 +189,7 @@ const CreateRoutinePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -181,68 +219,80 @@ const CreateRoutinePage = () => {
 
         {/* Form */}
         <div className="space-y-6">
+          {/* Routine Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Routine Name</Label>
             <Input
               id="name"
-              placeholder="e.g., Push Pull Legs"
+              placeholder="e.g., Push Day, Leg Day, etc."
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
-          {/* Schedule - Vertical Days */}
-          <div className="space-y-3">
-            <Label>Schedule</Label>
-            <div className="space-y-2">
-              {daysOfWeek.map((day) => (
-                <div key={day} className="flex items-center gap-3">
-                  <div 
-                    className="flex items-center gap-2 min-w-[140px] cursor-pointer"
-                    onClick={() => toggleDay(day)}
-                  >
-                    <Checkbox 
-                      checked={selectedDays[day]?.selected} 
-                      onCheckedChange={() => toggleDay(day)}
-                    />
-                    <span className={`text-sm ${selectedDays[day]?.selected ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {day}
-                    </span>
-                  </div>
-                  {selectedDays[day]?.selected && (
-                    <Input
-                      type="time"
-                      value={selectedDays[day]?.time || ""}
-                      onChange={(e) => updateDayTime(day, e.target.value)}
-                      className="w-32"
-                      placeholder="Time"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Description (Optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Describe your routine..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="min-h-[80px]"
+            />
           </div>
 
-          {/* Recurring Section */}
+          {/* Schedule - Pill Style Days */}
           <div className="space-y-3">
-            <Label>Repeat For</Label>
-            <div className="space-y-2">
-              {recurringOptions.map((option) => (
-                <div 
-                  key={option.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => setRecurring(option.value)}
+            <Label>Schedule</Label>
+            <div className="flex gap-2 flex-wrap">
+              {daysOfWeek.map((day, index) => (
+                <button
+                  key={day.full}
+                  onClick={() => toggleDay(day.full)}
+                  className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                    selectedDays[day.full]?.selected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
                 >
-                  <Checkbox 
-                    checked={recurring === option.value}
-                    onCheckedChange={() => setRecurring(option.value)}
-                  />
-                  <span className={`text-sm ${recurring === option.value ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {option.label}
-                  </span>
-                </div>
+                  {day.short}
+                </button>
               ))}
             </div>
+            {/* Time inputs for selected days */}
+            {daysOfWeek.filter(d => selectedDays[d.full]?.selected).length > 0 && (
+              <div className="space-y-2 mt-3">
+                {daysOfWeek.filter(d => selectedDays[d.full]?.selected).map((day) => (
+                  <div key={day.full} className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground w-24">{day.full}</span>
+                    <Input
+                      type="time"
+                      value={selectedDays[day.full]?.time || ""}
+                      onChange={(e) => updateDayTime(day.full, e.target.value)}
+                      className="w-32"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recurring Section - Dropdown */}
+          <div className="space-y-2">
+            <Label>Repeat For</Label>
+            <Select value={recurring} onValueChange={setRecurring}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {recurringOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Exercise Search */}
@@ -254,114 +304,92 @@ const CreateRoutinePage = () => {
             />
           </div>
 
-          {/* Exercises List */}
-          {exercises.length > 0 && (
-            <div className="space-y-4">
-              <Label>Exercises</Label>
-              {exercises.map((exercise, index) => (
-                <motion.div
-                  key={exercise.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-4 rounded-2xl bg-card border border-border space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{exercise.name}</span>
-                    <Button variant="ghost" size="icon" onClick={() => removeExercise(exercise.id)}>
-                      <Trash2 size={16} className="text-destructive" />
+          {/* Exercises List - Workout Style */}
+          {exercises.map((exercise) => (
+            <motion.div
+              key={exercise.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-card rounded-2xl border border-border overflow-hidden"
+            >
+              {/* Exercise Header */}
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <span className="font-semibold text-lg">{exercise.name}</span>
+                <Button variant="ghost" size="icon" onClick={() => removeExercise(exercise.id)}>
+                  <Trash2 size={18} className="text-destructive" />
+                </Button>
+              </div>
+
+              {/* Sets Header */}
+              <div className="px-4 py-2 border-b border-border/50 bg-muted/30">
+                <div className="flex items-center gap-4">
+                  <span className="w-12 text-xs text-muted-foreground text-center">SET</span>
+                  <span className="flex-1 text-xs text-muted-foreground text-center">REP RANGE</span>
+                  <span className="w-10"></span>
+                </div>
+              </div>
+
+              {/* Sets */}
+              <div className="p-4 space-y-3">
+                {exercise.sets.map((set, setIndex) => (
+                  <div key={set.id} className="flex items-center gap-4">
+                    <div className="w-12 h-8 rounded-lg bg-muted flex items-center justify-center">
+                      <span className="text-sm font-medium">{setIndex + 1}</span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="8"
+                        value={set.minReps}
+                        onChange={(e) => updateSet(exercise.id, set.id, "minReps", e.target.value)}
+                        className="w-16 text-center"
+                      />
+                      <span className="text-muted-foreground">-</span>
+                      <Input
+                        type="number"
+                        placeholder="12"
+                        value={set.maxReps}
+                        onChange={(e) => updateSet(exercise.id, set.id, "maxReps", e.target.value)}
+                        className="w-16 text-center"
+                      />
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="w-10"
+                      onClick={() => removeSet(exercise.id, set.id)}
+                      disabled={exercise.sets.length === 1}
+                    >
+                      <Trash2 size={16} className="text-muted-foreground" />
                     </Button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label className="text-xs">Sets</Label>
-                      <Input
-                        placeholder="4"
-                        value={exercise.sets}
-                        onChange={(e) => updateExercise(exercise.id, "sets", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Min Reps</Label>
-                      <Input
-                        placeholder="8"
-                        value={exercise.minReps}
-                        onChange={(e) => updateExercise(exercise.id, "minReps", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Max Reps</Label>
-                      <Input
-                        placeholder="12"
-                        value={exercise.maxReps}
-                        onChange={(e) => updateExercise(exercise.id, "maxReps", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {/* Photo Preview */}
-          {photos.length > 0 && (
-            <div className="space-y-2">
-              <Label>Photos</Label>
-              <div className="flex gap-2 flex-wrap">
-                {photos.map((photo, index) => (
-                  <div key={index} className="relative w-20 h-20">
-                    <img src={photo} alt="" className="w-full h-full object-cover rounded-lg" />
-                    <button
-                      onClick={() => removePhoto(index)}
-                      className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
                 ))}
+
+                {/* Add Set Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => addSet(exercise.id)}
+                  className="w-full text-primary hover:text-primary/80"
+                >
+                  <Plus size={16} className="mr-1" />
+                  Add Set
+                </Button>
               </div>
-            </div>
-          )}
+            </motion.div>
+          ))}
         </div>
       </motion.div>
 
-      {/* Camera Button - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border">
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => setIsCameraOpen(true)}
-          >
-            <Camera size={18} className="mr-2" />
-            Take a Photo
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'image/*';
-              input.multiple = true;
-              input.onchange = (e) => {
-                const files = (e.target as HTMLInputElement).files;
-                if (files) {
-                  Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      if (e.target?.result) {
-                        setPhotos(prev => [...prev, e.target!.result as string]);
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  });
-                }
-              };
-              input.click();
-            }}
-          >
-            <Image size={18} />
-          </Button>
-        </div>
+      {/* Camera Button - Fixed at bottom right */}
+      <div className="fixed bottom-6 right-6">
+        <Button 
+          size="icon"
+          className="w-14 h-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
+          onClick={() => setIsCameraOpen(true)}
+        >
+          <Camera size={24} />
+        </Button>
       </div>
 
       {/* Camera Modal */}
