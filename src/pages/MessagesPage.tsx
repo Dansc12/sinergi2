@@ -1,5 +1,7 @@
-import { Search } from "lucide-react";
+import { Search, MessageCircle, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface ConversationProps {
   name: string;
@@ -42,57 +44,34 @@ const Conversation = ({ name, avatar, lastMessage, time, unread, isGroup }: Conv
   </button>
 );
 
+const EmptyMessagesState = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+        <MessageCircle size={40} className="text-primary" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">No Messages Yet</h3>
+      <p className="text-muted-foreground mb-6 max-w-[280px]">
+        Connect with friends and groups to start conversations about your fitness journey.
+      </p>
+      <div className="flex flex-col gap-3 w-full max-w-[200px]">
+        <Button onClick={() => navigate("/discover")} className="w-full gap-2">
+          <Users size={18} />
+          Find Friends
+        </Button>
+        <Button variant="outline" onClick={() => navigate("/create/group")} className="w-full">
+          Create a Group
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const MessagesPage = () => {
-  const conversations = [
-    {
-      name: "Powerlifting Squad",
-      avatar: undefined,
-      lastMessage: "Mike: Just hit a new PR! 💪",
-      time: "2m",
-      unread: 3,
-      isGroup: true
-    },
-    {
-      name: "Sarah Chen",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
-      lastMessage: "Great workout today! See you tomorrow?",
-      time: "15m",
-      unread: 1,
-      isGroup: false
-    },
-    {
-      name: "Coach Emma",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
-      lastMessage: "Your form is looking much better!",
-      time: "1h",
-      unread: 0,
-      isGroup: false
-    },
-    {
-      name: "Morning Yoga Group",
-      avatar: undefined,
-      lastMessage: "Tomorrow's session starts at 6 AM",
-      time: "3h",
-      unread: 0,
-      isGroup: true
-    },
-    {
-      name: "Alex Rivera",
-      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100",
-      lastMessage: "Thanks for the deadlift tips!",
-      time: "1d",
-      unread: 0,
-      isGroup: false
-    },
-    {
-      name: "Running Club",
-      avatar: undefined,
-      lastMessage: "5K run this Saturday at Central Park",
-      time: "2d",
-      unread: 0,
-      isGroup: true
-    },
-  ];
+  // Empty array - no dummy conversations
+  const conversations: ConversationProps[] = [];
 
   return (
     <div className="min-h-screen">
@@ -111,11 +90,15 @@ const MessagesPage = () => {
         </div>
       </header>
 
-      {/* Conversations List */}
+      {/* Conversations List or Empty State */}
       <div className="px-2 py-2 animate-fade-in">
-        {conversations.map((conv, index) => (
-          <Conversation key={index} {...conv} />
-        ))}
+        {conversations.length === 0 ? (
+          <EmptyMessagesState />
+        ) : (
+          conversations.map((conv, index) => (
+            <Conversation key={index} {...conv} />
+          ))
+        )}
       </div>
     </div>
   );
