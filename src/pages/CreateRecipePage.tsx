@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
 import { CameraCapture } from "@/components/CameraCapture";
+import { FoodDetailModal } from "@/components/FoodDetailModal";
 
 interface Ingredient {
   id: string;
@@ -17,12 +18,15 @@ interface Ingredient {
   protein: number;
   carbs: number;
   fats: number;
+  servings: number;
+  servingSize: string;
 }
 
 interface RestoredState {
   restored?: boolean;
   contentData?: { 
-    title?: string; 
+    title?: string;
+    description?: string;
     prepTime?: string;
     cookTime?: string;
     servings?: string;
@@ -38,6 +42,7 @@ const CreateRecipePage = () => {
   const restoredState = location.state as RestoredState | null;
   
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [servings, setServings] = useState("");
@@ -46,12 +51,15 @@ const CreateRecipePage = () => {
   const [ingredientSearchValue, setIngredientSearchValue] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
+  const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
 
   // Restore state if coming back from share screen
   useEffect(() => {
     if (restoredState?.restored && restoredState.contentData) {
       const data = restoredState.contentData;
       if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
       if (data.prepTime) setPrepTime(data.prepTime);
       if (data.cookTime) setCookTime(data.cookTime);
       if (data.servings) setServings(data.servings);
@@ -67,16 +75,25 @@ const CreateRecipePage = () => {
   };
 
   const handleIngredientSelect = (food: FoodItem) => {
+    setSelectedFood(food);
+    setIsFoodModalOpen(true);
+    setIngredientSearchValue("");
+  };
+
+  const handleFoodConfirm = (food: FoodItem, foodServings: number, servingSize: string) => {
     const newIngredient: Ingredient = {
       id: Date.now().toString(),
       name: food.description,
-      calories: food.calories,
-      protein: food.protein,
-      carbs: food.carbs,
-      fats: food.fats,
+      calories: Math.round(food.calories * foodServings),
+      protein: Math.round(food.protein * foodServings * 10) / 10,
+      carbs: Math.round(food.carbs * foodServings * 10) / 10,
+      fats: Math.round(food.fats * foodServings * 10) / 10,
+      servings: foodServings,
+      servingSize: servingSize,
     };
     setIngredients([...ingredients, newIngredient]);
-    setIngredientSearchValue("");
+    setIsFoodModalOpen(false);
+    setSelectedFood(null);
   };
 
   const removeIngredient = (id: string) => {
@@ -115,7 +132,7 @@ const CreateRecipePage = () => {
     navigate("/share", {
       state: {
         contentType: "recipe",
-        contentData: { title, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
+        contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
         images,
         returnTo: "/create/recipe",
       },
@@ -169,6 +186,17 @@ const CreateRecipePage = () => {
               placeholder="e.g., High Protein Overnight Oats"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Describe your recipe..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
             />
           </div>
 
@@ -299,6 +327,17 @@ const CreateRecipePage = () => {
         onClose={() => setIsCameraOpen(false)}
         onCapture={handleCapturePhoto}
         onSelectFromGallery={handleSelectFromGallery}
+      />
+
+      {/* Food Detail Modal */}
+      <FoodDetailModal
+        isOpen={isFoodModalOpen}
+        food={selectedFood}
+        onClose={() => {
+          setIsFoodModalOpen(false);
+          setSelectedFood(null);
+        }}
+        onConfirm={handleFoodConfirm}
       />
     </div>
   );
