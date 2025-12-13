@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings, Flame, Users } from "lucide-react";
+import { ChevronLeft, Settings, Flame, Users, Camera, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,42 +16,96 @@ const tabs: { id: ContentTab; label: string }[] = [
   { id: "groups", label: "Groups" },
 ];
 
-const mockContent = {
-  posts: [
-    "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400",
-    "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=400",
-    "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400",
-  ],
-  workouts: [
-    "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400",
-    "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400",
-  ],
-  meals: [
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
-    "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400",
-    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400",
-    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400",
-  ],
-  recipes: [
-    "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=400",
-  ],
-  routines: [
-    "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400",
-    "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=400",
-  ],
+// Empty content - will be populated with real user data
+const userContent: Record<ContentTab, string[]> = {
+  posts: [],
+  workouts: [],
+  meals: [],
+  recipes: [],
+  routines: [],
   groups: [],
+};
+
+const EmptyTabState = ({ tab, onAction }: { tab: ContentTab; onAction: () => void }) => {
+  const messages: Record<ContentTab, { title: string; description: string; action: string }> = {
+    posts: { 
+      title: "No posts yet", 
+      description: "Share your fitness journey with the community", 
+      action: "Create Post" 
+    },
+    workouts: { 
+      title: "No workouts logged", 
+      description: "Start tracking your training progress", 
+      action: "Log Workout" 
+    },
+    meals: { 
+      title: "No meals logged", 
+      description: "Track your nutrition to reach your goals", 
+      action: "Log Meal" 
+    },
+    recipes: { 
+      title: "No recipes created", 
+      description: "Save and share your favorite healthy recipes", 
+      action: "Create Recipe" 
+    },
+    routines: { 
+      title: "No routines created", 
+      description: "Build workout routines to stay consistent", 
+      action: "Create Routine" 
+    },
+    groups: { 
+      title: "No groups joined", 
+      description: "Join groups to connect with like-minded people", 
+      action: "Find Groups" 
+    },
+  };
+
+  const { title, description, action } = messages[tab];
+
+  return (
+    <div className="col-span-3 py-12 text-center flex flex-col items-center">
+      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <Plus size={24} className="text-muted-foreground" />
+      </div>
+      <p className="font-medium mb-1">{title}</p>
+      <p className="text-sm text-muted-foreground mb-4 max-w-[200px]">{description}</p>
+      <Button size="sm" variant="outline" onClick={onAction}>
+        {action}
+      </Button>
+    </div>
+  );
 };
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");
 
-  const interests = ["Weightlifting", "Yoga", "Hiking", "Nutrition", "CrossFit"];
+  // These will come from user profile data
+  const userName = "Your Name";
+  const userBio = "Add a bio to tell others about yourself";
+  const avatarUrl = undefined;
+  const streakCount = 0;
+  const friendsCount = 0;
+  const interests: string[] = [];
+  
+  // Stats will come from real data
   const stats = [
-    { value: "342", label: "Meals" },
-    { value: "87", label: "Days" },
-    { value: "156", label: "Workouts" },
+    { value: "0", label: "Meals" },
+    { value: "0", label: "Days" },
+    { value: "0", label: "Workouts" },
   ];
+
+  const handleTabAction = (tab: ContentTab) => {
+    const routes: Record<ContentTab, string> = {
+      posts: "/share",
+      workouts: "/create/workout",
+      meals: "/create/meal",
+      recipes: "/create/recipe",
+      routines: "/create/routine",
+      groups: "/discover",
+    };
+    navigate(routes[tab]);
+  };
 
   return (
     <div className="min-h-screen">
@@ -71,35 +125,42 @@ const ProfilePage = () => {
         <div className="flex flex-col items-center text-center mb-6">
           <div className="relative mb-4">
             <Avatar className="w-24 h-24 border-4 border-primary/30">
-              <AvatarImage src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200" />
-              <AvatarFallback className="text-2xl">A</AvatarFallback>
+              <AvatarImage src={avatarUrl} />
+              <AvatarFallback className="text-2xl bg-muted">
+                <Camera size={32} className="text-muted-foreground" />
+              </AvatarFallback>
             </Avatar>
-            {/* Streak Badge */}
-            <div className="absolute -top-1 -right-1 flex items-center gap-0.5 bg-streak text-primary-foreground px-2 py-1 rounded-full text-sm font-bold shadow-lg">
-              <Flame size={14} />
-              <span>12</span>
-            </div>
+            {streakCount > 0 && (
+              <div className="absolute -top-1 -right-1 flex items-center gap-0.5 bg-streak text-primary-foreground px-2 py-1 rounded-full text-sm font-bold shadow-lg">
+                <Flame size={14} />
+                <span>{streakCount}</span>
+              </div>
+            )}
           </div>
           
-          <h2 className="text-2xl font-bold mb-1">Alex Thompson</h2>
-          <p className="text-muted-foreground text-sm mb-2">Fitness enthusiast | NYC 🏙️</p>
+          <h2 className="text-2xl font-bold mb-1">{userName}</h2>
+          <p className="text-muted-foreground text-sm mb-2">{userBio}</p>
           
           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
             <Users size={14} />
-            <span>248 friends</span>
+            <span>{friendsCount} friends</span>
           </div>
 
           {/* Interests */}
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {interests.map((interest) => (
-              <span
-                key={interest}
-                className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-medium"
-              >
-                {interest}
-              </span>
-            ))}
-          </div>
+          {interests.length > 0 ? (
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {interests.map((interest) => (
+                <span
+                  key={interest}
+                  className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-medium"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground mb-6">Complete onboarding to add your interests</p>
+          )}
 
           {/* Stats */}
           <div className="flex gap-6 w-full justify-center">
@@ -137,8 +198,8 @@ const ProfilePage = () => {
 
         {/* Content Grid */}
         <div className="grid grid-cols-3 gap-1">
-          {mockContent[activeTab].length > 0 ? (
-            mockContent[activeTab].map((image, index) => (
+          {userContent[activeTab].length > 0 ? (
+            userContent[activeTab].map((image, index) => (
               <div key={index} className="aspect-square">
                 <img
                   src={image}
@@ -148,9 +209,7 @@ const ProfilePage = () => {
               </div>
             ))
           ) : (
-            <div className="col-span-3 py-12 text-center text-muted-foreground">
-              <p>No {activeTab} yet</p>
-            </div>
+            <EmptyTabState tab={activeTab} onAction={() => handleTabAction(activeTab)} />
           )}
         </div>
       </div>

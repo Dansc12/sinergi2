@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from "react";
-import { Search, MoreHorizontal, Users, UserPlus } from "lucide-react";
+import { Search, MoreHorizontal, Users, UserPlus, Compass } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 interface FeedPost {
   id: string;
@@ -34,66 +35,12 @@ interface SuggestedUser {
   mutualFriends: number;
 }
 
-const feedPosts: FeedPost[] = [
-  {
-    id: "1",
-    user: { name: "Sarah Chen", handle: "@sarahfitness", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
-    content: "Just crushed my first 5K in under 25 minutes! 🏃‍♀️ All those morning runs are finally paying off. Who else is training for a race?",
-    images: ["https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600", "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600", "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600"],
-    type: "workout",
-    stats: { likes: 142, comments: 28 },
-    timeAgo: "2h"
-  },
-  {
-    id: "2",
-    user: { name: "Mike Johnson", handle: "@mikej", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
-    content: "Meal prep Sunday complete! 🥗 Got my protein-packed lunches ready for the week. Sharing the recipe in my stories!",
-    images: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600"],
-    type: "meal",
-    stats: { likes: 89, comments: 15 },
-    timeAgo: "4h"
-  },
-  {
-    id: "3",
-    user: { name: "Emma Wilson", handle: "@emmawellness", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" },
-    content: "Morning yoga flow to start the day right ☀️🧘‍♀️ Remember: progress, not perfection!",
-    images: ["https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600", "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600"],
-    type: "post",
-    stats: { likes: 234, comments: 42 },
-    timeAgo: "5h"
-  },
-  {
-    id: "4",
-    user: { name: "Alex Rivera", handle: "@alexlifts", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100" },
-    content: "New PR on deadlift today! 💪 315 lbs felt smooth. Thanks to everyone in the powerlifting group for the tips!",
-    images: ["https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600"],
-    type: "workout",
-    stats: { likes: 312, comments: 67 },
-    timeAgo: "6h"
-  },
-  {
-    id: "5",
-    user: { name: "Sofia Garcia", handle: "@sofiacooks", avatar: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=100" },
-    content: "Made this high-protein overnight oats recipe! Perfect for busy mornings. Full recipe in my profile 🥣",
-    images: ["https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=600"],
-    type: "recipe",
-    stats: { likes: 178, comments: 34 },
-    timeAgo: "8h"
-  },
-];
-
-const suggestedGroups: SuggestedGroup[] = [
-  { name: "Weightlifting", members: 2340, image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300" },
-  { name: "Morning Yoga", members: 1850, image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300" },
-  { name: "Running Club", members: 3200, image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=300" },
-  { name: "Meal Prep", members: 1560, image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300" },
-];
-
-const suggestedUsers: SuggestedUser[] = [
-  { name: "James Park", handle: "@jamesfit", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100", mutualFriends: 5 },
-  { name: "Lily Zhang", handle: "@lilylifts", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", mutualFriends: 3 },
-  { name: "Marcus Johnson", handle: "@marcusmoves", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100", mutualFriends: 8 },
-];
+interface FloatingEmoji {
+  id: number;
+  emoji: string;
+  originX: number;
+  originY: number;
+}
 
 const typeLabels = {
   workout: { label: "Workout", color: "bg-primary/20 text-primary" },
@@ -103,13 +50,6 @@ const typeLabels = {
 };
 
 const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
-
-interface FloatingEmoji {
-  id: number;
-  emoji: string;
-  originX: number;
-  originY: number;
-}
 
 const LONG_PRESS_THRESHOLD = 300;
 const DOUBLE_TAP_DELAY = 300;
@@ -140,10 +80,8 @@ const ImageCarousel = ({
 
     if (Math.abs(diff) > threshold) {
       if (diff > 0) {
-        // Swipe left - go to next (circular)
         setCurrentIndex((prev) => (prev + 1) % images.length);
       } else {
-        // Swipe right - go to previous (circular)
         setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
       }
     }
@@ -159,7 +97,6 @@ const ImageCarousel = ({
     }
   };
 
-  // Consistent image size for all posts
   const imageContainerClass = "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
 
   if (images.length === 1) {
@@ -183,7 +120,6 @@ const ImageCarousel = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Previous image preview */}
         <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
           <img 
             src={images[(currentIndex - 1 + images.length) % images.length]} 
@@ -192,7 +128,6 @@ const ImageCarousel = ({
           />
         </div>
 
-        {/* Current image */}
         <motion.div 
           key={currentIndex}
           initial={{ opacity: 0.9, scale: 0.98 }}
@@ -208,7 +143,6 @@ const ImageCarousel = ({
           />
         </motion.div>
 
-        {/* Next image preview */}
         <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
           <img 
             src={images[(currentIndex + 1) % images.length]} 
@@ -236,7 +170,6 @@ const PostCard = ({ post }: { post: FeedPost }) => {
       [emoji]: (prev[emoji] || 0) + 1,
     }));
 
-    // Get button position for animation origin (or use provided coords for double-tap)
     const button = buttonRefs.current[emoji];
     const finalOriginX = originX ?? (button ? button.getBoundingClientRect().left + button.offsetWidth / 2 : window.innerWidth / 2);
     const finalOriginY = originY ?? (button ? button.getBoundingClientRect().top : 200);
@@ -255,7 +188,6 @@ const PostCard = ({ post }: { post: FeedPost }) => {
   }, []);
 
   const handleDoubleTap = useCallback(() => {
-    // Double-tap triggers ❤️ reaction from center of card
     const cardRect = cardRef.current?.getBoundingClientRect();
     const centerX = cardRect ? cardRect.left + cardRect.width / 2 : window.innerWidth / 2;
     const centerY = cardRect ? cardRect.top + cardRect.height / 2 : 300;
@@ -300,7 +232,6 @@ const PostCard = ({ post }: { post: FeedPost }) => {
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="bg-card border-b border-border"
     >
-      {/* Header */}
       <div className="flex items-center gap-3 p-4">
         <Avatar className="w-10 h-10 border border-border">
           <AvatarImage src={post.user.avatar} />
@@ -320,14 +251,11 @@ const PostCard = ({ post }: { post: FeedPost }) => {
         </Button>
       </div>
 
-      {/* Images with double-tap support */}
       {post.images && post.images.length > 0 && (
         <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
       )}
 
-      {/* Reaction Buttons - Tighter container */}
       <div className="relative px-4 py-1.5">
-        {/* Floating Emojis - Origin from specific button position */}
         <AnimatePresence>
           {floatingEmojis.map((floating) => (
             <motion.span
@@ -370,7 +298,6 @@ const PostCard = ({ post }: { post: FeedPost }) => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="px-4 pb-4">
         <p className="text-sm">
           <span className="font-semibold">{post.user.name}</span>{" "}
@@ -386,60 +313,43 @@ const PostCard = ({ post }: { post: FeedPost }) => {
   );
 };
 
-const SuggestedGroupsSection = () => (
-  <section className="bg-card border-b border-border py-4">
-    <div className="flex items-center justify-between px-4 mb-3">
-      <h3 className="font-semibold">Suggested Groups</h3>
-      <button className="text-sm text-primary font-medium">See All</button>
+const EmptyFeedState = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+        <Compass size={40} className="text-primary" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">No Posts Yet</h3>
+      <p className="text-muted-foreground mb-6 max-w-[280px]">
+        Be the first to share your fitness journey! Log a workout or meal and share it with the community.
+      </p>
+      <div className="flex flex-col gap-3 w-full max-w-[200px]">
+        <Button onClick={() => navigate("/create/workout")} className="w-full">
+          Log a Workout
+        </Button>
+        <Button variant="outline" onClick={() => navigate("/create/meal")} className="w-full">
+          Log a Meal
+        </Button>
+      </div>
     </div>
-    <div className="flex gap-3 overflow-x-auto px-4 hide-scrollbar">
-      {suggestedGroups.map((group) => (
-        <div key={group.name} className="min-w-[140px] rounded-xl overflow-hidden border border-border bg-background">
-          <img src={group.image} alt={group.name} className="w-full h-20 object-cover" />
-          <div className="p-3">
-            <h4 className="font-semibold text-sm truncate">{group.name}</h4>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Users size={12} />
-              {group.members.toLocaleString()}
-            </p>
-            <Button size="sm" className="w-full mt-2 h-7 text-xs">Join</Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  </section>
-);
-
-const SuggestedUsersSection = () => (
-  <section className="bg-card border-b border-border py-4">
-    <div className="flex items-center justify-between px-4 mb-3">
-      <h3 className="font-semibold">People to Follow</h3>
-      <button className="text-sm text-primary font-medium">See All</button>
-    </div>
-    <div className="flex gap-3 overflow-x-auto px-4 hide-scrollbar">
-      {suggestedUsers.map((user) => (
-        <div key={user.handle} className="min-w-[140px] rounded-xl border border-border bg-background p-4 flex flex-col items-center text-center">
-          <Avatar className="w-16 h-16 mb-2 border-2 border-primary/30">
-            <AvatarImage src={user.avatar} />
-            <AvatarFallback className="bg-primary/20 text-primary">{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <h4 className="font-semibold text-sm truncate w-full">{user.name}</h4>
-          <p className="text-xs text-muted-foreground mb-2">{user.mutualFriends} mutual friends</p>
-          <Button size="sm" variant="outline" className="w-full h-7 text-xs gap-1">
-            <UserPlus size={14} />
-            Follow
-          </Button>
-        </div>
-      ))}
-    </div>
-  </section>
-);
+  );
+};
 
 const DiscoverPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Empty arrays - no dummy data
+  const feedPosts: FeedPost[] = [];
+  const suggestedGroups: SuggestedGroup[] = [];
+  const suggestedUsers: SuggestedUser[] = [];
 
-  // Insert suggestion sections after certain posts
-  const renderFeedWithSuggestions = () => {
+  const renderFeed = () => {
+    if (feedPosts.length === 0) {
+      return <EmptyFeedState />;
+    }
+
     const elements: React.ReactNode[] = [];
     
     feedPosts.forEach((post, index) => {
@@ -447,14 +357,57 @@ const DiscoverPage = () => {
         <PostCard key={post.id} post={post} />
       );
       
-      // Insert suggested groups after 2nd post
-      if (index === 1) {
-        elements.push(<SuggestedGroupsSection key="groups-section" />);
+      if (index === 1 && suggestedGroups.length > 0) {
+        elements.push(
+          <section key="groups-section" className="bg-card border-b border-border py-4">
+            <div className="flex items-center justify-between px-4 mb-3">
+              <h3 className="font-semibold">Suggested Groups</h3>
+              <button className="text-sm text-primary font-medium">See All</button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto px-4 hide-scrollbar">
+              {suggestedGroups.map((group) => (
+                <div key={group.name} className="min-w-[140px] rounded-xl overflow-hidden border border-border bg-background">
+                  <img src={group.image} alt={group.name} className="w-full h-20 object-cover" />
+                  <div className="p-3">
+                    <h4 className="font-semibold text-sm truncate">{group.name}</h4>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Users size={12} />
+                      {group.members.toLocaleString()}
+                    </p>
+                    <Button size="sm" className="w-full mt-2 h-7 text-xs">Join</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
       }
       
-      // Insert suggested users after 4th post
-      if (index === 3) {
-        elements.push(<SuggestedUsersSection key="users-section" />);
+      if (index === 3 && suggestedUsers.length > 0) {
+        elements.push(
+          <section key="users-section" className="bg-card border-b border-border py-4">
+            <div className="flex items-center justify-between px-4 mb-3">
+              <h3 className="font-semibold">People to Follow</h3>
+              <button className="text-sm text-primary font-medium">See All</button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto px-4 hide-scrollbar">
+              {suggestedUsers.map((user) => (
+                <div key={user.handle} className="min-w-[140px] rounded-xl border border-border bg-background p-4 flex flex-col items-center text-center">
+                  <Avatar className="w-16 h-16 mb-2 border-2 border-primary/30">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback className="bg-primary/20 text-primary">{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <h4 className="font-semibold text-sm truncate w-full">{user.name}</h4>
+                  <p className="text-xs text-muted-foreground mb-2">{user.mutualFriends} mutual friends</p>
+                  <Button size="sm" variant="outline" className="w-full h-7 text-xs gap-1">
+                    <UserPlus size={14} />
+                    Follow
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
       }
     });
     
@@ -463,7 +416,6 @@ const DiscoverPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - Search bar only, no "Connect" text */}
       <header className="sticky top-0 z-40 glass-elevated">
         <div className="px-4 py-3">
           <div className="relative">
@@ -472,16 +424,15 @@ const DiscoverPage = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search posts, groups, people..."
-              className="w-full bg-muted border-0 rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Search posts, people, groups..."
+              className="w-full bg-muted border-0 rounded-xl py-3 pl-12 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
       </header>
 
-      {/* Feed with smooth scroll */}
-      <div className="animate-fade-in scroll-smooth">
-        {renderFeedWithSuggestions()}
+      <div className="animate-fade-in pb-24">
+        {renderFeed()}
       </div>
     </div>
   );

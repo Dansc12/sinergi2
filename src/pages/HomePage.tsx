@@ -6,12 +6,17 @@ import { TasksSection } from "@/components/home/TasksSection";
 const HomePage = () => {
   const navigate = useNavigate();
 
+  // These values will come from real user data
+  const userName = "User";
+  const streakCount = 0;
+  const avatarUrl = undefined;
+
   return (
     <div className="min-h-screen">
       <HomeHeader 
-        userName="Alex"
-        streakCount={12}
-        avatarUrl="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200"
+        userName={userName}
+        streakCount={streakCount}
+        avatarUrl={avatarUrl}
         onProfileClick={() => navigate("/profile")}
       />
       
