@@ -331,11 +331,16 @@ const CreateMealPage = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="font-medium text-foreground">{food.name}</div>
+                        {food.servings && food.servingSize && (
+                          <div className="text-xs text-primary mt-0.5">
+                            {food.servings} × {food.servingSize}
+                          </div>
+                        )}
                         <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{food.calories} cal</span>
-                          <span>P: {food.protein}g</span>
-                          <span>C: {food.carbs}g</span>
-                          <span>F: {food.fats}g</span>
+                          <span>P: {typeof food.protein === 'number' ? food.protein.toFixed(0) : food.protein}g</span>
+                          <span>C: {typeof food.carbs === 'number' ? food.carbs.toFixed(0) : food.carbs}g</span>
+                          <span>F: {typeof food.fats === 'number' ? food.fats.toFixed(0) : food.fats}g</span>
                         </div>
                       </div>
                       <Button

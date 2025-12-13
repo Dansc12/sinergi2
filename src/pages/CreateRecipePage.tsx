@@ -262,6 +262,11 @@ const CreateRecipePage = () => {
                   >
                     <div className="flex-1">
                       <p className="font-medium text-sm">{ingredient.name}</p>
+                      {ingredient.servings && ingredient.servingSize && (
+                        <p className="text-xs text-primary mt-0.5">
+                          {ingredient.servings} × {ingredient.servingSize}
+                        </p>
+                      )}
                       <div className="flex gap-3 text-xs text-muted-foreground mt-1">
                         <span>{ingredient.calories} cal</span>
                         <span>P: {ingredient.protein}g</span>
