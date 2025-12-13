@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, RotateCcw, Trash2, Camera, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, RotateCcw, Trash2, Camera, Plus, ChevronDown, ChevronUp, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,11 @@ interface RoutineSet {
 interface RoutineExercise {
   id: string;
   name: string;
+  category: string;
+  muscleGroup: string;
+  notes: string;
   sets: RoutineSet[];
+  isExpanded: boolean;
 }
 
 interface DaySchedule {
@@ -81,6 +85,9 @@ const CreateRoutinePage = () => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
+  // Check if any day is selected
+  const hasSelectedDays = Object.values(selectedDays).some(d => d.selected);
+
   // Restore state if coming back from share screen
   useEffect(() => {
     if (restoredState?.restored && restoredState.contentData) {
@@ -113,16 +120,36 @@ const CreateRoutinePage = () => {
     }));
   };
 
-  const addExercise = (exerciseName: string) => {
+  const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string }) => {
     setExercises([...exercises, { 
       id: Date.now().toString(), 
-      name: exerciseName, 
-      sets: [{ id: Date.now().toString(), minReps: "", maxReps: "" }]
+      name: exercise.name,
+      category: exercise.category,
+      muscleGroup: exercise.muscleGroup,
+      notes: "",
+      sets: [{ id: Date.now().toString(), minReps: "", maxReps: "" }],
+      isExpanded: true
     }]);
   };
 
   const removeExercise = (id: string) => {
     setExercises(exercises.filter(e => e.id !== id));
+  };
+
+  const toggleExerciseExpand = (exerciseId: string) => {
+    setExercises(
+      exercises.map((e) =>
+        e.id === exerciseId ? { ...e, isExpanded: !e.isExpanded } : e
+      )
+    );
+  };
+
+  const updateExerciseNotes = (exerciseId: string, notes: string) => {
+    setExercises(
+      exercises.map((e) =>
+        e.id === exerciseId ? { ...e, notes } : e
+      )
+    );
   };
 
   const addSet = (exerciseId: string) => {
@@ -189,7 +216,7 @@ const CreateRoutinePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-32">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -211,7 +238,7 @@ const CreateRoutinePage = () => {
           <Button 
             onClick={handleSubmit}
             disabled={!isValid()}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+            className="rounded-full px-6"
           >
             Finish
           </Button>
@@ -246,7 +273,7 @@ const CreateRoutinePage = () => {
           <div className="space-y-3">
             <Label>Schedule</Label>
             <div className="flex gap-2 flex-wrap">
-              {daysOfWeek.map((day, index) => (
+              {daysOfWeek.map((day) => (
                 <button
                   key={day.full}
                   onClick={() => toggleDay(day.full)}
@@ -261,7 +288,7 @@ const CreateRoutinePage = () => {
               ))}
             </div>
             {/* Time inputs for selected days */}
-            {daysOfWeek.filter(d => selectedDays[d.full]?.selected).length > 0 && (
+            {hasSelectedDays && (
               <div className="space-y-2 mt-3">
                 {daysOfWeek.filter(d => selectedDays[d.full]?.selected).map((day) => (
                   <div key={day.full} className="flex items-center gap-3">
@@ -278,117 +305,195 @@ const CreateRoutinePage = () => {
             )}
           </div>
 
-          {/* Recurring Section - Dropdown */}
-          <div className="space-y-2">
-            <Label>Repeat For</Label>
-            <Select value={recurring} onValueChange={setRecurring}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {recurringOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Recurring Section - Only visible if days are selected */}
+          {hasSelectedDays && (
+            <div className="space-y-2">
+              <Label>Repeat For</Label>
+              <Select value={recurring} onValueChange={setRecurring}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {recurringOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Exercise Search */}
           <div className="space-y-3">
             <Label>Add Exercises</Label>
             <ExerciseSearchInput 
-              onSelect={(exercise) => addExercise(exercise.name)}
+              onSelect={addExercise}
               placeholder="Search for an exercise..."
             />
           </div>
 
           {/* Exercises List - Workout Style */}
-          {exercises.map((exercise) => (
-            <motion.div
-              key={exercise.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-card rounded-2xl border border-border overflow-hidden"
-            >
-              {/* Exercise Header */}
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <span className="font-semibold text-lg">{exercise.name}</span>
-                <Button variant="ghost" size="icon" onClick={() => removeExercise(exercise.id)}>
-                  <Trash2 size={18} className="text-destructive" />
-                </Button>
-              </div>
-
-              {/* Sets Header */}
-              <div className="px-4 py-2 border-b border-border/50 bg-muted/30">
-                <div className="flex items-center gap-4">
-                  <span className="w-12 text-xs text-muted-foreground text-center">SET</span>
-                  <span className="flex-1 text-xs text-muted-foreground text-center">REP RANGE</span>
-                  <span className="w-10"></span>
-                </div>
-              </div>
-
-              {/* Sets */}
-              <div className="p-4 space-y-3">
-                {exercise.sets.map((set, setIndex) => (
-                  <div key={set.id} className="flex items-center gap-4">
-                    <div className="w-12 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      <span className="text-sm font-medium">{setIndex + 1}</span>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center gap-2">
-                      <Input
-                        type="number"
-                        placeholder="8"
-                        value={set.minReps}
-                        onChange={(e) => updateSet(exercise.id, set.id, "minReps", e.target.value)}
-                        className="w-16 text-center"
-                      />
-                      <span className="text-muted-foreground">-</span>
-                      <Input
-                        type="number"
-                        placeholder="12"
-                        value={set.maxReps}
-                        onChange={(e) => updateSet(exercise.id, set.id, "maxReps", e.target.value)}
-                        className="w-16 text-center"
-                      />
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="w-10"
-                      onClick={() => removeSet(exercise.id, set.id)}
-                      disabled={exercise.sets.length === 1}
-                    >
-                      <Trash2 size={16} className="text-muted-foreground" />
-                    </Button>
-                  </div>
-                ))}
-
-                {/* Add Set Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => addSet(exercise.id)}
-                  className="w-full text-primary hover:text-primary/80"
+          <div className="space-y-4">
+            <AnimatePresence>
+              {exercises.map((exercise) => (
+                <motion.div
+                  key={exercise.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  className="rounded-2xl bg-card border border-border overflow-hidden"
                 >
-                  <Plus size={16} className="mr-1" />
-                  Add Set
-                </Button>
-              </div>
-            </motion.div>
-          ))}
+                  {/* Exercise Header */}
+                  <div className="p-4 flex items-center justify-between">
+                    <button
+                      onClick={() => toggleExerciseExpand(exercise.id)}
+                      className="flex items-center gap-3 flex-1 text-left"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                        <Dumbbell size={18} className="text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">{exercise.name}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {exercise.category} • {exercise.muscleGroup}
+                        </p>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleExerciseExpand(exercise.id)}
+                      >
+                        {exercise.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeExercise(exercise.id)}
+                      >
+                        <Trash2 size={18} className="text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Exercise Content */}
+                  <AnimatePresence>
+                    {exercise.isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        {/* Notes */}
+                        <div className="px-4 pb-3">
+                          <Textarea
+                            placeholder="Add notes..."
+                            value={exercise.notes}
+                            onChange={(e) => updateExerciseNotes(exercise.id, e.target.value)}
+                            className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
+                            rows={2}
+                          />
+                        </div>
+
+                        {/* Sets Header */}
+                        <div className="px-4 pb-2">
+                          <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
+                            <div className="col-span-2 text-center">SET</div>
+                            <div className="col-span-8 text-center">REP RANGE</div>
+                            <div className="col-span-2"></div>
+                          </div>
+                        </div>
+
+                        {/* Sets List */}
+                        <div className="px-4 pb-3 space-y-2">
+                          {exercise.sets.map((set, index) => (
+                            <motion.div
+                              key={set.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-muted/30"
+                            >
+                              <div className="col-span-2 flex justify-center">
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm text-muted-foreground">
+                                  {index + 1}
+                                </div>
+                              </div>
+                              <div className="col-span-8 flex items-center justify-center gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="Min"
+                                  value={set.minReps}
+                                  onChange={(e) => updateSet(exercise.id, set.id, "minReps", e.target.value)}
+                                  className="w-16 text-center h-9 bg-background border-border"
+                                />
+                                <span className="text-muted-foreground font-medium">-</span>
+                                <Input
+                                  type="number"
+                                  placeholder="Max"
+                                  value={set.maxReps}
+                                  onChange={(e) => updateSet(exercise.id, set.id, "maxReps", e.target.value)}
+                                  className="w-16 text-center h-9 bg-background border-border"
+                                />
+                              </div>
+                              <div className="col-span-2 flex justify-center">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => removeSet(exercise.id, set.id)}
+                                  disabled={exercise.sets.length === 1}
+                                >
+                                  <Trash2 size={14} className={exercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+
+                        {/* Add Set Button */}
+                        <div className="px-4 pb-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => addSet(exercise.id)}
+                          >
+                            <Plus size={16} className="mr-1" />
+                            Add Set
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Empty State */}
+          {exercises.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <RotateCcw size={48} className="mb-4 opacity-50" />
+              <p className="text-lg font-medium">No exercises yet</p>
+              <p className="text-sm">Search and add exercises above</p>
+            </div>
+          )}
         </div>
       </motion.div>
 
-      {/* Camera Button - Fixed at bottom right */}
-      <div className="fixed bottom-6 right-6">
-        <Button 
-          size="icon"
-          className="w-14 h-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
+      {/* Bottom Camera Button - Matching workout style */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full gap-2 rounded-xl border-border bg-card hover:bg-muted"
           onClick={() => setIsCameraOpen(true)}
         >
-          <Camera size={24} />
+          <Camera size={20} />
+          Take a Photo {photos.length > 0 && `(${photos.length})`}
         </Button>
       </div>
 
