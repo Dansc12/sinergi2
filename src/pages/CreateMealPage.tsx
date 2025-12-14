@@ -24,6 +24,7 @@ interface RestoredState {
   restored?: boolean;
   contentData?: { mealType?: string; foods?: SelectedFood[] };
   images?: string[];
+  preselectedMealType?: string;
 }
 
 // Mock recent foods - in production, this would come from the database
@@ -49,12 +50,15 @@ const CreateMealPage = () => {
   const [pendingFood, setPendingFood] = useState<FoodItem | null>(null);
   const [isFoodDetailOpen, setIsFoodDetailOpen] = useState(false);
 
-  // Restore state if coming back from share screen
+  // Restore state if coming back from share screen or preselect meal type
   useEffect(() => {
     if (restoredState?.restored) {
       if (restoredState.contentData?.mealType) setMealType(restoredState.contentData.mealType);
       if (restoredState.contentData?.foods) setSelectedFoods(restoredState.contentData.foods);
       if (restoredState.images) setPhotos(restoredState.images);
+      window.history.replaceState({}, document.title);
+    } else if (restoredState?.preselectedMealType) {
+      setMealType(restoredState.preselectedMealType);
       window.history.replaceState({}, document.title);
     }
   }, []);
