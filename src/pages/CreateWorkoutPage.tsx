@@ -33,6 +33,9 @@ interface RestoredState {
   restored?: boolean;
   contentData?: { title?: string; exercises?: Exercise[] };
   images?: string[];
+  prefilled?: boolean;
+  routineName?: string;
+  exercises?: Exercise[];
 }
 
 const CreateWorkoutPage = () => {
@@ -45,13 +48,16 @@ const CreateWorkoutPage = () => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
-  // Restore state if coming back from share screen
+  // Restore state if coming back from share screen or prefilled from routine
   useEffect(() => {
     if (restoredState?.restored) {
       if (restoredState.contentData?.title) setTitle(restoredState.contentData.title);
       if (restoredState.contentData?.exercises) setExercises(restoredState.contentData.exercises);
       if (restoredState.images) setPhotos(restoredState.images);
-      // Clear the state to prevent re-restoration on refresh
+      window.history.replaceState({}, document.title);
+    } else if (restoredState?.prefilled) {
+      if (restoredState.routineName) setTitle(restoredState.routineName);
+      if (restoredState.exercises) setExercises(restoredState.exercises);
       window.history.replaceState({}, document.title);
     }
   }, []);

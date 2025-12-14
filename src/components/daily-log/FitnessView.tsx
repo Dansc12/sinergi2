@@ -1,65 +1,78 @@
 import { useState } from "react";
-import { Footprints, Clock, Dumbbell, Check, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Footprints, Clock, Dumbbell, ChevronRight, ChevronDown, Play, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
-interface WorkoutItemProps {
-  title: string;
-  time: string;
-  duration: string;
-  exercises: number;
-  completed: boolean;
+interface RoutineExercise {
+  name: string;
+  sets: number;
+  reps: string;
 }
 
-const WorkoutItem = ({ title, time, duration, exercises, completed }: WorkoutItemProps) => (
-  <div className={`bg-card border rounded-xl p-4 ${completed ? 'border-success/50' : 'border-border'}`}>
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2">
-        <h4 className="font-semibold flex items-center gap-2">
-          {title}
-          {completed && (
-            <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-              <Check size={12} className="text-primary-foreground" />
-            </span>
-          )}
-        </h4>
-        <span className="text-sm text-muted-foreground">{time}</span>
-      </div>
-      <span className={`text-xs px-2 py-1 rounded-full ${completed ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
-        {completed ? 'Completed' : 'Scheduled'}
-      </span>
-    </div>
-    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-      <span className="flex items-center gap-1">
-        <Clock size={14} />
-        {duration}
-      </span>
-      <span className="flex items-center gap-1">
-        <Dumbbell size={14} />
-        {exercises} exercises
-      </span>
-    </div>
-  </div>
-);
+interface ScheduledRoutine {
+  id: string;
+  name: string;
+  time: string;
+  exercises: RoutineExercise[];
+}
 
 interface FitnessViewProps {
   selectedDate?: Date;
 }
 
 export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
-  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  const navigate = useNavigate();
+  const [expandedRoutine, setExpandedRoutine] = useState<string | null>(null);
   
-  const steps = 7842;
+  const steps = 0;
   const stepsGoal = 10000;
   const stepsLeft = stepsGoal - steps;
 
-  // Sample workouts - in real app, this would come from database
-  const workouts = [
-    { title: "Morning HIIT", time: "8:00 AM", duration: "30 min", exercises: 8, completed: true },
-    { title: "Upper Body Strength", time: "5:00 PM", duration: "45 min", exercises: 6, completed: false },
-    { title: "Evening Cardio", time: "7:00 PM", duration: "20 min", exercises: 4, completed: false },
-    { title: "Core Workout", time: "8:30 PM", duration: "15 min", exercises: 5, completed: false },
-  ];
+  // Empty scheduled routines - in production, this would come from the database
+  const scheduledRoutines: ScheduledRoutine[] = [];
 
-  const displayedWorkouts = showAllWorkouts ? workouts : workouts.slice(0, 3);
+  const toggleRoutine = (routineId: string) => {
+    setExpandedRoutine(expandedRoutine === routineId ? null : routineId);
+  };
+
+  const handleStartRoutineWorkout = (routine: ScheduledRoutine) => {
+    // Convert routine exercises to workout format with pre-filled sets
+    const exercises = routine.exercises.map((exercise, index) => {
+      const [minReps, maxReps] = exercise.reps.split("-").map(r => r.trim());
+      const sets = Array.from({ length: exercise.sets }, (_, i) => ({
+        id: `${index}-${i}`,
+        weight: "",
+        reps: minReps || exercise.reps,
+        distance: "",
+        time: "",
+        completed: false,
+      }));
+
+      return {
+        id: `${Date.now()}-${index}`,
+        name: exercise.name,
+        category: "Strength",
+        muscleGroup: "Various",
+        notes: "",
+        sets,
+        isExpanded: true,
+        isCardio: false,
+      };
+    });
+
+    navigate("/create/workout", {
+      state: {
+        prefilled: true,
+        routineName: routine.name,
+        exercises,
+      },
+    });
+  };
+
+  const handleQuickLogWorkout = () => {
+    navigate("/create/workout");
+  };
 
   return (
     <div className="space-y-6">
@@ -103,28 +116,115 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
       {/* Scheduled Workouts */}
       <div>
         <h3 className="font-semibold mb-3">Scheduled Workouts</h3>
-        <div className="space-y-3">
-          {displayedWorkouts.map((workout, index) => (
-            <WorkoutItem 
-              key={index}
-              title={workout.title}
-              time={workout.time}
-              duration={workout.duration}
-              exercises={workout.exercises}
-              completed={workout.completed}
-            />
-          ))}
-        </div>
         
-        {workouts.length > 3 && (
-          <button
-            onClick={() => setShowAllWorkouts(!showAllWorkouts)}
-            className="w-full mt-3 py-2 text-sm text-primary flex items-center justify-center gap-1 hover:opacity-80 transition-opacity"
-          >
-            {showAllWorkouts ? 'Show Less' : `View All ${workouts.length} Workouts`}
-            <ChevronRight size={16} className={`transition-transform ${showAllWorkouts ? 'rotate-90' : ''}`} />
-          </button>
+        {scheduledRoutines.length > 0 ? (
+          <div className="space-y-3">
+            {scheduledRoutines.map((routine) => (
+              <motion.div
+                key={routine.id}
+                className="bg-card border border-border rounded-xl overflow-hidden"
+              >
+                {/* Routine Header */}
+                <button
+                  onClick={() => toggleRoutine(routine.id)}
+                  className="w-full p-4 flex items-center justify-between text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <Dumbbell size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">{routine.name}</h4>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock size={14} />
+                        <span>{routine.time}</span>
+                        <span>•</span>
+                        <span>{routine.exercises.length} exercises</span>
+                      </div>
+                    </div>
+                  </div>
+                  {expandedRoutine === routine.id ? (
+                    <ChevronDown size={20} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronRight size={20} className="text-muted-foreground" />
+                  )}
+                </button>
+
+                {/* Expanded Routine Details */}
+                <AnimatePresence>
+                  {expandedRoutine === routine.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 space-y-3">
+                        {/* Exercise List */}
+                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                          {routine.exercises.map((exercise, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span className="text-foreground">{exercise.name}</span>
+                              <span className="text-muted-foreground">
+                                {exercise.sets} × {exercise.reps}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Start Workout Button */}
+                        <Button
+                          className="w-full gap-2"
+                          onClick={() => handleStartRoutineWorkout(routine)}
+                        >
+                          <Play size={16} />
+                          Start Workout
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Preview of first 3 exercises when collapsed */}
+                {expandedRoutine !== routine.id && (
+                  <div className="px-4 pb-4">
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      {routine.exercises.slice(0, 3).map((exercise, index) => (
+                        <div key={index} className="flex justify-between">
+                          <span>{exercise.name}</span>
+                          <span>{exercise.sets} × {exercise.reps}</span>
+                        </div>
+                      ))}
+                      {routine.exercises.length > 3 && (
+                        <span className="text-xs text-primary">
+                          +{routine.exercises.length - 3} more exercises
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-6 text-center">
+            <Calendar size={32} className="mx-auto mb-3 text-muted-foreground/50" />
+            <p className="text-muted-foreground mb-1">No workout routines scheduled for this day</p>
+            <p className="text-sm text-muted-foreground/70 mb-4">
+              Consider creating or finding a routine to stay on track
+            </p>
+          </div>
         )}
+
+        {/* Quick Log Workout Button */}
+        <Button
+          variant="outline"
+          className="w-full mt-4 gap-2 border-primary/50 text-primary hover:bg-primary/10"
+          onClick={handleQuickLogWorkout}
+        >
+          <Dumbbell size={18} />
+          Log a Workout
+        </Button>
       </div>
     </div>
   );

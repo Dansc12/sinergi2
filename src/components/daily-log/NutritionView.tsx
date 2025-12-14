@@ -1,4 +1,6 @@
-import { Droplets } from "lucide-react";
+import { Droplets, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface MacroBarProps {
   label: string;
@@ -24,34 +26,85 @@ const MacroBar = ({ label, current, goal, color }: MacroBarProps) => {
   );
 };
 
-interface MealLogProps {
+interface LoggedFood {
   name: string;
+  servings: number;
+  servingSize: string;
   calories: number;
-  foods: string[];
-  time: string;
 }
 
-const MealLog = ({ name, calories, foods, time }: MealLogProps) => (
-  <div className="bg-card border border-border rounded-xl p-4">
-    <div className="flex items-center justify-between mb-2">
-      <h4 className="font-semibold">{name}</h4>
-      <span className="text-sm text-muted-foreground">{time}</span>
+interface MealLogProps {
+  name: string;
+  mealType: string;
+  foods: LoggedFood[];
+  onAddFood: () => void;
+}
+
+const MealLog = ({ name, mealType, foods, onAddFood }: MealLogProps) => {
+  const totalCalories = foods.reduce((sum, food) => sum + food.calories, 0);
+  
+  return (
+    <div className="bg-card border border-border rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="font-semibold">{name}</h4>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-primary hover:bg-primary/10"
+          onClick={onAddFood}
+        >
+          <Plus size={18} />
+        </Button>
+      </div>
+      
+      {foods.length > 0 ? (
+        <>
+          <p className="text-primary font-bold text-lg mb-2">{totalCalories} cal</p>
+          <div className="space-y-1">
+            {foods.map((food, index) => (
+              <div key={index} className="text-sm text-muted-foreground flex justify-between">
+                <span>{food.name}</span>
+                <span className="text-xs">{food.servings} × {food.servingSize}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground italic">No foods logged yet</p>
+      )}
     </div>
-    <p className="text-primary font-bold text-lg mb-1">{calories} cal</p>
-    <p className="text-sm text-muted-foreground">{foods.join(", ")}</p>
-  </div>
-);
+  );
+};
 
 interface NutritionViewProps {
   selectedDate?: Date;
 }
 
 export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
-  const caloriesConsumed = 1450;
+  const navigate = useNavigate();
+  
+  // In production, these would come from the database based on selectedDate
+  const caloriesConsumed = 0;
   const caloriesGoal = 2200;
   const caloriesLeft = caloriesGoal - caloriesConsumed;
-  const waterConsumed = 6;
+  const waterConsumed = 0;
   const waterGoal = 8;
+
+  // Empty meal data - in production, this would come from the database
+  const meals = {
+    breakfast: [] as LoggedFood[],
+    lunch: [] as LoggedFood[],
+    dinner: [] as LoggedFood[],
+    snack: [] as LoggedFood[],
+  };
+
+  const handleAddFood = (mealType: string) => {
+    navigate("/create/meal", { state: { preselectedMealType: mealType } });
+  };
+
+  const totalProtein = 0;
+  const totalCarbs = 0;
+  const totalFats = 0;
 
   return (
     <div className="space-y-6">
@@ -124,38 +177,38 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
       {/* Macros */}
       <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
         <h3 className="font-semibold mb-3">Macros</h3>
-        <MacroBar label="P" current={98} goal={150} color="hsl(270, 91%, 65%)" />
-        <MacroBar label="C" current={165} goal={250} color="hsl(142, 76%, 45%)" />
-        <MacroBar label="F" current={45} goal={70} color="hsl(38, 92%, 50%)" />
+        <MacroBar label="P" current={totalProtein} goal={150} color="hsl(270, 91%, 65%)" />
+        <MacroBar label="C" current={totalCarbs} goal={250} color="hsl(142, 76%, 45%)" />
+        <MacroBar label="F" current={totalFats} goal={70} color="hsl(38, 92%, 50%)" />
       </div>
 
-      {/* Meals Log */}
+      {/* Logged Meals */}
       <div>
-        <h3 className="font-semibold mb-3">Today's Meals</h3>
+        <h3 className="font-semibold mb-3">Logged Meals</h3>
         <div className="space-y-3">
           <MealLog 
             name="Breakfast"
-            calories={450}
-            foods={["Eggs", "Avocado Toast", "Orange Juice"]}
-            time="7:30 AM"
+            mealType="breakfast"
+            foods={meals.breakfast}
+            onAddFood={() => handleAddFood("breakfast")}
           />
           <MealLog 
             name="Lunch"
-            calories={620}
-            foods={["Grilled Chicken", "Brown Rice", "Broccoli"]}
-            time="12:15 PM"
-          />
-          <MealLog 
-            name="Snack"
-            calories={180}
-            foods={["Greek Yogurt", "Almonds"]}
-            time="3:00 PM"
+            mealType="lunch"
+            foods={meals.lunch}
+            onAddFood={() => handleAddFood("lunch")}
           />
           <MealLog 
             name="Dinner"
-            calories={200}
-            foods={["Salmon", "Quinoa", "Asparagus"]}
-            time="Planned • 6:30 PM"
+            mealType="dinner"
+            foods={meals.dinner}
+            onAddFood={() => handleAddFood("dinner")}
+          />
+          <MealLog 
+            name="Snack"
+            mealType="snack"
+            foods={meals.snack}
+            onAddFood={() => handleAddFood("snack")}
           />
         </div>
       </div>
