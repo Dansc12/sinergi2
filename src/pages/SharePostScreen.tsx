@@ -38,7 +38,7 @@ const SharePostScreen = () => {
   const isPostType = state?.contentType === "post";
 
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>(isPostType ? "public" : "private");
+  const [visibility, setVisibility] = useState<Visibility>(isPostType ? "public" : "friends");
   const [images, setImages] = useState<string[]>(state?.images || []);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -384,7 +384,7 @@ const SharePostScreen = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="end" 
-              className="w-72 p-2 bg-card border border-border"
+              className="w-80 p-2 bg-card border border-border"
               sideOffset={8}
             >
               {visibilityOptions
@@ -393,6 +393,12 @@ const SharePostScreen = () => {
                   const Icon = option.icon;
                   const isSelected = visibility === option.value;
                   const isSocial = option.value === "public" || option.value === "friends";
+                  
+                  const descriptions: Record<Visibility, string> = {
+                    public: "Anyone can see this post in the public feed",
+                    friends: "Only your friends will see this in their feed",
+                    private: "Only you can see this - saved to your library",
+                  };
                   
                   return (
                     <DropdownMenuItem
@@ -419,7 +425,7 @@ const SharePostScreen = () => {
                               <Sparkles size={14} className="text-primary" />
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">{option.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{descriptions[option.value]}</p>
                         </div>
                       </div>
                     </DropdownMenuItem>
