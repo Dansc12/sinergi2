@@ -25,11 +25,16 @@ export function HobbiesScreen() {
 
   const handleContinue = () => {
     if (data.hobbies.length >= 3) {
-      setCurrentStep(9);
+      // For weight_loss: step 8 is HobbiesScreen, next is step 9
+      // For non-weight_loss: step 7 is HobbiesScreen, next is step 8
+      const nextStep = data.primaryGoal === 'weight_loss' ? 9 : 8;
+      setCurrentStep(nextStep);
     }
   };
 
   const getPreviousStep = () => {
+    // For weight_loss: previous is WeightLossRateScreen (step 7)
+    // For non-weight_loss: previous is BodyStatsScreen (step 6)
     return data.primaryGoal === 'weight_loss' ? 7 : 6;
   };
 
