@@ -25,8 +25,11 @@ export function HobbiesScreen() {
 
   const handleContinue = () => {
     if (data.hobbies.length >= 3) {
-      // For weight_loss: step 8 is HobbiesScreen, next is step 9
-      // For non-weight_loss: step 7 is HobbiesScreen, next is step 8
+      // After hobbies, go to Account Creation (unauth) or GroupJoin (auth)
+      // For weight_loss unauth: step 8 -> 9 (Account)
+      // For other unauth: step 7 -> 8 (Account)
+      // For weight_loss auth: step 8 -> 9 (GroupJoin)
+      // For other auth: step 7 -> 8 (GroupJoin)
       const nextStep = data.primaryGoal === 'weight_loss' ? 9 : 8;
       setCurrentStep(nextStep);
     }

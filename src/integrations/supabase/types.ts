@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          creator_id: string | null
+          description: string | null
+          id: string
+          is_system: boolean
+          name: string
+          slug: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          creator_id?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          creator_id?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       meal_logs: {
         Row: {
           created_at: string

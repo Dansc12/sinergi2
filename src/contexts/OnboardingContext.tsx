@@ -27,15 +27,18 @@ export interface OnboardingData {
   // Step 8: Hobbies
   hobbies: string[];
   
-  // Step 9: Account Creation
+  // Step 9: Account Creation (for unauthenticated users)
   firstName: string;
   lastName: string;
   email: string;
   username: string;
   password: string;
   
-  // Step 10: Profile Photo
+  // Step: Profile Photo
   avatarUrl: string;
+  
+  // Step: Joined Groups
+  joinedGroupIds: string[];
 }
 
 interface OnboardingContextType {
@@ -65,6 +68,7 @@ const defaultData: OnboardingData = {
   username: '',
   password: '',
   avatarUrl: '',
+  joinedGroupIds: [],
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -75,11 +79,14 @@ export function OnboardingProvider({ children, isAuthenticated = false }: { chil
   
   // Total steps depends on authentication status and goal
   // Authenticated users skip account creation step
+  // Flow: Welcome, Goal, Activity, Exercise, Personal, Body, [WeightLoss], Hobbies, [Account], GroupJoin, FriendSuggestions, Photo, Completion
   const getTotalSteps = () => {
     if (isAuthenticated) {
-      return data.primaryGoal === 'weight_loss' ? 10 : 9;
+      // No account creation step
+      return data.primaryGoal === 'weight_loss' ? 12 : 11;
     }
-    return data.primaryGoal === 'weight_loss' ? 11 : 10;
+    // With account creation step
+    return data.primaryGoal === 'weight_loss' ? 13 : 12;
   };
   
   const totalSteps = getTotalSteps();

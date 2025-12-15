@@ -18,18 +18,19 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Determine correct step navigation based on auth status and goal
+  // Profile Photo comes after FriendSuggestions, before Completion
   const getBackStep = () => {
     if (isAuthenticated) {
-      return data.primaryGoal === 'weight_loss' ? 8 : 7;
+      return data.primaryGoal === 'weight_loss' ? 10 : 9; // FriendSuggestions step
     }
-    return data.primaryGoal === 'weight_loss' ? 9 : 8;
+    return data.primaryGoal === 'weight_loss' ? 11 : 10; // FriendSuggestions step
   };
 
   const getNextStep = () => {
     if (isAuthenticated) {
-      return data.primaryGoal === 'weight_loss' ? 10 : 9;
+      return data.primaryGoal === 'weight_loss' ? 12 : 11; // Completion step
     }
-    return data.primaryGoal === 'weight_loss' ? 11 : 10;
+    return data.primaryGoal === 'weight_loss' ? 13 : 12; // Completion step
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {

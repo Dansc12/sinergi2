@@ -129,7 +129,9 @@ export function AccountCreationScreen() {
 
         if (updateError) throw updateError;
         
-        setCurrentStep(10);
+        // Navigate to GroupJoin step (step 10 for weight_loss, step 9 for others)
+        const nextStep = data.primaryGoal === 'weight_loss' ? 10 : 9;
+        setCurrentStep(nextStep);
       }
     } catch (error: any) {
       console.error('Error creating account:', error);
@@ -156,7 +158,7 @@ export function AccountCreationScreen() {
       
       <div className="flex-1 px-6 py-8">
         <button 
-          onClick={() => setCurrentStep(8)}
+          onClick={() => setCurrentStep(data.primaryGoal === 'weight_loss' ? 8 : 7)}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
         >
           <ChevronLeft size={20} />
