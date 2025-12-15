@@ -1,6 +1,6 @@
-import { Bell, Flame } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Flame } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationsPanel } from "./NotificationsPanel";
 
 interface HomeHeaderProps {
   userName: string;
@@ -23,10 +23,7 @@ export const HomeHeader = ({ userName, streakCount, avatarUrl, onProfileClick }:
 
           {/* Right: Notification Bell & Avatar */}
           <div className="flex items-center gap-3">
-            <Button variant="icon" size="icon" className="relative">
-              <Bell size={22} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
-            </Button>
+            <NotificationsPanel />
             
             <button onClick={onProfileClick}>
               <Avatar className="h-10 w-10 border-2 border-primary/50">
