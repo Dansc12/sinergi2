@@ -162,6 +162,13 @@ export default function OnboardingPage() {
       setIsChecking(false);
     };
     checkAuth();
+
+    // Listen for auth state changes (e.g., when user creates account)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuth(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (isChecking) {

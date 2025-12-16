@@ -14,6 +14,8 @@ interface SuggestedUser {
   last_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  bio: string | null;
+  hobbies: string[] | null;
 }
 
 interface FriendSuggestionsScreenProps {
@@ -56,7 +58,7 @@ export function FriendSuggestionsScreen({ isAuthenticated = false }: FriendSugge
       // Fetch other users (excluding current user)
       const { data: usersData, error } = await supabase
         .from('profiles')
-        .select('user_id, first_name, last_name, username, avatar_url')
+        .select('user_id, first_name, last_name, username, avatar_url, bio, hobbies')
         .neq('user_id', user.id)
         .eq('onboarding_completed', true)
         .limit(10);
@@ -171,13 +173,12 @@ export function FriendSuggestionsScreen({ isAuthenticated = false }: FriendSugge
             <p className="text-muted-foreground">No users to suggest yet. Be one of the first!</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {users.map((user, index) => {
               const isRequested = requestedUsers.has(user.user_id);
               const isSending = sendingRequest === user.user_id;
-              const displayName = user.first_name && user.last_name 
-                ? `${user.first_name} ${user.last_name}`
-                : user.username || 'User';
+              const displayName = user.first_name || user.username || 'User';
+              const hobbiesDisplay = user.hobbies?.slice(0, 3) || [];
               
               return (
                 <motion.div
@@ -185,47 +186,77 @@ export function FriendSuggestionsScreen({ isAuthenticated = false }: FriendSugge
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
+                  className="p-4 rounded-xl bg-card border border-border"
                 >
-                  <div className="w-12 h-12 rounded-full bg-muted overflow-hidden shrink-0">
-                    {user.avatar_url ? (
-                      <img src={user.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User size={24} className="text-muted-foreground" />
+                  <div className="flex items-start gap-3">
+                    {/* Profile Photo */}
+                    <div className="w-14 h-14 rounded-full bg-muted overflow-hidden shrink-0">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User size={28} className="text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-semibold text-foreground">{displayName}</p>
+                        <Button
+                          size="sm"
+                          variant={isRequested ? "secondary" : "default"}
+                          disabled={isRequested || isSending}
+                          onClick={() => sendFriendRequest(user.user_id)}
+                          className={cn(
+                            "shrink-0",
+                            isRequested && "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {isSending ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : isRequested ? (
+                            <>
+                              <Check size={16} className="mr-1" />
+                              Requested
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus size={16} className="mr-1" />
+                              Friend
+                            </>
+                          )}
+                        </Button>
                       </div>
-                    )}
+                      
+                      {/* Bio */}
+                      {user.bio && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                          {user.bio}
+                        </p>
+                      )}
+                      
+                      {/* Hobbies */}
+                      {hobbiesDisplay.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {hobbiesDisplay.map((hobby) => (
+                            <span
+                              key={hobby}
+                              className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary"
+                            >
+                              {hobby}
+                            </span>
+                          ))}
+                          {user.hobbies && user.hobbies.length > 3 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                              +{user.hobbies.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{displayName}</p>
-                    {user.username && (
-                      <p className="text-sm text-muted-foreground truncate">@{user.username}</p>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={isRequested ? "secondary" : "default"}
-                    disabled={isRequested || isSending}
-                    onClick={() => sendFriendRequest(user.user_id)}
-                    className={cn(
-                      "shrink-0",
-                      isRequested && "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {isSending ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : isRequested ? (
-                      <>
-                        <Check size={16} className="mr-1" />
-                        Requested
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus size={16} className="mr-1" />
-                        Friend
-                      </>
-                    )}
-                  </Button>
                 </motion.div>
               );
             })}
