@@ -266,6 +266,42 @@ export type Database = {
         }
         Relationships: []
       }
+      posts: {
+        Row: {
+          content_data: Json
+          content_type: string
+          created_at: string
+          description: string | null
+          id: string
+          images: string[] | null
+          updated_at: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          content_data?: Json
+          content_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          updated_at?: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          content_data?: Json
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          updated_at?: string
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activity_level: string | null

@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Image, X, Globe, Users, Lock, Camera, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { ArrowLeft, Image, X, Globe, Users, Lock, Camera, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { CameraCapture } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
+import { usePosts } from "@/hooks/usePosts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ const SharePostScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
+  const { createPost } = usePosts();
 
   const isPostType = state?.contentType === "post";
 
@@ -42,6 +44,7 @@ const SharePostScreen = () => {
   const [images, setImages] = useState<string[]>(state?.images || []);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     setImages([...images, ...urls]);
@@ -61,7 +64,7 @@ const SharePostScreen = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const contentTypeLabels: Record<string, string> = {
       workout: "Workout",
       meal: "Meal",
@@ -73,13 +76,33 @@ const SharePostScreen = () => {
 
     const label = contentTypeLabels[state?.contentType || "post"] || "Post";
 
-    toast({ 
-      title: `${label} shared!`, 
-      description: visibility === "private" 
-        ? `Your ${label.toLowerCase()} has been saved privately.`
-        : `Your ${label.toLowerCase()} is now live.` 
-    });
-    navigate("/");
+    setIsSubmitting(true);
+    try {
+      await createPost({
+        content_type: state?.contentType || "post",
+        content_data: state?.contentData || {},
+        description: description || undefined,
+        images: images,
+        visibility: visibility,
+      });
+
+      toast({ 
+        title: `${label} shared!`, 
+        description: visibility === "private" 
+          ? `Your ${label.toLowerCase()} has been saved privately.`
+          : `Your ${label.toLowerCase()} is now live.` 
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Error creating post:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to share. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getContentTypeIcon = () => {
@@ -359,7 +382,11 @@ const SharePostScreen = () => {
           <Button 
             className="flex-[2] glow-primary h-14 text-lg" 
             onClick={handleSubmit}
+            disabled={isSubmitting}
           >
+            {isSubmitting ? (
+              <Loader2 className="animate-spin mr-2" size={20} />
+            ) : null}
             {visibility === "private" ? "Save" : "Save & Share"}
           </Button>
           

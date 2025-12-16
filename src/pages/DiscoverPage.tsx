@@ -4,6 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { usePosts, Post } from "@/hooks/usePosts";
+import { formatDistanceToNow } from "date-fns";
+import { Json } from "@/integrations/supabase/types";
 
 interface FeedPost {
   id: string;
@@ -14,7 +17,7 @@ interface FeedPost {
   };
   content: string;
   images?: string[];
-  type: "workout" | "meal" | "recipe" | "post";
+  type: "workout" | "meal" | "recipe" | "post" | "routine";
   stats: {
     likes: number;
     comments: number;
@@ -42,17 +45,49 @@ interface FloatingEmoji {
   originY: number;
 }
 
-const typeLabels = {
+const typeLabels: Record<string, { label: string; color: string }> = {
   workout: { label: "Workout", color: "bg-primary/20 text-primary" },
   meal: { label: "Meal", color: "bg-success/20 text-success" },
   recipe: { label: "Recipe", color: "bg-rose-500/20 text-rose-400" },
   post: { label: "Post", color: "bg-accent/20 text-accent" },
+  routine: { label: "Routine", color: "bg-violet-500/20 text-violet-400" },
 };
 
 const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
 
 const LONG_PRESS_THRESHOLD = 300;
 const DOUBLE_TAP_DELAY = 300;
+
+// Helper to generate post description from content data
+const generateDescription = (contentType: string, contentData: Json, description: string | null): string => {
+  if (description) return description;
+  
+  const data = contentData as Record<string, unknown>;
+  
+  switch (contentType) {
+    case "workout":
+      const exercises = data.exercises as Array<{ name: string }> | undefined;
+      if (exercises?.length) {
+        return `Completed ${exercises.length} exercise${exercises.length > 1 ? 's' : ''}: ${exercises.map(e => e.name).join(', ')}`;
+      }
+      return "Logged a workout";
+    case "meal":
+      const mealType = data.mealType as string | undefined;
+      const foods = data.foods as Array<{ name: string }> | undefined;
+      if (mealType && foods?.length) {
+        return `${mealType}: ${foods.map(f => f.name).join(', ')}`;
+      }
+      return `Logged a ${mealType || 'meal'}`;
+    case "recipe":
+      const title = data.title as string | undefined;
+      return title ? `Shared a recipe: ${title}` : "Shared a new recipe";
+    case "routine":
+      const routineName = data.routineName as string | undefined;
+      return routineName ? `Created routine: ${routineName}` : "Created a new routine";
+    default:
+      return "Shared a post";
+  }
+};
 
 const ImageCarousel = ({ 
   images, 
@@ -339,13 +374,39 @@ const EmptyFeedState = () => {
 
 const DiscoverPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { posts, isLoading } = usePosts();
   
-  // Empty arrays - no dummy data
-  const feedPosts: FeedPost[] = [];
+  // Transform database posts to FeedPost format
+  const feedPosts: FeedPost[] = posts.map((post) => ({
+    id: post.id,
+    user: {
+      name: post.profile?.first_name || "User",
+      avatar: post.profile?.avatar_url || undefined,
+      handle: post.profile?.username ? `@${post.profile.username}` : "@user",
+    },
+    content: generateDescription(post.content_type, post.content_data, post.description),
+    images: post.images || undefined,
+    type: post.content_type as "workout" | "meal" | "recipe" | "post" | "routine",
+    stats: {
+      likes: 0,
+      comments: 0,
+    },
+    timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
+  }));
+  
+  // Empty arrays for suggested content
   const suggestedGroups: SuggestedGroup[] = [];
   const suggestedUsers: SuggestedUser[] = [];
 
   const renderFeed = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+    
     if (feedPosts.length === 0) {
       return <EmptyFeedState />;
     }
