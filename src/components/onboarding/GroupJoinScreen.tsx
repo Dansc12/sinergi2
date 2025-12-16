@@ -7,6 +7,7 @@ import { ChevronLeft, Check, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { sendJoinNotification } from '@/hooks/useGroupChats';
 
 interface SystemGroup {
   id: string;
@@ -101,6 +102,18 @@ export function GroupJoinScreen({ isAuthenticated = false }: GroupJoinScreenProp
         toast.error('Failed to join group');
         return;
       }
+
+      // Get user's first name for the join notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const userName = profile?.first_name || 'Someone';
+      
+      // Send join notification to the group chat
+      await sendJoinNotification(groupId, userName);
 
       setJoinedGroups(prev => new Set([...prev, groupId]));
     }
