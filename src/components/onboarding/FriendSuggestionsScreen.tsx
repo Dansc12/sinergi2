@@ -28,16 +28,18 @@ export function FriendSuggestionsScreen({ isAuthenticated = false }: FriendSugge
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
 
   // Determine correct step navigation based on auth status and goal
+  // Authenticated flow: GroupJoin is step 9 (weight_loss) or 8 (other), FriendSuggestions is 10/9, ProfilePhoto is 11/10
+  // Unauthenticated flow: GroupJoin is step 10 (weight_loss) or 9 (other), FriendSuggestions is 11/10, ProfilePhoto is 12/11
   const getBackStep = () => {
     if (isAuthenticated) {
-      return data.primaryGoal === 'weight_loss' ? 10 : 9;
+      return data.primaryGoal === 'weight_loss' ? 9 : 8;
     }
     return data.primaryGoal === 'weight_loss' ? 10 : 9;
   };
 
   const getNextStep = () => {
     if (isAuthenticated) {
-      return data.primaryGoal === 'weight_loss' ? 12 : 11;
+      return data.primaryGoal === 'weight_loss' ? 11 : 10;
     }
     return data.primaryGoal === 'weight_loss' ? 12 : 11;
   };

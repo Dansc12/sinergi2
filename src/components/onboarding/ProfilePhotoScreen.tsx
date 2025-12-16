@@ -5,9 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingProgress } from './OnboardingProgress';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Camera, Upload, Loader2, User } from 'lucide-react';
+import { ChevronLeft, Camera, Upload, Loader2, User, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface ProfilePhotoScreenProps {
   isAuthenticated?: boolean;
@@ -19,7 +20,11 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [firstName, setFirstName] = useState(data.firstName || '');
   const [lastName, setLastName] = useState(data.lastName || '');
+  const [username, setUsername] = useState(data.username || '');
   const [bio, setBio] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing profile data
@@ -29,13 +34,17 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name, bio, avatar_url')
+          .select('first_name, last_name, username, bio, avatar_url')
           .eq('user_id', user.id)
           .single();
         
         if (profile) {
           if (profile.first_name) setFirstName(profile.first_name);
           if (profile.last_name) setLastName(profile.last_name);
+          if (profile.username) {
+            setUsername(profile.username);
+            setUsernameAvailable(true);
+          }
           if (profile.bio) setBio(profile.bio);
           if (profile.avatar_url) setPreviewUrl(profile.avatar_url);
         }
@@ -45,6 +54,8 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
   }, []);
 
   // Determine correct step navigation based on auth status and goal
+  // Authenticated flow: FriendSuggestions is step 10 (weight_loss) or 9 (other)
+  // Unauthenticated flow: FriendSuggestions is step 11 (weight_loss) or 10 (other)
   const getBackStep = () => {
     if (isAuthenticated) {
       return data.primaryGoal === 'weight_loss' ? 10 : 9;
@@ -58,6 +69,61 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
     }
     return data.primaryGoal === 'weight_loss' ? 13 : 12;
   };
+
+  // Username validation - Instagram-like rules
+  const validateUsername = (value: string): string | null => {
+    if (!value) return null;
+    if (value.length < 3) return 'Username must be at least 3 characters';
+    if (value.length > 30) return 'Username must be less than 30 characters';
+    if (!/^[a-zA-Z0-9._]+$/.test(value)) return 'Only letters, numbers, periods, and underscores allowed';
+    if (/^[._]/.test(value) || /[._]$/.test(value)) return 'Cannot start or end with period or underscore';
+    if (/[._]{2}/.test(value)) return 'Cannot have consecutive periods or underscores';
+    return null;
+  };
+
+  // Check username availability
+  useEffect(() => {
+    const checkUsername = async () => {
+      const validationError = validateUsername(username);
+      if (validationError) {
+        setUsernameError(validationError);
+        setUsernameAvailable(null);
+        return;
+      }
+
+      if (!username || username.length < 3) {
+        setUsernameAvailable(null);
+        setUsernameError(null);
+        return;
+      }
+
+      setCheckingUsername(true);
+      setUsernameError(null);
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('username', username.toLowerCase())
+          .maybeSingle();
+
+        // Available if no one has it, or if it's the current user's username
+        const isAvailable = !existing || (user && existing.user_id === user.id);
+        setUsernameAvailable(isAvailable);
+        if (!isAvailable) {
+          setUsernameError('Username is already taken');
+        }
+      } catch (error) {
+        console.error('Error checking username:', error);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+
+    const debounce = setTimeout(checkUsername, 500);
+    return () => clearTimeout(debounce);
+  }, [username]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -119,6 +185,16 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
       return;
     }
 
+    if (!username.trim()) {
+      toast.error('Please enter a username');
+      return;
+    }
+
+    if (usernameError || !usernameAvailable) {
+      toast.error('Please choose a valid, available username');
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -127,6 +203,7 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
           .update({
             first_name: firstName.trim(),
             last_name: lastName.trim() || null,
+            username: username.toLowerCase().trim(),
             bio: bio.trim() || null
           })
           .eq('user_id', user.id);
@@ -134,7 +211,8 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
 
       updateData({ 
         firstName: firstName.trim(), 
-        lastName: lastName.trim() || undefined 
+        lastName: lastName.trim() || undefined,
+        username: username.toLowerCase().trim()
       });
       setCurrentStep(getNextStep());
     } catch (error) {
@@ -148,10 +226,17 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
       toast.error('First name is required');
       return;
     }
+    if (!username.trim() || !usernameAvailable) {
+      toast.error('A valid username is required');
+      return;
+    }
     await handleContinue();
   };
 
-  const canContinue = firstName.trim().length > 0;
+  const canContinue = firstName.trim().length > 0 && 
+                      username.trim().length >= 3 && 
+                      usernameAvailable === true &&
+                      !usernameError;
 
   return (
     <motion.div 
@@ -238,7 +323,7 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
         </div>
 
         {/* Name Fields */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb-4">
           <div>
             <label className="block text-sm font-medium mb-2">
               First Name <span className="text-destructive">*</span>
@@ -268,6 +353,44 @@ export function ProfilePhotoScreen({ isAuthenticated = false }: ProfilePhotoScre
               Only visible to your friends.
             </p>
           </div>
+        </div>
+
+        {/* Username Field */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">
+            Username <span className="text-destructive">*</span>
+          </label>
+          <div className="relative">
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ''))}
+              placeholder="Choose a username"
+              maxLength={30}
+              className={cn(
+                "pr-10",
+                usernameError && "border-destructive",
+                usernameAvailable === true && !usernameError && "border-green-500"
+              )}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              {checkingUsername && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
+              {!checkingUsername && usernameAvailable === true && !usernameError && (
+                <Check size={16} className="text-green-500" />
+              )}
+              {!checkingUsername && (usernameError || usernameAvailable === false) && (
+                <X size={16} className="text-destructive" />
+              )}
+            </div>
+          </div>
+          {usernameError ? (
+            <p className="text-xs text-destructive mt-1">{usernameError}</p>
+          ) : usernameAvailable === true ? (
+            <p className="text-xs text-green-500 mt-1">Username is available!</p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              This is how other users will find you. Use letters, numbers, periods, or underscores.
+            </p>
+          )}
         </div>
 
         {/* Bio Field */}

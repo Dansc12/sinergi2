@@ -129,8 +129,11 @@ export function AccountCreationScreen() {
 
         if (updateError) throw updateError;
         
-        // Navigate to GroupJoin step (step 10 for weight_loss, step 9 for others)
-        const nextStep = data.primaryGoal === 'weight_loss' ? 10 : 9;
+        // After account creation, user becomes authenticated
+        // Navigate to GroupJoin step in the AUTHENTICATED flow:
+        // - Authenticated weight_loss: GroupJoinScreen is step 9
+        // - Authenticated other: GroupJoinScreen is step 8
+        const nextStep = data.primaryGoal === 'weight_loss' ? 9 : 8;
         setCurrentStep(nextStep);
       }
     } catch (error: any) {

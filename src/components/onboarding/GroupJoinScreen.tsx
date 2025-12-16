@@ -27,18 +27,22 @@ export function GroupJoinScreen({ isAuthenticated = false }: GroupJoinScreenProp
   const [loading, setLoading] = useState(true);
 
   // Determine correct step navigation based on auth status and goal
+  // Note: After account creation, users become authenticated, so this screen
+  // always uses the authenticated flow in practice
   const getBackStep = () => {
+    // Back to HobbiesScreen (or AccountCreation for unauth, but that's rare)
     if (isAuthenticated) {
       return data.primaryGoal === 'weight_loss' ? 8 : 7;
     }
-    return data.primaryGoal === 'weight_loss' ? 8 : 7;
+    return data.primaryGoal === 'weight_loss' ? 9 : 8;
   };
 
   const getNextStep = () => {
+    // Forward to FriendSuggestionsScreen
     if (isAuthenticated) {
       return data.primaryGoal === 'weight_loss' ? 10 : 9;
     }
-    return data.primaryGoal === 'weight_loss' ? 10 : 9;
+    return data.primaryGoal === 'weight_loss' ? 11 : 10;
   };
 
   useEffect(() => {

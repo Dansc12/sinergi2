@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings, Flame, Users, Camera, Plus } from "lucide-react";
+import { ChevronLeft, Settings, Flame, Users, Camera, Plus, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type ContentTab = "posts" | "workouts" | "meals" | "recipes" | "routines" | "groups";
 
@@ -25,6 +26,15 @@ const userContent: Record<ContentTab, string[]> = {
   routines: [],
   groups: [],
 };
+
+interface UserProfile {
+  first_name: string | null;
+  last_name: string | null;
+  username: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  hobbies: string[] | null;
+}
 
 const EmptyTabState = ({ tab, onAction }: { tab: ContentTab; onAction: () => void }) => {
   const messages: Record<ContentTab, { title: string; description: string; action: string }> = {
@@ -79,21 +89,106 @@ const EmptyTabState = ({ tab, onAction }: { tab: ContentTab; onAction: () => voi
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [streakCount, setStreakCount] = useState(0);
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [stats, setStats] = useState({
+    meals: 0,
+    days: 0,
+    workouts: 0
+  });
 
-  // These will come from user profile data
-  const userName = "Your Name";
-  const userBio = "Add a bio to tell others about yourself";
-  const avatarUrl = undefined;
-  const streakCount = 0;
-  const friendsCount = 0;
-  const interests: string[] = [];
-  
-  // Stats will come from real data
-  const stats = [
-    { value: "0", label: "Meals" },
-    { value: "0", label: "Days" },
-    { value: "0", label: "Workouts" },
-  ];
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      // Fetch profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, username, bio, avatar_url, hobbies')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      // Fetch streak data
+      const { data: streakData } = await supabase
+        .from('user_streaks')
+        .select('current_streak')
+        .eq('user_id', user.id)
+        .single();
+
+      if (streakData) {
+        setStreakCount(streakData.current_streak);
+      }
+
+      // Fetch friends count (accepted friendships)
+      const { count: friendsAccepted } = await supabase
+        .from('friendships')
+        .select('*', { count: 'exact', head: true })
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      setFriendsCount(friendsAccepted || 0);
+
+      // Fetch stats
+      const { count: mealsCount } = await supabase
+        .from('meal_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      const { count: workoutsCount } = await supabase
+        .from('workout_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      // Calculate days since first activity
+      const { data: firstMeal } = await supabase
+        .from('meal_logs')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      const { data: firstWorkout } = await supabase
+        .from('workout_logs')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      let daysActive = 0;
+      const dates = [firstMeal?.created_at, firstWorkout?.created_at].filter(Boolean);
+      if (dates.length > 0) {
+        const earliest = new Date(Math.min(...dates.map(d => new Date(d!).getTime())));
+        daysActive = Math.floor((Date.now() - earliest.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      }
+
+      setStats({
+        meals: mealsCount || 0,
+        days: daysActive,
+        workouts: workoutsCount || 0
+      });
+
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTabAction = (tab: ContentTab) => {
     const routes: Record<ContentTab, string> = {
@@ -106,6 +201,19 @@ const ProfilePage = () => {
     };
     navigate(routes[tab]);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const displayName = profile?.first_name || "Your Name";
+  const userBio = profile?.bio || "Add a bio to tell others about yourself";
+  const avatarUrl = profile?.avatar_url;
+  const interests = profile?.hobbies || [];
 
   return (
     <div className="min-h-screen">
@@ -125,7 +233,7 @@ const ProfilePage = () => {
         <div className="flex flex-col items-center text-center mb-6">
           <div className="relative mb-4">
             <Avatar className="w-24 h-24 border-4 border-primary/30">
-              <AvatarImage src={avatarUrl} />
+              <AvatarImage src={avatarUrl || undefined} />
               <AvatarFallback className="text-2xl bg-muted">
                 <Camera size={32} className="text-muted-foreground" />
               </AvatarFallback>
@@ -138,7 +246,10 @@ const ProfilePage = () => {
             )}
           </div>
           
-          <h2 className="text-2xl font-bold mb-1">{userName}</h2>
+          <h2 className="text-2xl font-bold mb-1">{displayName}</h2>
+          {profile?.username && (
+            <p className="text-muted-foreground text-sm mb-1">@{profile.username}</p>
+          )}
           <p className="text-muted-foreground text-sm mb-2">{userBio}</p>
           
           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
@@ -164,12 +275,18 @@ const ProfilePage = () => {
 
           {/* Stats */}
           <div className="flex gap-6 w-full justify-center">
-            {stats.map((stat) => (
-              <div key={stat.label} className="bg-card border border-border rounded-xl px-6 py-4 text-center">
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
+            <div className="bg-card border border-border rounded-xl px-6 py-4 text-center">
+              <p className="text-2xl font-bold">{stats.meals}</p>
+              <p className="text-xs text-muted-foreground">Meals</p>
+            </div>
+            <div className="bg-card border border-border rounded-xl px-6 py-4 text-center">
+              <p className="text-2xl font-bold">{stats.days}</p>
+              <p className="text-xs text-muted-foreground">Days</p>
+            </div>
+            <div className="bg-card border border-border rounded-xl px-6 py-4 text-center">
+              <p className="text-2xl font-bold">{stats.workouts}</p>
+              <p className="text-xs text-muted-foreground">Workouts</p>
+            </div>
           </div>
         </div>
 
