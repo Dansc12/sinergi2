@@ -2,6 +2,7 @@ import { Home, ListTodo, Users, MessageCircle, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useGroupChats } from "@/hooks/useGroupChats";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -9,9 +10,10 @@ interface NavItemProps {
   path: string;
   isActive: boolean;
   onClick: () => void;
+  showBadge?: boolean;
 }
 
-const NavItem = ({ icon, label, isActive, onClick }: NavItemProps) => (
+const NavItem = ({ icon, label, isActive, onClick, showBadge }: NavItemProps) => (
   <button
     onClick={onClick}
     className={cn(
@@ -26,6 +28,9 @@ const NavItem = ({ icon, label, isActive, onClick }: NavItemProps) => (
       isActive && "after:absolute after:-bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary"
     )}>
       {icon}
+      {showBadge && (
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full" />
+      )}
     </div>
     <span className="text-xs font-medium">{label}</span>
   </button>
@@ -38,12 +43,13 @@ interface BottomNavProps {
 export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { totalUnreadCount } = useGroupChats();
 
   const navItems = [
-    { icon: <Home size={22} />, label: "Home", path: "/" },
-    { icon: <ListTodo size={22} />, label: "Log", path: "/daily-log" },
-    { icon: <Users size={22} />, label: "Connect", path: "/discover" },
-    { icon: <MessageCircle size={22} />, label: "Messages", path: "/messages" },
+    { icon: <Home size={22} />, label: "Home", path: "/", showBadge: false },
+    { icon: <ListTodo size={22} />, label: "Log", path: "/daily-log", showBadge: false },
+    { icon: <Users size={22} />, label: "Connect", path: "/discover", showBadge: false },
+    { icon: <MessageCircle size={22} />, label: "Messages", path: "/messages", showBadge: totalUnreadCount > 0 },
   ];
 
   return (
@@ -53,9 +59,12 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
         {navItems.slice(0, 2).map((item) => (
           <NavItem
             key={item.path}
-            {...item}
+            icon={item.icon}
+            label={item.label}
+            path={item.path}
             isActive={location.pathname === item.path}
             onClick={() => navigate(item.path)}
+            showBadge={item.showBadge}
           />
         ))}
 
@@ -75,9 +84,12 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
         {navItems.slice(2).map((item) => (
           <NavItem
             key={item.path}
-            {...item}
+            icon={item.icon}
+            label={item.label}
+            path={item.path}
             isActive={location.pathname === item.path}
             onClick={() => navigate(item.path)}
+            showBadge={item.showBadge}
           />
         ))}
       </div>

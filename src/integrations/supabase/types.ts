@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          message_type: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          message_type?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          message_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_read_status: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          last_read_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          last_read_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          last_read_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_read_status_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           addressee_id: string
@@ -200,6 +270,7 @@ export type Database = {
         Row: {
           activity_level: string | null
           avatar_url: string | null
+          bio: string | null
           biological_sex: string | null
           birthdate: string | null
           created_at: string
@@ -224,6 +295,7 @@ export type Database = {
         Insert: {
           activity_level?: string | null
           avatar_url?: string | null
+          bio?: string | null
           biological_sex?: string | null
           birthdate?: string | null
           created_at?: string
@@ -248,6 +320,7 @@ export type Database = {
         Update: {
           activity_level?: string | null
           avatar_url?: string | null
+          bio?: string | null
           biological_sex?: string | null
           birthdate?: string | null
           created_at?: string
