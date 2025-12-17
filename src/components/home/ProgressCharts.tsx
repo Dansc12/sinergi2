@@ -160,10 +160,11 @@ export const ProgressCharts = () => {
     ? `${strengthTrend > 0 ? "+" : ""}${Math.round(strengthTrend / 1000)}K lbs`
     : "";
 
-  // Weight subtitle with countdown
+  // Weight subtitle with countdown - always show days until next weigh-in
+  const countdownText = `${daysUntilNextWeighIn} day${daysUntilNextWeighIn !== 1 ? 's' : ''} until next weigh-in`;
   const weightSubtitle = hasWeightData 
-    ? `${daysUntilNextWeighIn} day${daysUntilNextWeighIn !== 1 ? 's' : ''} until next weigh-in`
-    : "Complete one more weigh-in to see your progress";
+    ? countdownText
+    : `Complete one more weigh-in to see your progress • ${countdownText}`;
 
   // Strength subtitle
   const strengthSubtitle = hasStrengthData
