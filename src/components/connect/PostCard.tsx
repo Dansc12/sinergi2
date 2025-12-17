@@ -228,9 +228,9 @@ const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
 
 // Workout types
 interface WorkoutSet {
-  weight?: number;
-  reps?: number;
-  distance?: number;
+  weight?: number | string;
+  reps?: number | string;
+  distance?: number | string;
   time?: string;
 }
 
@@ -242,6 +242,7 @@ interface WorkoutExercise {
 }
 
 interface WorkoutContentData {
+  title?: string;
   name?: string;
   exercises?: WorkoutExercise[];
   notes?: string;
@@ -259,23 +260,31 @@ const getAutoWorkoutName = (createdAt?: string): string => {
   return "Night Workout";
 };
 
-// Workout Summary Card for workouts without photos/descriptions
+// Calculate volume for a single exercise
+const calculateExerciseVolume = (exercise: WorkoutExercise): number => {
+  if (exercise.isCardio || !exercise.sets) return 0;
+  return exercise.sets.reduce((sum, set) => {
+    const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : set.weight || 0;
+    const reps = typeof set.reps === 'string' ? parseFloat(set.reps) || 0 : set.reps || 0;
+    return sum + (weight * reps);
+  }, 0);
+};
+
+// Workout Summary Card for workouts without photos/descriptions (Preview mode)
 const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutContentData; createdAt?: string }) => {
   const exercises = contentData.exercises || [];
-  const workoutName = contentData.name || getAutoWorkoutName(createdAt);
+  // Check both title (from CreateWorkoutPage) and name fields
+  const workoutName = contentData.title || contentData.name || getAutoWorkoutName(createdAt);
   
   // Calculate total volume (only for weight-based exercises)
   let totalVolume = 0;
   let hasWeightExercises = false;
   
   exercises.forEach(exercise => {
-    if (!exercise.isCardio && exercise.sets) {
-      exercise.sets.forEach(set => {
-        if (set.weight && set.reps) {
-          totalVolume += set.weight * set.reps;
-          hasWeightExercises = true;
-        }
-      });
+    const exerciseVolume = calculateExerciseVolume(exercise);
+    if (exerciseVolume > 0) {
+      totalVolume += exerciseVolume;
+      hasWeightExercises = true;
     }
   });
 
@@ -286,39 +295,33 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
         <h4 className="font-semibold text-foreground">{workoutName}</h4>
       </div>
       
-      {/* Exercises */}
-      <div className="space-y-3 mb-4">
-        {exercises.map((exercise, idx) => (
-          <div key={idx} className="space-y-1">
-            <p className="text-sm font-medium text-foreground">{exercise.name}</p>
-            {exercise.notes && (
-              <p className="text-xs text-muted-foreground italic">"{exercise.notes}"</p>
-            )}
-            {exercise.sets && exercise.sets.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-1">
-                {exercise.sets.map((set, setIdx) => (
-                  <span key={setIdx} className="text-xs bg-muted/50 px-2 py-1 rounded-md text-muted-foreground">
-                    {exercise.isCardio || set.distance !== undefined ? (
-                      // Cardio display: distance and time
-                      <>
-                        {set.distance && `${set.distance} mi`}
-                        {set.distance && set.time && " • "}
-                        {set.time && set.time}
-                      </>
-                    ) : (
-                      // Strength display: weight and reps
-                      <>
-                        {set.weight && `${set.weight} lbs`}
-                        {set.weight && set.reps && " × "}
-                        {set.reps && `${set.reps} reps`}
-                      </>
-                    )}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      {/* Exercises - simplified preview showing exercise name + per-exercise volume */}
+      <div className="space-y-2 mb-4">
+        {exercises.map((exercise, idx) => {
+          const exerciseVolume = calculateExerciseVolume(exercise);
+          const isCardio = exercise.isCardio || (exercise.sets && exercise.sets.some(s => s.distance !== undefined));
+          
+          // For cardio, show total distance/time summary
+          let cardioSummary = "";
+          if (isCardio && exercise.sets) {
+            const totalDistance = exercise.sets.reduce((sum, s) => {
+              const dist = typeof s.distance === 'string' ? parseFloat(s.distance) || 0 : s.distance || 0;
+              return sum + dist;
+            }, 0);
+            if (totalDistance > 0) {
+              cardioSummary = `${totalDistance} mi`;
+            }
+          }
+          
+          return (
+            <div key={idx} className="flex items-center justify-between py-1.5">
+              <span className="text-sm font-medium text-foreground">{exercise.name}</span>
+              <span className="text-sm text-muted-foreground">
+                {isCardio ? cardioSummary : (exerciseVolume > 0 ? `${exerciseVolume.toLocaleString()} lbs` : "")}
+              </span>
+            </div>
+          );
+        })}
       </div>
       
       {/* Total volume - only show if there are weight-based exercises */}
@@ -330,6 +333,9 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
           </div>
         </div>
       )}
+      
+      {/* Tap to view details hint */}
+      <p className="text-xs text-center text-muted-foreground mt-3">Tap to view details</p>
     </div>
   );
 };

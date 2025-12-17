@@ -76,35 +76,57 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   const renderWorkoutDetails = () => {
     const exercises = (contentData?.exercises as Exercise[]) || [];
     const notes = contentData?.notes as string;
+    // Check both title (from CreateWorkoutPage) and name fields
+    const workoutTitle = (contentData?.title as string) || (contentData?.name as string);
+    
+    // Auto-generate name based on time if not provided
+    const getAutoWorkoutName = (): string => {
+      if (!post.createdAt) return "Workout";
+      const date = new Date(post.createdAt);
+      const hour = date.getHours();
+      
+      if (hour >= 5 && hour < 12) return "Morning Workout";
+      if (hour >= 12 && hour < 17) return "Afternoon Workout";
+      if (hour >= 17 && hour < 21) return "Evening Workout";
+      return "Night Workout";
+    };
+    
+    const workoutName = workoutTitle || getAutoWorkoutName();
 
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <Dumbbell size={20} />
-          <h4 className="font-semibold">Workout Details</h4>
+          <h4 className="font-semibold">{workoutName}</h4>
         </div>
         
-        {exercises.map((exercise, idx) => (
-          <div key={idx} className="bg-muted/50 rounded-xl p-4">
-            <h5 className="font-medium mb-2">{exercise.name}</h5>
-            {exercise.sets && exercise.sets.length > 0 && (
-              <div className="space-y-1.5">
-                {exercise.sets.map((set, setIdx) => (
-                  <div key={setIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">
-                      {setIdx + 1}
-                    </span>
-                    {exercise.isCardio ? (
-                      <span>{set.distance} miles • {set.time}</span>
-                    ) : (
-                      <span>{set.weight} lbs × {set.reps} reps</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+        {exercises.map((exercise, idx) => {
+          const exerciseNotes = (exercise as { notes?: string }).notes;
+          return (
+            <div key={idx} className="bg-muted/50 rounded-xl p-4">
+              <h5 className="font-medium mb-2">{exercise.name}</h5>
+              {exerciseNotes && (
+                <p className="text-xs text-muted-foreground italic mb-2">"{exerciseNotes}"</p>
+              )}
+              {exercise.sets && exercise.sets.length > 0 && (
+                <div className="space-y-1.5">
+                  {exercise.sets.map((set, setIdx) => (
+                    <div key={setIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">
+                        {setIdx + 1}
+                      </span>
+                      {exercise.isCardio ? (
+                        <span>{set.distance} miles • {set.time}</span>
+                      ) : (
+                        <span>{set.weight} lbs × {set.reps} reps</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
         
         {notes && (
           <div className="bg-muted/30 rounded-xl p-4">
