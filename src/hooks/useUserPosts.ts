@@ -25,13 +25,20 @@ const contentTypeMap: Record<ContentType, string> = {
   routines: "routine",
 };
 
-export const useUserPosts = (contentType?: ContentType) => {
+export const useUserPosts = (
+  contentType?: ContentType,
+  targetUserId?: string,
+  visibilityFilter?: 'public' | 'friends'
+) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<UserPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUserPosts = useCallback(async () => {
-    if (!user) {
+    // If targetUserId is provided, use that; otherwise use current user
+    const userId = targetUserId || user?.id;
+    
+    if (!userId) {
       setPosts([]);
       setIsLoading(false);
       return;
@@ -41,11 +48,18 @@ export const useUserPosts = (contentType?: ContentType) => {
       let query = supabase
         .from("posts")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (contentType && contentTypeMap[contentType]) {
         query = query.eq("content_type", contentTypeMap[contentType]);
+      }
+
+      // Filter by visibility when viewing other users' profiles
+      if (visibilityFilter === 'public') {
+        query = query.eq("visibility", "public");
+      } else if (visibilityFilter === 'friends') {
+        query = query.in("visibility", ["public", "friends"]);
       }
 
       const { data, error } = await query;
@@ -57,7 +71,7 @@ export const useUserPosts = (contentType?: ContentType) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, contentType]);
+  }, [user, contentType, targetUserId, visibilityFilter]);
 
   useEffect(() => {
     fetchUserPosts();

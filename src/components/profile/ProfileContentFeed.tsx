@@ -10,14 +10,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 type ContentType = "posts" | "workouts" | "meals" | "recipes" | "routines";
 
-interface ProfileContentFeedProps {
+export interface ProfileContentFeedProps {
   contentType: ContentType;
-  onEmptyAction: () => void;
+  onEmptyAction?: () => void;
   emptyState: {
     title: string;
     description: string;
     action: string;
   };
+  userId?: string;
+  visibility?: 'public' | 'friends';
 }
 
 const transformPostToCardData = (post: UserPost, userName: string, userHandle: string, userAvatar?: string): PostData => {
@@ -45,6 +47,7 @@ const transformPostToCardData = (post: UserPost, userName: string, userHandle: s
 
   return {
     id: post.id,
+    userId: post.user_id,
     user: {
       name: userName,
       avatar: userAvatar,
@@ -64,27 +67,31 @@ export const ProfileContentFeed = ({
   contentType,
   onEmptyAction,
   emptyState,
+  userId,
+  visibility,
 }: ProfileContentFeedProps) => {
   const { user } = useAuth();
-  const { posts, isLoading } = useUserPosts(contentType);
+  const targetUserId = userId || user?.id;
+  const { posts, isLoading } = useUserPosts(contentType, targetUserId, visibility);
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [profile, setProfile] = useState<{ first_name: string | null; username: string | null; avatar_url: string | null } | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!targetUserId) return;
       const { data } = await supabase
         .from("profiles")
         .select("first_name, username, avatar_url")
-        .eq("user_id", user.id)
+        .eq("user_id", targetUserId)
         .single();
       if (data) setProfile(data);
     };
     fetchProfile();
-  }, [user]);
+  }, [targetUserId]);
 
-  const userName = profile?.first_name || "You";
-  const userHandle = profile?.username ? `@${profile.username}` : "@you";
+  const isOwnProfile = user?.id === targetUserId;
+  const userName = profile?.first_name || (isOwnProfile ? "You" : "User");
+  const userHandle = profile?.username ? `@${profile.username}` : (isOwnProfile ? "@you" : "@user");
   const userAvatar = profile?.avatar_url || undefined;
 
   if (isLoading) {
@@ -105,9 +112,11 @@ export const ProfileContentFeed = ({
         <p className="text-sm text-muted-foreground mb-4 max-w-[200px]">
           {emptyState.description}
         </p>
-        <Button size="sm" variant="outline" onClick={onEmptyAction}>
-          {emptyState.action}
-        </Button>
+        {onEmptyAction && emptyState.action && (
+          <Button size="sm" variant="outline" onClick={onEmptyAction}>
+            {emptyState.action}
+          </Button>
+        )}
       </div>
     );
   }

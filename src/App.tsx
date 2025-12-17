@@ -12,6 +12,7 @@ import DailyLogPage from "./pages/DailyLogPage";
 import DiscoverPage from "./pages/DiscoverPage";
 import MessagesPage from "./pages/MessagesPage";
 import ProfilePage from "./pages/ProfilePage";
+import UserProfilePage from "./pages/UserProfilePage";
 import CreateWorkoutPage from "./pages/CreateWorkoutPage";
 import CreateMealPage from "./pages/CreateMealPage";
 import CreatePostPage from "./pages/CreatePostPage";
@@ -95,6 +96,7 @@ const AppRoutes = () => {
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/user/:userId" element={<UserProfilePage />} />
               <Route path="/create/workout" element={<CreateWorkoutPage />} />
               <Route path="/create/meal" element={<CreateMealPage />} />
               <Route path="/create/post" element={<CreatePostPage />} />
