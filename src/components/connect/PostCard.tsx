@@ -27,6 +27,26 @@ const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
 const LONG_PRESS_THRESHOLD = 300;
 const DOUBLE_TAP_DELAY = 300;
 
+interface MealFood {
+  name: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
+  fat?: number;
+  servings?: number;
+  servingSize?: string;
+}
+
+interface MealContentData {
+  mealType?: string;
+  foods?: MealFood[];
+  totalCalories?: number;
+  totalProtein?: number;
+  totalCarbs?: number;
+  totalFats?: number;
+}
+
 interface PostCardProps {
   post: {
     id: string;
@@ -39,6 +59,8 @@ interface PostCardProps {
     images?: string[];
     type: "workout" | "meal" | "recipe" | "post" | "routine";
     timeAgo: string;
+    contentData?: unknown;
+    hasDescription?: boolean;
   };
 }
 
@@ -139,6 +161,58 @@ const ImageCarousel = ({
             alt="Next"
             className="w-full h-full object-cover"
           />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Meal Summary Card for meals without photos/descriptions
+const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
+  const mealType = contentData.mealType || "Meal";
+  const foods = contentData.foods || [];
+  const totalCalories = contentData.totalCalories || foods.reduce((sum, f) => sum + (f.calories || 0), 0);
+  const totalProtein = contentData.totalProtein || foods.reduce((sum, f) => sum + (f.protein || 0), 0);
+  const totalCarbs = contentData.totalCarbs || foods.reduce((sum, f) => sum + (f.carbs || 0), 0);
+  const totalFat = contentData.totalFats || foods.reduce((sum, f) => sum + (f.fat || f.fats || 0), 0);
+
+  return (
+    <div className="mx-4 my-2 bg-gradient-to-br from-success/10 to-success/5 border border-success/20 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">🍽️</span>
+        <h4 className="font-semibold text-foreground">{mealType}</h4>
+      </div>
+      
+      {/* Food items */}
+      <div className="space-y-1.5 mb-4">
+        {foods.map((food, idx) => (
+          <div key={idx} className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">•</span>
+            <span className="text-foreground">{food.name}</span>
+            {food.servings && food.servings !== 1 && (
+              <span className="text-muted-foreground text-xs">({food.servings} {food.servingSize || 'servings'})</span>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      {/* Macros summary */}
+      <div className="grid grid-cols-4 gap-2 pt-3 border-t border-success/20">
+        <div className="text-center">
+          <p className="text-lg font-bold text-foreground">{Math.round(totalCalories)}</p>
+          <p className="text-xs text-muted-foreground">cal</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-primary">{Math.round(totalProtein)}g</p>
+          <p className="text-xs text-muted-foreground">protein</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-success">{Math.round(totalCarbs)}g</p>
+          <p className="text-xs text-muted-foreground">carbs</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-amber-500">{Math.round(totalFat)}g</p>
+          <p className="text-xs text-muted-foreground">fat</p>
         </div>
       </div>
     </div>
@@ -282,6 +356,11 @@ export const PostCard = ({ post }: PostCardProps) => {
         <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
       )}
 
+      {/* Meal summary card for meals without photos/description */}
+      {post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
+        <MealSummaryCard contentData={post.contentData as MealContentData} />
+      )}
+
       <div className="relative px-4 py-1.5">
         <AnimatePresence>
           {floatingEmojis.map((floating) => (
@@ -335,11 +414,14 @@ export const PostCard = ({ post }: PostCardProps) => {
         </div>
       </div>
 
-      <div className="px-4 pb-2">
-        <p className="text-sm">
-          <span className="font-semibold">{post.user.name}</span> {post.content}
-        </p>
-      </div>
+      {/* Only show text content if it's not a meal without photos/description (since MealSummaryCard handles that) */}
+      {!(post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription) && (
+        <div className="px-4 pb-2">
+          <p className="text-sm">
+            <span className="font-semibold">{post.user.name}</span> {post.content}
+          </p>
+        </div>
+      )}
 
       {/* Comments section */}
       <div className="px-4 pb-4">

@@ -92,6 +92,8 @@ const DiscoverPage = () => {
     images: post.images || undefined,
     type: post.content_type as "workout" | "meal" | "recipe" | "post" | "routine",
     timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
+    contentData: post.content_data,
+    hasDescription: !!post.description,
   }));
   
   // Empty arrays for suggested content
