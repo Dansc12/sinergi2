@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, MessageCircle, Users, ChevronLeft, Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useGroupChats, useGroupChatMessages } from "@/hooks/useGroupChats";
+import { useDirectMessages, useDMChat } from "@/hooks/useDirectMessages";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +55,7 @@ const Conversation = ({ name, avatar, lastMessage, lastMessageSender, lastMessag
           "text-sm truncate",
           unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"
         )}>
-          {lastMessageType === 'system' ? lastMessage : `${lastMessageSender}: ${lastMessage}`}
+          {lastMessageType === 'system' ? lastMessage : lastMessageSender ? `${lastMessageSender}: ${lastMessage}` : lastMessage}
         </p>
       )}
     </div>
@@ -88,16 +90,17 @@ const EmptyMessagesState = () => {
   );
 };
 
-interface ChatViewProps {
+interface GroupChatViewProps {
   groupId: string;
   onBack: () => void;
 }
 
-const ChatView = ({ groupId, onBack }: ChatViewProps) => {
+const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
   const { messages, members, groupInfo, isLoading, sendMessage } = useGroupChatMessages(groupId);
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showMembers, setShowMembers] = useState(false);
+  const navigate = useNavigate();
 
   useState(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -109,6 +112,12 @@ const ChatView = ({ groupId, onBack }: ChatViewProps) => {
     if (!newMessage.trim()) return;
     await sendMessage(newMessage);
     setNewMessage("");
+  };
+
+  const handleMemberClick = (userId: string) => {
+    if (userId !== currentUserId) {
+      navigate(`/user/${userId}`);
+    }
   };
 
   if (isLoading) {
@@ -144,7 +153,11 @@ const ChatView = ({ groupId, onBack }: ChatViewProps) => {
             <p className="text-xs font-medium text-muted-foreground mb-2">Members</p>
             <div className="flex flex-wrap gap-2">
               {members.map((member) => (
-                <div key={member.user_id} className="flex items-center gap-2 bg-background rounded-full px-3 py-1">
+                <button 
+                  key={member.user_id} 
+                  onClick={() => handleMemberClick(member.user_id)}
+                  className="flex items-center gap-2 bg-background rounded-full px-3 py-1 hover:bg-primary/10 transition-colors"
+                >
                   <Avatar className="w-5 h-5">
                     <AvatarImage src={member.profile?.avatar_url || undefined} />
                     <AvatarFallback className="text-[10px]">
@@ -152,7 +165,7 @@ const ChatView = ({ groupId, onBack }: ChatViewProps) => {
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-xs">{member.profile?.first_name || 'Member'}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -183,7 +196,10 @@ const ChatView = ({ groupId, onBack }: ChatViewProps) => {
             return (
               <div key={msg.id} className={cn("flex gap-2", isOwn && "flex-row-reverse")}>
                 {!isOwn && (
-                  <Avatar className="w-8 h-8 shrink-0">
+                  <Avatar 
+                    className="w-8 h-8 shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50"
+                    onClick={() => handleMemberClick(msg.sender_id)}
+                  >
                     <AvatarImage src={msg.sender?.avatar_url || undefined} />
                     <AvatarFallback className="text-xs">
                       {msg.sender?.first_name?.charAt(0) || '?'}
@@ -195,7 +211,10 @@ const ChatView = ({ groupId, onBack }: ChatViewProps) => {
                   isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
                 )}>
                   {!isOwn && (
-                    <p className="text-xs font-medium mb-1 opacity-70">
+                    <p 
+                      className="text-xs font-medium mb-1 opacity-70 hover:underline cursor-pointer"
+                      onClick={() => handleMemberClick(msg.sender_id)}
+                    >
                       {msg.sender?.first_name || 'Member'}
                     </p>
                   )}
@@ -238,17 +257,177 @@ const ChatView = ({ groupId, onBack }: ChatViewProps) => {
   );
 };
 
+interface DMChatViewProps {
+  otherUserId: string;
+  onBack: () => void;
+}
+
+const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
+  const { messages, otherUser, currentUserId, isLoading, sendMessage } = useDMChat(otherUserId);
+  const [newMessage, setNewMessage] = useState("");
+  const navigate = useNavigate();
+
+  const handleSend = async () => {
+    if (!newMessage.trim()) return;
+    await sendMessage(newMessage);
+    setNewMessage("");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-80px)]">
+      {/* Chat Header */}
+      <header className="sticky top-0 z-40 glass-elevated px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-2 -ml-2 hover:bg-muted rounded-lg">
+            <ChevronLeft size={24} />
+          </button>
+          <Avatar 
+            className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary/50"
+            onClick={() => navigate(`/user/${otherUserId}`)}
+          >
+            <AvatarImage src={otherUser?.avatar_url || undefined} />
+            <AvatarFallback>{otherUser?.first_name?.charAt(0) || '?'}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h1 
+              className="font-bold truncate hover:underline cursor-pointer"
+              onClick={() => navigate(`/user/${otherUserId}`)}
+            >
+              {otherUser?.first_name || 'User'}
+            </h1>
+          </div>
+        </div>
+      </header>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No messages yet. Say hi! 👋
+          </div>
+        ) : (
+          messages.map((msg) => {
+            const isOwn = msg.sender_id === currentUserId;
+
+            return (
+              <div key={msg.id} className={cn("flex gap-2", isOwn && "flex-row-reverse")}>
+                {!isOwn && (
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarImage src={msg.sender_profile?.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs">
+                      {msg.sender_profile?.first_name?.charAt(0) || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={cn(
+                  "max-w-[75%] rounded-2xl px-4 py-2",
+                  isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
+                )}>
+                  <p className="text-sm">{msg.content}</p>
+                  <p className={cn(
+                    "text-[10px] mt-1",
+                    isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                  )}>
+                    {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Message Input */}
+      <div className="sticky bottom-0 glass-elevated p-4 safe-area-bottom">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Type a message..."
+            className="flex-1 bg-muted border-0 rounded-full py-3 px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <Button 
+            size="icon" 
+            className="rounded-full w-12 h-12 shrink-0"
+            onClick={handleSend}
+            disabled={!newMessage.trim()}
+          >
+            <Send size={20} />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MessagesPage = () => {
-  const { groupChats, isLoading } = useGroupChats();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { groupChats, isLoading: groupsLoading } = useGroupChats();
+  const { conversations: dmConversations, isLoading: dmsLoading } = useDirectMessages();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedDMUserId, setSelectedDMUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredChats = groupChats.filter(chat => 
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Handle DM from URL parameter
+  useEffect(() => {
+    const dmUserId = searchParams.get('dm');
+    if (dmUserId) {
+      setSelectedDMUserId(dmUserId);
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
+  const isLoading = groupsLoading || dmsLoading;
+
+  // Combine group chats and DM conversations
+  const allConversations = [
+    ...dmConversations.map(dm => ({
+      id: dm.otherUserId,
+      name: dm.otherUserName,
+      avatar: dm.otherUserAvatar,
+      lastMessage: dm.lastMessage,
+      lastMessageTime: dm.lastMessageTime,
+      unreadCount: dm.unreadCount,
+      isGroup: false as const,
+    })),
+    ...groupChats.map(gc => ({
+      id: gc.id,
+      name: gc.name,
+      avatar: gc.avatar_url,
+      lastMessage: gc.lastMessage?.content,
+      lastMessageSender: gc.lastMessage?.sender_name,
+      lastMessageType: gc.lastMessage?.message_type,
+      lastMessageTime: gc.lastMessage?.created_at,
+      unreadCount: gc.unreadCount,
+      isGroup: true as const,
+    })),
+  ].sort((a, b) => {
+    if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+    if (!a.lastMessageTime) return 1;
+    if (!b.lastMessageTime) return -1;
+    return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
+  });
+
+  const filteredConversations = allConversations.filter(conv => 
+    conv.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (selectedGroupId) {
-    return <ChatView groupId={selectedGroupId} onBack={() => setSelectedGroupId(null)} />;
+    return <GroupChatView groupId={selectedGroupId} onBack={() => setSelectedGroupId(null)} />;
+  }
+
+  if (selectedDMUserId) {
+    return <DMChatView otherUserId={selectedDMUserId} onBack={() => setSelectedDMUserId(null)} />;
   }
 
   return (
@@ -278,24 +457,30 @@ const MessagesPage = () => {
               <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />
             ))}
           </div>
-        ) : filteredChats.length === 0 && !searchQuery ? (
+        ) : filteredConversations.length === 0 && !searchQuery ? (
           <EmptyMessagesState />
-        ) : filteredChats.length === 0 ? (
+        ) : filteredConversations.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No conversations found</p>
         ) : (
-          filteredChats.map((chat) => (
+          filteredConversations.map((conv) => (
             <Conversation
-              key={chat.id}
-              id={chat.id}
-              name={chat.name}
-              avatar={chat.avatar_url}
-              lastMessage={chat.lastMessage?.content}
-              lastMessageSender={chat.lastMessage?.sender_name}
-              lastMessageType={chat.lastMessage?.message_type}
-              time={chat.lastMessage ? formatDistanceToNow(new Date(chat.lastMessage.created_at), { addSuffix: true }) : undefined}
-              unread={chat.unreadCount}
-              isGroup
-              onClick={() => setSelectedGroupId(chat.id)}
+              key={`${conv.isGroup ? 'group' : 'dm'}-${conv.id}`}
+              id={conv.id}
+              name={conv.name}
+              avatar={conv.avatar}
+              lastMessage={conv.lastMessage}
+              lastMessageSender={conv.isGroup ? (conv as any).lastMessageSender : undefined}
+              lastMessageType={conv.isGroup ? (conv as any).lastMessageType : undefined}
+              time={conv.lastMessageTime ? formatDistanceToNow(new Date(conv.lastMessageTime), { addSuffix: true }) : undefined}
+              unread={conv.unreadCount}
+              isGroup={conv.isGroup}
+              onClick={() => {
+                if (conv.isGroup) {
+                  setSelectedGroupId(conv.id);
+                } else {
+                  setSelectedDMUserId(conv.id);
+                }
+              }}
             />
           ))
         )}

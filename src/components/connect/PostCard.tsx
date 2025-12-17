@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, MessageCircle, Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ interface MealContentData {
 
 export interface PostData {
   id: string;
+  userId?: string;
   user: {
     name: string;
     avatar?: string;
@@ -225,6 +227,7 @@ const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
 };
 
 export const PostCard = ({ post, onPostClick }: PostCardProps) => {
+  const navigate = useNavigate();
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -244,6 +247,14 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
       setShowDetailModal(true);
     }
   };
+
+  const handleUserClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (post.userId) {
+      navigate(`/user/${post.userId}`);
+    }
+  };
+
   const { comments, commentCount, addComment } = usePostComments(post.id);
 
   const showFloatingEmoji = useCallback(
@@ -342,20 +353,25 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="bg-card border-b border-border"
       >
-        {/* Clickable header area */}
-        <div 
-          className="flex items-center gap-3 p-4 cursor-pointer"
-          onClick={handleCardClick}
-        >
-          <Avatar className="w-10 h-10 border border-border">
+        {/* Header area - user info clickable to profile, rest clickable to post details */}
+        <div className="flex items-center gap-3 p-4">
+          <Avatar 
+            className="w-10 h-10 border border-border cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+            onClick={handleUserClick}
+          >
             <AvatarImage src={post.user.avatar} />
             <AvatarFallback className="bg-muted">
               {post.user.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={handleCardClick}>
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-sm">{post.user.name}</p>
+              <p 
+                className="font-semibold text-sm hover:underline cursor-pointer"
+                onClick={handleUserClick}
+              >
+                {post.user.name}
+              </p>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}
               >

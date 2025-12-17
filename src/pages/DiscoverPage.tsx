@@ -83,6 +83,7 @@ const DiscoverPage = () => {
   // Transform database posts to format expected by PostCard
   const feedPosts = posts.map((post) => ({
     id: post.id,
+    userId: post.user_id,
     user: {
       name: post.profile?.first_name || "User",
       avatar: post.profile?.avatar_url || undefined,
