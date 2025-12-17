@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePostReactions } from "@/hooks/usePostReactions";
 import { usePostComments } from "@/hooks/usePostComments";
 import { formatDistanceToNow } from "date-fns";
+import { PostDetailModal } from "./PostDetailModal";
 
 interface FloatingEmoji {
   id: number;
@@ -47,21 +48,25 @@ interface MealContentData {
   totalFats?: number;
 }
 
-interface PostCardProps {
-  post: {
-    id: string;
-    user: {
-      name: string;
-      avatar?: string;
-      handle: string;
-    };
-    content: string;
-    images?: string[];
-    type: "workout" | "meal" | "recipe" | "post" | "routine";
-    timeAgo: string;
-    contentData?: unknown;
-    hasDescription?: boolean;
+export interface PostData {
+  id: string;
+  user: {
+    name: string;
+    avatar?: string;
+    handle: string;
   };
+  content: string;
+  images?: string[];
+  type: "workout" | "meal" | "recipe" | "post" | "routine";
+  timeAgo: string;
+  contentData?: unknown;
+  hasDescription?: boolean;
+  createdAt?: string;
+}
+
+interface PostCardProps {
+  post: PostData;
+  onPostClick?: (post: PostData) => void;
 }
 
 const ImageCarousel = ({
@@ -219,10 +224,11 @@ const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
   );
 };
 
-export const PostCard = ({ post }: PostCardProps) => {
+export const PostCard = ({ post, onPostClick }: PostCardProps) => {
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -230,6 +236,14 @@ export const PostCard = ({ post }: PostCardProps) => {
   const cardRef = useRef<HTMLElement>(null);
 
   const { userReactionCounts, userReactions, addReaction: dbAddReaction } = usePostReactions(post.id);
+  
+  const handleCardClick = () => {
+    if (onPostClick) {
+      onPostClick(post);
+    } else {
+      setShowDetailModal(true);
+    }
+  };
   const { comments, commentCount, addComment } = usePostComments(post.id);
 
   const showFloatingEmoji = useCallback(
@@ -320,46 +334,54 @@ export const PostCard = ({ post }: PostCardProps) => {
   };
 
   return (
-    <motion.article
-      ref={cardRef}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-card border-b border-border"
-    >
-      <div className="flex items-center gap-3 p-4">
-        <Avatar className="w-10 h-10 border border-border">
-          <AvatarImage src={post.user.avatar} />
-          <AvatarFallback className="bg-muted">
-            {post.user.name.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm">{post.user.name}</p>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}
-            >
-              {typeLabels[post.type].label}
-            </span>
+    <>
+      <motion.article
+        ref={cardRef}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="bg-card border-b border-border"
+      >
+        {/* Clickable header area */}
+        <div 
+          className="flex items-center gap-3 p-4 cursor-pointer"
+          onClick={handleCardClick}
+        >
+          <Avatar className="w-10 h-10 border border-border">
+            <AvatarImage src={post.user.avatar} />
+            <AvatarFallback className="bg-muted">
+              {post.user.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm">{post.user.name}</p>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}
+              >
+                {typeLabels[post.type].label}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {post.user.handle} • {post.timeAgo}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {post.user.handle} • {post.timeAgo}
-          </p>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+            <MoreHorizontal size={18} />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreHorizontal size={18} />
-        </Button>
-      </div>
 
-      {post.images && post.images.length > 0 && (
-        <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
-      )}
+        {/* Clickable content area */}
+        <div onClick={handleCardClick} className="cursor-pointer">
+          {post.images && post.images.length > 0 && (
+            <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
+          )}
 
-      {/* Meal summary card for meals without photos/description */}
-      {post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
-        <MealSummaryCard contentData={post.contentData as MealContentData} />
-      )}
+          {/* Meal summary card for meals without photos/description */}
+          {post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
+            <MealSummaryCard contentData={post.contentData as MealContentData} />
+          )}
+        </div>
 
       <div className="relative px-4 py-1.5">
         <AnimatePresence>
@@ -495,6 +517,13 @@ export const PostCard = ({ post }: PostCardProps) => {
           )}
         </AnimatePresence>
       </div>
-    </motion.article>
+      </motion.article>
+      
+      <PostDetailModal
+        open={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        post={post}
+      />
+    </>
   );
 };

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings, Flame, Users, Camera, Plus, Loader2 } from "lucide-react";
+import { ChevronLeft, Settings, Flame, Users, Camera, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ProfileContentFeed } from "@/components/profile/ProfileContentFeed";
 
 type ContentTab = "posts" | "workouts" | "meals" | "recipes" | "routines" | "groups";
 
@@ -17,16 +18,6 @@ const tabs: { id: ContentTab; label: string }[] = [
   { id: "groups", label: "Groups" },
 ];
 
-// Empty content - will be populated with real user data
-const userContent: Record<ContentTab, string[]> = {
-  posts: [],
-  workouts: [],
-  meals: [],
-  recipes: [],
-  routines: [],
-  groups: [],
-};
-
 interface UserProfile {
   first_name: string | null;
   last_name: string | null;
@@ -36,55 +27,39 @@ interface UserProfile {
   hobbies: string[] | null;
 }
 
-const EmptyTabState = ({ tab, onAction }: { tab: ContentTab; onAction: () => void }) => {
-  const messages: Record<ContentTab, { title: string; description: string; action: string }> = {
-    posts: { 
-      title: "No posts yet", 
-      description: "Share your fitness journey with the community", 
-      action: "Create Post" 
-    },
-    workouts: { 
-      title: "No workouts logged", 
-      description: "Start tracking your training progress", 
-      action: "Log Workout" 
-    },
-    meals: { 
-      title: "No meals logged", 
-      description: "Track your nutrition to reach your goals", 
-      action: "Log Meal" 
-    },
-    recipes: { 
-      title: "No recipes created", 
-      description: "Save and share your favorite healthy recipes", 
-      action: "Create Recipe" 
-    },
-    routines: { 
-      title: "No routines created", 
-      description: "Build workout routines to stay consistent", 
-      action: "Create Routine" 
-    },
-    groups: { 
-      title: "No groups joined", 
-      description: "Join groups to connect with like-minded people", 
-      action: "Find Groups" 
-    },
-  };
-
-  const { title, description, action } = messages[tab];
-
-  return (
-    <div className="col-span-3 py-12 text-center flex flex-col items-center">
-      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-        <Plus size={24} className="text-muted-foreground" />
-      </div>
-      <p className="font-medium mb-1">{title}</p>
-      <p className="text-sm text-muted-foreground mb-4 max-w-[200px]">{description}</p>
-      <Button size="sm" variant="outline" onClick={onAction}>
-        {action}
-      </Button>
-    </div>
-  );
+const emptyStateMessages: Record<ContentTab, { title: string; description: string; action: string }> = {
+  posts: { 
+    title: "No posts yet", 
+    description: "Share your fitness journey with the community", 
+    action: "Create Post" 
+  },
+  workouts: { 
+    title: "No workouts logged", 
+    description: "Start tracking your training progress", 
+    action: "Log Workout" 
+  },
+  meals: { 
+    title: "No meals logged", 
+    description: "Track your nutrition to reach your goals", 
+    action: "Log Meal" 
+  },
+  recipes: { 
+    title: "No recipes created", 
+    description: "Save and share your favorite healthy recipes", 
+    action: "Create Recipe" 
+  },
+  routines: { 
+    title: "No routines created", 
+    description: "Build workout routines to stay consistent", 
+    action: "Create Routine" 
+  },
+  groups: { 
+    title: "No groups joined", 
+    description: "Join groups to connect with like-minded people", 
+    action: "Find Groups" 
+  },
 };
+
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -313,20 +288,18 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Content Grid */}
+        {/* Content Feed */}
         <div className="grid grid-cols-3 gap-1">
-          {userContent[activeTab].length > 0 ? (
-            userContent[activeTab].map((image, index) => (
-              <div key={index} className="aspect-square">
-                <img
-                  src={image}
-                  alt={`${activeTab} ${index + 1}`}
-                  className="w-full h-full object-cover rounded-md"
-                />
-              </div>
-            ))
+          {activeTab !== "groups" ? (
+            <ProfileContentFeed
+              contentType={activeTab as "posts" | "workouts" | "meals" | "recipes" | "routines"}
+              onEmptyAction={() => handleTabAction(activeTab)}
+              emptyState={emptyStateMessages[activeTab]}
+            />
           ) : (
-            <EmptyTabState tab={activeTab} onAction={() => handleTabAction(activeTab)} />
+            <div className="col-span-3 py-12 text-center flex flex-col items-center">
+              <p className="text-sm text-muted-foreground">Groups coming soon</p>
+            </div>
           )}
         </div>
       </div>
