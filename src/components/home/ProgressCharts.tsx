@@ -1,7 +1,13 @@
-import { TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
+import { useState } from "react";
+import { TrendingUp, TrendingDown, BarChart3, Plus } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useWeightLogs } from "@/hooks/useWeightLogs";
+import { useStrengthData } from "@/hooks/useStrengthData";
+import { WeighInModal } from "./WeighInModal";
+import { WeightDetailModal } from "./WeightDetailModal";
+import { StrengthDetailModal } from "./StrengthDetailModal";
 
 interface ChartCardProps {
   title: string;
@@ -10,13 +16,42 @@ interface ChartCardProps {
   isPositive: boolean;
   data: { value: number }[];
   color: string;
+  onClick?: () => void;
+  onAddClick?: (e: React.MouseEvent) => void;
+  showAddButton?: boolean;
 }
 
-const ChartCard = ({ title, value, change, isPositive, data, color }: ChartCardProps) => (
-  <div className="flex-1 bg-card border border-border rounded-2xl p-4 shadow-card">
+const ChartCard = ({ 
+  title, 
+  value, 
+  change, 
+  isPositive, 
+  data, 
+  color, 
+  onClick,
+  onAddClick,
+  showAddButton 
+}: ChartCardProps) => (
+  <div 
+    className="flex-1 bg-card border border-border rounded-2xl p-4 shadow-card cursor-pointer hover:bg-card/80 transition-colors"
+    onClick={onClick}
+  >
     <div className="flex items-start justify-between mb-2">
       <div>
-        <p className="text-sm text-muted-foreground">{title}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm text-muted-foreground">{title}</p>
+          {showAddButton && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddClick?.(e);
+              }}
+              className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors"
+            >
+              <Plus size={12} className="text-primary" />
+            </button>
+          )}
+        </div>
         <p className="text-2xl font-bold">{value}</p>
       </div>
       {change && (
@@ -77,11 +112,51 @@ const EmptyProgressState = () => {
 };
 
 export const ProgressCharts = () => {
-  // Empty data - will be populated from real user logs
-  const weightData: { value: number }[] = [];
-  const totalLiftedData: { value: number }[] = [];
+  const [weighInModalOpen, setWeighInModalOpen] = useState(false);
+  const [weightDetailOpen, setWeightDetailOpen] = useState(false);
+  const [strengthDetailOpen, setStrengthDetailOpen] = useState(false);
 
-  const hasData = weightData.length > 0 || totalLiftedData.length > 0;
+  const {
+    chartData: weightChartData,
+    latestWeight,
+    weightChange,
+    goalWeight,
+    logWeight,
+    isLoading: weightLoading
+  } = useWeightLogs();
+
+  const {
+    chartData: strengthChartData,
+    latestValue: latestStrength,
+    totalLifted,
+    trend: strengthTrend,
+    isLoading: strengthLoading
+  } = useStrengthData();
+
+  const hasData = weightChartData.length > 0 || strengthChartData.length > 0;
+  const isLoading = weightLoading || strengthLoading;
+
+  // Format weight change for display
+  const weightChangeDisplay = weightChange !== 0 
+    ? `${weightChange > 0 ? "+" : ""}${Math.abs(weightChange).toFixed(1)} lbs`
+    : "";
+
+  // Format strength change for display
+  const strengthChangeDisplay = strengthTrend !== 0
+    ? `${strengthTrend > 0 ? "+" : ""}${Math.round(strengthTrend / 1000)}K lbs`
+    : "";
+
+  if (isLoading) {
+    return (
+      <section className="px-4 py-4">
+        <h2 className="text-lg font-semibold mb-3">Your Progress</h2>
+        <div className="flex gap-3">
+          <div className="flex-1 bg-card border border-border rounded-2xl p-4 h-32 animate-pulse" />
+          <div className="flex-1 bg-card border border-border rounded-2xl p-4 h-32 animate-pulse" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="px-4 py-4">
@@ -91,24 +166,60 @@ export const ProgressCharts = () => {
         <div className="flex gap-3">
           <ChartCard
             title="Weight"
-            value={weightData.length > 0 ? `${weightData[weightData.length - 1].value} lbs` : "-- lbs"}
-            change=""
-            isPositive={true}
-            data={weightData}
+            value={latestWeight ? `${latestWeight} lbs` : "-- lbs"}
+            change={weightChangeDisplay}
+            isPositive={weightChange < 0}
+            data={weightChartData}
             color="hsl(270, 91%, 65%)"
+            onClick={() => setWeightDetailOpen(true)}
+            onAddClick={() => setWeighInModalOpen(true)}
+            showAddButton={true}
           />
           <ChartCard
             title="Total Lifted"
-            value={totalLiftedData.length > 0 ? `${Math.round(totalLiftedData[totalLiftedData.length - 1].value / 1000)}K lbs` : "-- lbs"}
-            change=""
-            isPositive={true}
-            data={totalLiftedData}
+            value={latestStrength ? `${Math.round(latestStrength / 1000)}K lbs` : "-- lbs"}
+            change={strengthChangeDisplay}
+            isPositive={strengthTrend > 0}
+            data={strengthChartData}
             color="hsl(142, 76%, 45%)"
+            onClick={() => setStrengthDetailOpen(true)}
           />
         </div>
       ) : (
         <EmptyProgressState />
       )}
+
+      {/* Weigh-In Modal */}
+      <WeighInModal
+        open={weighInModalOpen}
+        onOpenChange={setWeighInModalOpen}
+        onSave={logWeight}
+        currentWeight={latestWeight}
+      />
+
+      {/* Weight Detail Modal */}
+      <WeightDetailModal
+        open={weightDetailOpen}
+        onOpenChange={setWeightDetailOpen}
+        chartData={weightChartData}
+        latestWeight={latestWeight}
+        goalWeight={goalWeight}
+        weightChange={weightChange}
+        onAddWeighIn={() => {
+          setWeightDetailOpen(false);
+          setWeighInModalOpen(true);
+        }}
+      />
+
+      {/* Strength Detail Modal */}
+      <StrengthDetailModal
+        open={strengthDetailOpen}
+        onOpenChange={setStrengthDetailOpen}
+        chartData={strengthChartData}
+        totalLifted={totalLifted}
+        latestValue={latestStrength}
+        trend={strengthTrend}
+      />
     </section>
   );
 };
