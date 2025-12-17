@@ -38,9 +38,15 @@ interface RecipeIngredient {
   fats?: number;
 }
 
+interface RoutineSet {
+  id: string;
+  minReps: string;
+  maxReps: string;
+}
+
 interface RoutineExercise {
   name: string;
-  sets?: number;
+  sets?: RoutineSet[] | number;
   minReps?: number;
   maxReps?: number;
 }
@@ -344,14 +350,23 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
         {exercises.length > 0 && (
           <div className="space-y-2">
             <h5 className="text-sm font-medium text-muted-foreground">Exercises</h5>
-            {exercises.map((exercise, idx) => (
-              <div key={idx} className="bg-muted/50 rounded-xl p-3">
-                <p className="font-medium">{exercise.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {exercise.sets} sets × {exercise.minReps}-{exercise.maxReps} reps
-                </p>
-              </div>
-            ))}
+            {exercises.map((exercise, idx) => {
+              // Handle both array of sets and legacy number format
+              const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
+              const setCount = Array.isArray(exercise.sets) ? exercise.sets.length : (exercise.sets || 0);
+              const firstSet = setsArray[0];
+              const minReps = firstSet?.minReps || exercise.minReps || 0;
+              const maxReps = firstSet?.maxReps || exercise.maxReps || 0;
+              
+              return (
+                <div key={idx} className="bg-muted/50 rounded-xl p-3">
+                  <p className="font-medium">{exercise.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {setCount} sets × {minReps}-{maxReps} reps
+                  </p>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
