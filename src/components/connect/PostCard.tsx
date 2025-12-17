@@ -273,8 +273,9 @@ const calculateExerciseVolume = (exercise: WorkoutExercise): number => {
 // Workout Summary Card for workouts without photos/descriptions (Preview mode)
 const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutContentData; createdAt?: string }) => {
   const exercises = contentData.exercises || [];
-  // Check both title (from CreateWorkoutPage) and name fields
-  const workoutName = contentData.title || contentData.name || getAutoWorkoutName(createdAt);
+  // Check both title (from CreateWorkoutPage) and name fields - ensure non-empty string
+  const rawTitle = contentData.title || contentData.name;
+  const workoutName = (rawTitle && rawTitle.trim()) ? rawTitle : getAutoWorkoutName(createdAt);
   
   // Calculate total volume (only for weight-based exercises)
   let totalVolume = 0;

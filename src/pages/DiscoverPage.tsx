@@ -95,6 +95,7 @@ const DiscoverPage = () => {
     timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
     contentData: post.content_data,
     hasDescription: !!post.description,
+    createdAt: post.created_at,
   }));
   
   // Empty arrays for suggested content
