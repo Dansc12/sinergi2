@@ -147,7 +147,7 @@ export const ProgressCharts = () => {
 
   const hasWeightData = totalWeightEntries >= 2;
   const hasStrengthData = strengthChartData.length >= 2;
-  const hasAnyData = hasWeightData || hasStrengthData;
+  // Always show chart cards - they handle their own empty/partial states
   const isLoading = weightLoading || strengthLoading;
 
   // Format weight change for display
@@ -186,34 +186,30 @@ export const ProgressCharts = () => {
     <section className="px-4 py-4">
       <h2 className="text-lg font-semibold mb-3">Your Progress</h2>
       
-      {hasAnyData ? (
-        <div className="flex gap-3">
-          <ChartCard
-            title="Weight"
-            value={latestWeight ? `${latestWeight} lbs` : "-- lbs"}
-            change={hasWeightData ? weightChangeDisplay : ""}
-            isPositive={weightChange < 0}
-            data={hasWeightData ? weightChartData : []}
-            color="hsl(270, 91%, 65%)"
-            onClick={() => setWeightDetailOpen(true)}
-            onAddClick={() => setWeighInModalOpen(true)}
-            showAddButton={true}
-            subtitle={weightSubtitle}
-          />
-          <ChartCard
-            title="Overall Strength"
-            value={latestStrength ? `${Math.round(latestStrength / 1000)}K lbs` : "-- lbs"}
-            change={hasStrengthData ? strengthChangeDisplay : ""}
-            isPositive={strengthTrend > 0}
-            data={hasStrengthData ? strengthChartData : []}
-            color="hsl(142, 76%, 45%)"
-            onClick={() => setStrengthDetailOpen(true)}
-            subtitle={strengthSubtitle}
-          />
-        </div>
-      ) : (
-        <EmptyProgressState />
-      )}
+      <div className="flex gap-3">
+        <ChartCard
+          title="Weight"
+          value={latestWeight ? `${latestWeight} lbs` : "-- lbs"}
+          change={hasWeightData ? weightChangeDisplay : ""}
+          isPositive={weightChange < 0}
+          data={hasWeightData ? weightChartData : []}
+          color="hsl(270, 91%, 65%)"
+          onClick={() => setWeightDetailOpen(true)}
+          onAddClick={() => setWeighInModalOpen(true)}
+          showAddButton={true}
+          subtitle={weightSubtitle}
+        />
+        <ChartCard
+          title="Overall Strength"
+          value={latestStrength ? `${Math.round(latestStrength / 1000)}K lbs` : "-- lbs"}
+          change={hasStrengthData ? strengthChangeDisplay : ""}
+          isPositive={strengthTrend > 0}
+          data={hasStrengthData ? strengthChartData : []}
+          color="hsl(142, 76%, 45%)"
+          onClick={() => setStrengthDetailOpen(true)}
+          subtitle={strengthSubtitle}
+        />
+      </div>
 
       {/* Weigh-In Modal */}
       <WeighInModal
