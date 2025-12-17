@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { CameraCapture } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import { usePosts } from "@/hooks/usePosts";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ interface LocationState {
   contentData: Record<string, unknown>;
   images?: string[];
   returnTo?: string;
+  routineInstanceId?: string;
 }
 
 const visibilityOptions = [
@@ -85,6 +87,17 @@ const SharePostScreen = () => {
         images: images,
         visibility: visibility,
       });
+
+      // If this workout was from a routine, mark the instance as completed
+      if (state?.routineInstanceId && state?.contentType === "workout") {
+        await supabase
+          .from("routine_instances")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", state.routineInstanceId);
+      }
 
       toast({ 
         title: `${label} shared!`, 

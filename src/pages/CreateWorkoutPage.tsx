@@ -16,6 +16,7 @@ interface Set {
   distance: string;
   time: string;
   completed: boolean;
+  repRangeHint?: string; // Hint from routine for rep range
 }
 
 interface Exercise {
@@ -36,6 +37,7 @@ interface RestoredState {
   prefilled?: boolean;
   routineName?: string;
   exercises?: Exercise[];
+  routineInstanceId?: string;
 }
 
 const CreateWorkoutPage = () => {
@@ -47,6 +49,7 @@ const CreateWorkoutPage = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [routineInstanceId, setRoutineInstanceId] = useState<string | null>(null);
 
   // Restore state if coming back from share screen or prefilled from routine
   useEffect(() => {
@@ -54,10 +57,12 @@ const CreateWorkoutPage = () => {
       if (restoredState.contentData?.title) setTitle(restoredState.contentData.title);
       if (restoredState.contentData?.exercises) setExercises(restoredState.contentData.exercises);
       if (restoredState.images) setPhotos(restoredState.images);
+      if (restoredState.routineInstanceId) setRoutineInstanceId(restoredState.routineInstanceId);
       window.history.replaceState({}, document.title);
     } else if (restoredState?.prefilled) {
       if (restoredState.routineName) setTitle(restoredState.routineName);
       if (restoredState.exercises) setExercises(restoredState.exercises);
+      if (restoredState.routineInstanceId) setRoutineInstanceId(restoredState.routineInstanceId);
       window.history.replaceState({}, document.title);
     }
   }, []);
@@ -205,6 +210,7 @@ const CreateWorkoutPage = () => {
         contentData: { title, exercises },
         images: photos,
         returnTo: "/create/workout",
+        routineInstanceId: routineInstanceId,
       },
     });
   };
@@ -369,12 +375,12 @@ const CreateWorkoutPage = () => {
                                 type={exercise.isCardio ? "text" : "number"}
                               />
                             </div>
-                            <div className="col-span-4">
+                            <div className="col-span-4 relative">
                               <Input
-                                placeholder={exercise.isCardio ? "mm:ss" : "reps"}
+                                placeholder={exercise.isCardio ? "mm:ss" : (set.repRangeHint || "reps")}
                                 value={exercise.isCardio ? set.time : set.reps}
                                 onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "time" : "reps", e.target.value)}
-                                className="text-center h-9 bg-background border-border"
+                                className={`text-center h-9 bg-background border-border ${set.repRangeHint && !set.reps ? "placeholder:text-primary/60" : ""}`}
                                 type={exercise.isCardio ? "text" : "number"}
                               />
                             </div>

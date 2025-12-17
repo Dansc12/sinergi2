@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Footprints, Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, X } from "lucide-react";
+import { Footprints, Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, X, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
+import { useScheduledRoutines } from "@/hooks/useScheduledRoutines";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -37,6 +38,15 @@ interface WorkoutLog {
   created_at: string;
 }
 
+interface RoutineExercise {
+  id: string;
+  name: string;
+  category: string;
+  muscleGroup: string;
+  notes: string;
+  sets: { id: string; minReps: string; maxReps: string }[];
+}
+
 interface FitnessViewProps {
   selectedDate?: Date;
 }
@@ -44,9 +54,18 @@ interface FitnessViewProps {
 export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
   const navigate = useNavigate();
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
+  const [expandedRoutine, setExpandedRoutine] = useState<string | null>(null);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutLog | null>(null);
+  const [selectedRoutineDetail, setSelectedRoutineDetail] = useState<{
+    id: string;
+    instanceId: string;
+    name: string;
+    exercises: RoutineExercise[];
+    time: string | null;
+  } | null>(null);
   
   const { workoutLogs, isLoading } = useDailyLogs(selectedDate || new Date());
+  const { routineInstances, isLoading: routinesLoading } = useScheduledRoutines(selectedDate || new Date());
   
   const steps = 0;
   const stepsGoal = 10000;
@@ -56,8 +75,48 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
     setExpandedWorkout(expandedWorkout === workoutId ? null : workoutId);
   };
 
+  const toggleRoutine = (routineId: string) => {
+    setExpandedRoutine(expandedRoutine === routineId ? null : routineId);
+  };
+
   const handleQuickLogWorkout = () => {
     navigate("/create/workout");
+  };
+
+  const handleStartRoutine = (instance: typeof routineInstances[0]) => {
+    if (!instance.scheduled_routine) return;
+    
+    const routine = instance.scheduled_routine;
+    const routineData = routine.routine_data as { exercises: RoutineExercise[]; description?: string };
+    
+    // Convert routine exercises to workout format with rep range placeholders
+    const prefilledExercises = routineData.exercises.map(ex => ({
+      id: ex.id,
+      name: ex.name,
+      category: ex.category,
+      muscleGroup: ex.muscleGroup,
+      notes: ex.notes || "",
+      isCardio: false,
+      isExpanded: true,
+      sets: ex.sets.map(set => ({
+        id: set.id,
+        weight: "",
+        reps: "",
+        distance: "",
+        time: "",
+        completed: false,
+        repRangeHint: `${set.minReps}-${set.maxReps}`, // Hint for rep range
+      })),
+    }));
+
+    navigate("/create/workout", {
+      state: {
+        prefilled: true,
+        routineName: routine.routine_name,
+        exercises: prefilledExercises,
+        routineInstanceId: instance.id,
+      },
+    });
   };
 
   const getWorkoutSummary = (workout: WorkoutLog) => {
@@ -70,13 +129,26 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
     return format(new Date(createdAt), "h:mm a");
   };
 
-  if (isLoading) {
+  const formatScheduledTime = (time: string | null) => {
+    if (!time) return "Anytime";
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  if (isLoading || routinesLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
+
+  // Filter out completed routine instances
+  const pendingRoutines = routineInstances.filter(r => r.status === "pending");
+  const completedRoutines = routineInstances.filter(r => r.status === "completed");
 
   return (
     <div className="space-y-6">
@@ -117,11 +189,147 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
         </div>
       </div>
 
-      {/* Logged Workouts */}
+      {/* Scheduled Routines Section */}
       <div>
-        <h3 className="font-semibold mb-3">Logged Workouts</h3>
+        <h3 className="font-semibold mb-3">Scheduled Workouts</h3>
         
-        {workoutLogs.length > 0 ? (
+        {pendingRoutines.length > 0 ? (
+          <div className="space-y-3">
+            {pendingRoutines.map((instance) => {
+              const routine = instance.scheduled_routine;
+              if (!routine) return null;
+              
+              const routineData = routine.routine_data as { exercises: RoutineExercise[]; description?: string };
+              const exercises = routineData.exercises || [];
+              
+              return (
+                <motion.div
+                  key={instance.id}
+                  className="bg-card border border-border rounded-xl overflow-hidden"
+                >
+                  {/* Routine Header */}
+                  <button
+                    onClick={() => toggleRoutine(instance.id)}
+                    className="w-full p-4 flex items-center justify-between text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                        <Dumbbell size={18} className="text-violet-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{routine.routine_name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock size={14} />
+                          <span>{formatScheduledTime(instance.scheduled_time)}</span>
+                          <span>•</span>
+                          <span>{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {expandedRoutine === instance.id ? (
+                      <ChevronDown size={20} className="text-muted-foreground" />
+                    ) : (
+                      <ChevronRight size={20} className="text-muted-foreground" />
+                    )}
+                  </button>
+
+                  {/* Preview when collapsed */}
+                  {expandedRoutine !== instance.id && (
+                    <div className="px-4 pb-4">
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        {exercises.slice(0, 3).map((exercise, index) => (
+                          <div key={index} className="flex justify-between">
+                            <span>{exercise.name}</span>
+                            <span>{exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}</span>
+                          </div>
+                        ))}
+                        {exercises.length > 3 && (
+                          <span className="text-xs text-primary">
+                            +{exercises.length - 3} more exercises
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        className="w-full mt-3 gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartRoutine(instance);
+                        }}
+                      >
+                        <Play size={16} />
+                        Start Workout
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Expanded Routine Details */}
+                  <AnimatePresence>
+                    {expandedRoutine === instance.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4 space-y-3">
+                          {/* Full Exercise List */}
+                          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                            {exercises.map((exercise, index) => (
+                              <div key={index} className="flex justify-between text-sm">
+                                <div>
+                                  <span className="text-foreground">{exercise.name}</span>
+                                  {exercise.notes && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{exercise.notes}</p>
+                                  )}
+                                </div>
+                                <span className="text-muted-foreground">
+                                  {exercise.sets.length} × {exercise.sets[0]?.minReps}-{exercise.sets[0]?.maxReps} reps
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Start Workout Button */}
+                          <Button
+                            className="w-full gap-2"
+                            onClick={() => handleStartRoutine(instance)}
+                          >
+                            <Play size={16} />
+                            Start Workout
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-6 text-center">
+            <Calendar size={32} className="mx-auto mb-3 text-muted-foreground/50" />
+            <p className="text-muted-foreground mb-1">No workout routines scheduled for this day</p>
+            <p className="text-sm text-muted-foreground/70 mb-4">
+              Create a routine to schedule recurring workouts
+            </p>
+          </div>
+        )}
+
+        {/* Quick Start Workout Button */}
+        <Button
+          variant="outline"
+          className="w-full mt-4 gap-2 border-primary/50 text-primary hover:bg-primary/10"
+          onClick={handleQuickLogWorkout}
+        >
+          <Dumbbell size={18} />
+          Quick Start Workout
+        </Button>
+      </div>
+
+      {/* Logged Workouts */}
+      {workoutLogs.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3">Logged Workouts</h3>
           <div className="space-y-3">
             {workoutLogs.map((workout) => (
               <motion.div
@@ -215,26 +423,36 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
               </motion.div>
             ))}
           </div>
-        ) : (
-          <div className="bg-card border border-border rounded-xl p-6 text-center">
-            <Calendar size={32} className="mx-auto mb-3 text-muted-foreground/50" />
-            <p className="text-muted-foreground mb-1">No workouts logged for this day</p>
-            <p className="text-sm text-muted-foreground/70 mb-4">
-              Log a workout to track your progress
-            </p>
-          </div>
-        )}
+        </div>
+      )}
 
-        {/* Quick Log Workout Button */}
-        <Button
-          variant="outline"
-          className="w-full mt-4 gap-2 border-primary/50 text-primary hover:bg-primary/10"
-          onClick={handleQuickLogWorkout}
-        >
-          <Dumbbell size={18} />
-          Log a Workout
-        </Button>
-      </div>
+      {/* Completed Routines */}
+      {completedRoutines.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3 text-muted-foreground">Completed Today</h3>
+          <div className="space-y-2">
+            {completedRoutines.map((instance) => {
+              const routine = instance.scheduled_routine;
+              if (!routine) return null;
+              
+              return (
+                <div
+                  key={instance.id}
+                  className="bg-card/50 border border-border/50 rounded-xl p-4 flex items-center gap-3 opacity-60"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
+                    <Dumbbell size={14} className="text-success" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm line-through">{routine.routine_name}</h4>
+                    <p className="text-xs text-muted-foreground">Completed</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Workout Detail Modal */}
       <Dialog open={!!selectedWorkout} onOpenChange={() => setSelectedWorkout(null)}>

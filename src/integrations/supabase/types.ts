@@ -474,6 +474,116 @@ export type Database = {
         }
         Relationships: []
       }
+      routine_instances: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          scheduled_date: string
+          scheduled_routine_id: string
+          scheduled_time: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          workout_log_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          scheduled_date: string
+          scheduled_routine_id: string
+          scheduled_time?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          workout_log_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          scheduled_date?: string
+          scheduled_routine_id?: string
+          scheduled_time?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workout_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_instances_scheduled_routine_id_fkey"
+            columns: ["scheduled_routine_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_routines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_instances_workout_log_id_fkey"
+            columns: ["workout_log_id"]
+            isOneToOne: false
+            referencedRelation: "workout_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_routines: {
+        Row: {
+          created_at: string
+          day_of_week: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          post_id: string | null
+          recurring: string
+          routine_data: Json
+          routine_name: string
+          scheduled_time: string | null
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          post_id?: string | null
+          recurring?: string
+          routine_data?: Json
+          routine_name: string
+          scheduled_time?: string | null
+          start_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          post_id?: string | null
+          recurring?: string
+          routine_data?: Json
+          routine_name?: string
+          scheduled_time?: string | null
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_routines_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_streaks: {
         Row: {
           created_at: string
