@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Bell, Heart, MessageCircle, UserPlus, Check, Trash2, CheckCheck } from 'lucide-react';
@@ -6,6 +6,8 @@ import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const reactionOrder = ["🙌", "💯", "❤️", "💪", "🎉"];
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -21,12 +23,98 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
+// Parse emoji and count from notification message (e.g., "John reacted 🎉 to your post")
+const parseReactionEmoji = (message: string): string | null => {
+  const emojiMatch = message.match(/reacted\s+(🙌|💯|❤️|💪|🎉)\s+to/);
+  return emojiMatch ? emojiMatch[1] : null;
+};
+
+// Aggregate reaction notifications from the same user on the same post
+interface AggregatedNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string | null;
+  is_read: boolean;
+  created_at: string;
+  related_user_id: string | null;
+  related_content_id: string | null;
+  // For aggregated reactions
+  reactionCounts?: Record<string, number>;
+  aggregatedIds?: string[];
+}
+
+function aggregateReactionNotifications(notifications: Notification[]): AggregatedNotification[] {
+  const result: AggregatedNotification[] = [];
+  const reactionGroups = new Map<string, {
+    notifications: Notification[];
+    reactionCounts: Record<string, number>;
+  }>();
+
+  for (const notification of notifications) {
+    if (notification.type === 'reaction' && notification.related_user_id && notification.related_content_id) {
+      // Group by user + post
+      const key = `${notification.related_user_id}-${notification.related_content_id}`;
+      
+      if (!reactionGroups.has(key)) {
+        reactionGroups.set(key, { notifications: [], reactionCounts: {} });
+      }
+      
+      const group = reactionGroups.get(key)!;
+      group.notifications.push(notification);
+      
+      const emoji = parseReactionEmoji(notification.message || '');
+      if (emoji) {
+        group.reactionCounts[emoji] = (group.reactionCounts[emoji] || 0) + 1;
+      }
+    } else {
+      // Non-reaction notifications pass through
+      result.push(notification);
+    }
+  }
+
+  // Convert reaction groups to aggregated notifications
+  for (const [, group] of reactionGroups) {
+    const latest = group.notifications.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0];
+    
+    // Extract name from message (e.g., "John reacted...")
+    const nameMatch = latest.message?.match(/^(\w+)\s+reacted/);
+    const name = nameMatch ? nameMatch[1] : 'Someone';
+    
+    // Build reaction summary string in correct order
+    const reactionSummary = reactionOrder
+      .filter(emoji => group.reactionCounts[emoji] > 0)
+      .map(emoji => `${emoji} ${group.reactionCounts[emoji]}`)
+      .join('  ');
+
+    result.push({
+      id: latest.id,
+      type: 'reaction',
+      title: `${name} shared some love`,
+      message: reactionSummary || null,
+      is_read: group.notifications.every(n => n.is_read),
+      created_at: latest.created_at,
+      related_user_id: latest.related_user_id,
+      related_content_id: latest.related_content_id,
+      reactionCounts: group.reactionCounts,
+      aggregatedIds: group.notifications.map(n => n.id),
+    });
+  }
+
+  // Sort by created_at descending
+  return result.sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
 function NotificationItem({ 
   notification, 
   onMarkAsRead, 
   onDelete 
 }: { 
-  notification: Notification; 
+  notification: AggregatedNotification; 
   onMarkAsRead: () => void;
   onDelete: () => void;
 }) {
@@ -53,7 +141,10 @@ function NotificationItem({
             {notification.title}
           </p>
           {notification.message && (
-            <p className="text-sm text-muted-foreground mt-0.5 truncate">
+            <p className={cn(
+              "text-sm mt-0.5",
+              notification.type === 'reaction' ? "text-foreground" : "text-muted-foreground truncate"
+            )}>
               {notification.message}
             </p>
           )}
@@ -104,6 +195,27 @@ export function NotificationsPanel() {
     deleteNotification 
   } = useNotifications();
 
+  const aggregatedNotifications = useMemo(
+    () => aggregateReactionNotifications(notifications),
+    [notifications]
+  );
+
+  const handleMarkAsRead = (notification: AggregatedNotification) => {
+    if (notification.aggregatedIds) {
+      notification.aggregatedIds.forEach(id => markAsRead(id));
+    } else {
+      markAsRead(notification.id);
+    }
+  };
+
+  const handleDelete = (notification: AggregatedNotification) => {
+    if (notification.aggregatedIds) {
+      notification.aggregatedIds.forEach(id => deleteNotification(id));
+    } else {
+      deleteNotification(notification.id);
+    }
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -146,7 +258,7 @@ export function NotificationsPanel() {
             <div className="flex items-center justify-center py-12">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : notifications.length === 0 ? (
+          ) : aggregatedNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="p-4 rounded-full bg-muted mb-4">
                 <Bell size={24} className="text-muted-foreground" />
@@ -158,12 +270,12 @@ export function NotificationsPanel() {
             </div>
           ) : (
             <AnimatePresence>
-              {notifications.map((notification) => (
+              {aggregatedNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onMarkAsRead={() => markAsRead(notification.id)}
-                  onDelete={() => deleteNotification(notification.id)}
+                  onMarkAsRead={() => handleMarkAsRead(notification)}
+                  onDelete={() => handleDelete(notification)}
                 />
               ))}
             </AnimatePresence>

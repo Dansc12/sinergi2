@@ -155,7 +155,7 @@ export const PostCard = ({ post }: PostCardProps) => {
   const isLongPressActiveRef = useRef(false);
   const cardRef = useRef<HTMLElement>(null);
 
-  const { reactionCounts, userReactions, addReaction: dbAddReaction, toggleReaction } = usePostReactions(post.id);
+  const { userReactionCounts, userReactions, addReaction: dbAddReaction } = usePostReactions(post.id);
   const { comments, commentCount, addComment } = usePostComments(post.id);
 
   const showFloatingEmoji = useCallback(
@@ -314,7 +314,7 @@ export const PostCard = ({ post }: PostCardProps) => {
               onPointerCancel={handlePointerUp}
               onClick={() => {
                 if (!isLongPressActiveRef.current) {
-                  toggleReaction(emoji);
+                  dbAddReaction(emoji);
                   showFloatingEmoji(emoji);
                 }
               }}
@@ -325,9 +325,9 @@ export const PostCard = ({ post }: PostCardProps) => {
               }`}
             >
               {emoji}
-              {reactionCounts[emoji] > 0 && (
+              {userReactionCounts[emoji] > 0 && (
                 <span className="absolute -top-1 left-1/2 -translate-x-1/2 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-lg border border-background">
-                  {reactionCounts[emoji]}
+                  {userReactionCounts[emoji]}
                 </span>
               )}
             </button>

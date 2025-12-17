@@ -13,7 +13,6 @@ export interface Reaction {
 export const usePostReactions = (postId: string) => {
   const { user } = useAuth();
   const [reactions, setReactions] = useState<Reaction[]>([]);
-  const [userReactions, setUserReactions] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchReactions = useCallback(async () => {
@@ -24,15 +23,9 @@ export const usePostReactions = (postId: string) => {
 
     if (!error && data) {
       setReactions(data);
-      if (user) {
-        const userEmojis = new Set(
-          data.filter((r) => r.user_id === user.id).map((r) => r.emoji)
-        );
-        setUserReactions(userEmojis);
-      }
     }
     setIsLoading(false);
-  }, [postId, user]);
+  }, [postId]);
 
   useEffect(() => {
     fetchReactions();
@@ -64,9 +57,6 @@ export const usePostReactions = (postId: string) => {
   const addReaction = async (emoji: string) => {
     if (!user) return;
 
-    // Optimistic update
-    setUserReactions((prev) => new Set(prev).add(emoji));
-
     const { error } = await supabase.from("post_reactions").insert({
       post_id: postId,
       user_id: user.id,
@@ -74,59 +64,28 @@ export const usePostReactions = (postId: string) => {
     });
 
     if (error) {
-      // Rollback on error
-      setUserReactions((prev) => {
-        const next = new Set(prev);
-        next.delete(emoji);
-        return next;
-      });
+      console.error("Error adding reaction:", error);
     }
   };
 
-  const removeReaction = async (emoji: string) => {
-    if (!user) return;
+  // Count only the current user's reactions per emoji (private counts)
+  const userReactionCounts = reactions
+    .filter((r) => r.user_id === user?.id)
+    .reduce((acc, r) => {
+      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    // Optimistic update
-    setUserReactions((prev) => {
-      const next = new Set(prev);
-      next.delete(emoji);
-      return next;
-    });
-
-    const { error } = await supabase
-      .from("post_reactions")
-      .delete()
-      .eq("post_id", postId)
-      .eq("user_id", user.id)
-      .eq("emoji", emoji);
-
-    if (error) {
-      // Rollback on error
-      setUserReactions((prev) => new Set(prev).add(emoji));
-    }
-  };
-
-  const toggleReaction = async (emoji: string) => {
-    if (userReactions.has(emoji)) {
-      await removeReaction(emoji);
-    } else {
-      await addReaction(emoji);
-    }
-  };
-
-  // Count reactions by emoji
-  const reactionCounts = reactions.reduce((acc, r) => {
-    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Check if user has reacted with each emoji
+  const userReactions = new Set(
+    reactions.filter((r) => r.user_id === user?.id).map((r) => r.emoji)
+  );
 
   return {
     reactions,
-    reactionCounts,
+    userReactionCounts,
     userReactions,
     isLoading,
     addReaction,
-    removeReaction,
-    toggleReaction,
   };
 };
