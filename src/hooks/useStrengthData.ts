@@ -95,6 +95,12 @@ export const useStrengthData = () => {
     ? strengthData[strengthData.length - 1].value - strengthData[strengthData.length - 2].value
     : 0;
 
+  // Number of unique workout days
+  const workoutDaysCount = strengthData.length;
+  
+  // Workouts needed to show chart (need at least 2 days)
+  const workoutsNeededForChart = Math.max(0, 2 - workoutDaysCount);
+
   return {
     strengthData,
     chartData: strengthData,
@@ -102,6 +108,8 @@ export const useStrengthData = () => {
     totalLifted,
     trend,
     isLoading,
-    refetch: fetchStrengthData
+    refetch: fetchStrengthData,
+    workoutDaysCount,
+    workoutsNeededForChart
   };
 };

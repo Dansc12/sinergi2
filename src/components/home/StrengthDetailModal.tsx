@@ -55,7 +55,7 @@ export const StrengthDetailModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Dumbbell size={20} className="text-success" />
-            Strength Progress
+            Overall Strength
           </DialogTitle>
         </DialogHeader>
 

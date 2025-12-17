@@ -19,6 +19,7 @@ interface ChartCardProps {
   onClick?: () => void;
   onAddClick?: (e: React.MouseEvent) => void;
   showAddButton?: boolean;
+  subtitle?: string;
 }
 
 const ChartCard = ({ 
@@ -30,7 +31,8 @@ const ChartCard = ({
   color, 
   onClick,
   onAddClick,
-  showAddButton 
+  showAddButton,
+  subtitle
 }: ChartCardProps) => (
   <div 
     className="flex-1 bg-card border border-border rounded-2xl p-4 shadow-card cursor-pointer hover:bg-card/80 transition-colors"
@@ -85,10 +87,17 @@ const ChartCard = ({
         </ResponsiveContainer>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <div className="w-full h-0.5 bg-border rounded-full" />
+          {subtitle ? (
+            <p className="text-xs text-muted-foreground text-center px-2">{subtitle}</p>
+          ) : (
+            <div className="w-full h-0.5 bg-border rounded-full" />
+          )}
         </div>
       )}
     </div>
+    {data.length > 0 && subtitle && (
+      <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+    )}
   </div>
 );
 
@@ -122,7 +131,9 @@ export const ProgressCharts = () => {
     weightChange,
     goalWeight,
     logWeight,
-    isLoading: weightLoading
+    isLoading: weightLoading,
+    daysUntilNextWeighIn,
+    totalWeightEntries
   } = useWeightLogs();
 
   const {
@@ -130,10 +141,13 @@ export const ProgressCharts = () => {
     latestValue: latestStrength,
     totalLifted,
     trend: strengthTrend,
-    isLoading: strengthLoading
+    isLoading: strengthLoading,
+    workoutsNeededForChart
   } = useStrengthData();
 
-  const hasData = weightChartData.length > 0 || strengthChartData.length > 0;
+  const hasWeightData = totalWeightEntries >= 2;
+  const hasStrengthData = strengthChartData.length >= 2;
+  const hasAnyData = hasWeightData || hasStrengthData;
   const isLoading = weightLoading || strengthLoading;
 
   // Format weight change for display
@@ -145,6 +159,16 @@ export const ProgressCharts = () => {
   const strengthChangeDisplay = strengthTrend !== 0
     ? `${strengthTrend > 0 ? "+" : ""}${Math.round(strengthTrend / 1000)}K lbs`
     : "";
+
+  // Weight subtitle with countdown
+  const weightSubtitle = hasWeightData 
+    ? `${daysUntilNextWeighIn} day${daysUntilNextWeighIn !== 1 ? 's' : ''} until next weigh-in`
+    : "Complete one more weigh-in to see your progress";
+
+  // Strength subtitle
+  const strengthSubtitle = hasStrengthData
+    ? ""
+    : `Log ${workoutsNeededForChart} more workout${workoutsNeededForChart !== 1 ? 's' : ''} to see your progress`;
 
   if (isLoading) {
     return (
@@ -162,27 +186,29 @@ export const ProgressCharts = () => {
     <section className="px-4 py-4">
       <h2 className="text-lg font-semibold mb-3">Your Progress</h2>
       
-      {hasData ? (
+      {hasAnyData ? (
         <div className="flex gap-3">
           <ChartCard
             title="Weight"
             value={latestWeight ? `${latestWeight} lbs` : "-- lbs"}
-            change={weightChangeDisplay}
+            change={hasWeightData ? weightChangeDisplay : ""}
             isPositive={weightChange < 0}
-            data={weightChartData}
+            data={hasWeightData ? weightChartData : []}
             color="hsl(270, 91%, 65%)"
             onClick={() => setWeightDetailOpen(true)}
             onAddClick={() => setWeighInModalOpen(true)}
             showAddButton={true}
+            subtitle={weightSubtitle}
           />
           <ChartCard
-            title="Total Lifted"
+            title="Overall Strength"
             value={latestStrength ? `${Math.round(latestStrength / 1000)}K lbs` : "-- lbs"}
-            change={strengthChangeDisplay}
+            change={hasStrengthData ? strengthChangeDisplay : ""}
             isPositive={strengthTrend > 0}
-            data={strengthChartData}
+            data={hasStrengthData ? strengthChartData : []}
             color="hsl(142, 76%, 45%)"
             onClick={() => setStrengthDetailOpen(true)}
+            subtitle={strengthSubtitle}
           />
         </div>
       ) : (

@@ -17,6 +17,8 @@ export const useWeightLogs = () => {
   const [accountCreatedAt, setAccountCreatedAt] = useState<Date | null>(null);
   const [daysSinceLastWeighIn, setDaysSinceLastWeighIn] = useState<number>(0);
   const [needsWeighIn, setNeedsWeighIn] = useState(false);
+  const [onboardingWeight, setOnboardingWeight] = useState<number | null>(null);
+  const [onboardingDate, setOnboardingDate] = useState<string | null>(null);
 
   const createWeighInReminder = async (userId: string) => {
     try {
@@ -59,16 +61,21 @@ export const useWeightLogs = () => {
 
       if (error) throw error;
 
-      // Fetch profile for goal weight and account creation date
+      // Fetch profile for goal weight, account creation date, and initial weight
       const { data: profile } = await supabase
         .from("profiles")
         .select("goal_weight, created_at, current_weight")
         .eq("user_id", user.id)
         .single();
 
+      let initialWeight: number | null = null;
+      let profileCreatedAt: string | null = null;
+
       if (profile) {
         setGoalWeight(profile.goal_weight ? Number(profile.goal_weight) : null);
         setAccountCreatedAt(profile.created_at ? new Date(profile.created_at) : null);
+        initialWeight = profile.current_weight ? Number(profile.current_weight) : null;
+        profileCreatedAt = profile.created_at;
       }
 
       const typedLogs: WeightLog[] = (logs || []).map(log => ({
@@ -80,6 +87,8 @@ export const useWeightLogs = () => {
       }));
 
       setWeightLogs(typedLogs);
+      setOnboardingWeight(initialWeight);
+      setOnboardingDate(profileCreatedAt);
 
       // Calculate days since last weigh-in
       let shouldRemind = false;
@@ -89,8 +98,8 @@ export const useWeightLogs = () => {
         setDaysSinceLastWeighIn(daysSince);
         shouldRemind = daysSince >= 7;
         setNeedsWeighIn(shouldRemind);
-      } else if (profile?.created_at) {
-        const daysSinceAccount = differenceInDays(new Date(), new Date(profile.created_at));
+      } else if (profileCreatedAt) {
+        const daysSinceAccount = differenceInDays(new Date(), new Date(profileCreatedAt));
         setDaysSinceLastWeighIn(daysSinceAccount);
         shouldRemind = daysSinceAccount >= 7;
         setNeedsWeighIn(shouldRemind);
@@ -155,21 +164,39 @@ export const useWeightLogs = () => {
     fetchWeightLogs();
   }, [fetchWeightLogs]);
 
-  // Calculate chart data
-  const chartData = weightLogs.map(log => ({
-    date: log.log_date,
-    value: log.weight
-  }));
+  // Calculate chart data - include onboarding weight as first point
+  const chartData = (() => {
+    const logs = weightLogs.map(log => ({
+      date: log.log_date,
+      value: log.weight
+    }));
+
+    // If we have onboarding weight and date, prepend it if it's not already in logs
+    if (onboardingWeight && onboardingDate) {
+      const onboardingDateStr = onboardingDate.split('T')[0];
+      const hasOnboardingDateLog = logs.some(log => log.date === onboardingDateStr);
+      if (!hasOnboardingDateLog) {
+        return [{ date: onboardingDateStr, value: onboardingWeight }, ...logs];
+      }
+    }
+    return logs;
+  })();
 
   // Get latest weight
   const latestWeight = weightLogs.length > 0 
     ? weightLogs[weightLogs.length - 1].weight 
-    : null;
+    : onboardingWeight;
 
-  // Calculate weight change
-  const weightChange = weightLogs.length >= 2
-    ? weightLogs[weightLogs.length - 1].weight - weightLogs[0].weight
+  // Calculate weight change (from first point including onboarding to last)
+  const weightChange = chartData.length >= 2
+    ? chartData[chartData.length - 1].value - chartData[0].value
     : 0;
+
+  // Calculate days until next weigh-in (whole days)
+  const daysUntilNextWeighIn = Math.max(0, 7 - daysSinceLastWeighIn);
+
+  // Total weight entries (including onboarding weight as first)
+  const totalWeightEntries = chartData.length;
 
   return {
     weightLogs,
@@ -179,9 +206,11 @@ export const useWeightLogs = () => {
     goalWeight,
     accountCreatedAt,
     daysSinceLastWeighIn,
+    daysUntilNextWeighIn,
     needsWeighIn,
     isLoading,
     logWeight,
-    refetch: fetchWeightLogs
+    refetch: fetchWeightLogs,
+    totalWeightEntries
   };
 };
