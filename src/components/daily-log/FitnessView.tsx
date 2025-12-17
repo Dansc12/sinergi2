@@ -146,9 +146,9 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
     );
   }
 
-  // Filter out completed routine instances
+  // Filter pending routine instances only
   const pendingRoutines = routineInstances.filter(r => r.status === "pending");
-  const completedRoutines = routineInstances.filter(r => r.status === "completed");
+  const hadRoutinesScheduled = routineInstances.length > 0;
 
   return (
     <div className="space-y-6">
@@ -305,7 +305,7 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
               );
             })}
           </div>
-        ) : (
+        ) : !hadRoutinesScheduled ? (
           <div className="bg-card border border-border rounded-xl p-6 text-center">
             <Calendar size={32} className="mx-auto mb-3 text-muted-foreground/50" />
             <p className="text-muted-foreground mb-1">No workout routines scheduled for this day</p>
@@ -313,7 +313,7 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
               Create a routine to schedule recurring workouts
             </p>
           </div>
-        )}
+        ) : null}
 
         {/* Quick Start Workout Button */}
         <Button
@@ -426,33 +426,7 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
         </div>
       )}
 
-      {/* Completed Routines */}
-      {completedRoutines.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-3 text-muted-foreground">Completed Today</h3>
-          <div className="space-y-2">
-            {completedRoutines.map((instance) => {
-              const routine = instance.scheduled_routine;
-              if (!routine) return null;
-              
-              return (
-                <div
-                  key={instance.id}
-                  className="bg-card/50 border border-border/50 rounded-xl p-4 flex items-center gap-3 opacity-60"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
-                    <Dumbbell size={14} className="text-success" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm line-through">{routine.routine_name}</h4>
-                    <p className="text-xs text-muted-foreground">Completed</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+
 
       {/* Workout Detail Modal */}
       <Dialog open={!!selectedWorkout} onOpenChange={() => setSelectedWorkout(null)}>
