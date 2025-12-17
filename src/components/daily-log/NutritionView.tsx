@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
 import { Droplets, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MacroBarProps {
   label: string;
@@ -91,9 +94,40 @@ interface NutritionViewProps {
 
 export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { mealsByType, waterLog, totals, isLoading } = useDailyLogs(selectedDate || new Date());
-  
-  const caloriesGoal = 2200;
+  const [caloriesGoal, setCaloriesGoal] = useState(2200);
+  const [macroGoals, setMacroGoals] = useState({ protein: 150, carbs: 250, fat: 70 });
+
+  // Fetch user's calorie target from profile
+  useEffect(() => {
+    const fetchUserGoals = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("profiles")
+        .select("daily_calorie_target")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data?.daily_calorie_target) {
+        setCaloriesGoal(data.daily_calorie_target);
+        // Calculate macro goals based on calorie target
+        // Typical split: 30% protein, 40% carbs, 30% fat
+        const proteinCals = data.daily_calorie_target * 0.30;
+        const carbsCals = data.daily_calorie_target * 0.40;
+        const fatCals = data.daily_calorie_target * 0.30;
+        setMacroGoals({
+          protein: Math.round(proteinCals / 4), // 4 cal per gram
+          carbs: Math.round(carbsCals / 4), // 4 cal per gram
+          fat: Math.round(fatCals / 9), // 9 cal per gram
+        });
+      }
+    };
+    
+    fetchUserGoals();
+  }, [user]);
+
   const caloriesConsumed = totals.calories;
   const caloriesLeft = Math.max(caloriesGoal - caloriesConsumed, 0);
   
@@ -183,9 +217,9 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
       {/* Macros */}
       <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
         <h3 className="font-semibold mb-3">Macros</h3>
-        <MacroBar label="P" current={totals.protein} goal={150} color="hsl(270, 91%, 65%)" />
-        <MacroBar label="C" current={totals.carbs} goal={250} color="hsl(142, 76%, 45%)" />
-        <MacroBar label="F" current={totals.fat} goal={70} color="hsl(38, 92%, 50%)" />
+        <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="hsl(270, 91%, 65%)" />
+        <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="hsl(142, 76%, 45%)" />
+        <MacroBar label="F" current={totals.fat} goal={macroGoals.fat} color="hsl(38, 92%, 50%)" />
       </div>
 
       {/* Logged Meals */}

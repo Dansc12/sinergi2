@@ -133,6 +133,57 @@ export const usePosts = () => {
   }) => {
     if (!user) throw new Error("Not authenticated");
 
+    // If this is a meal, also save to meal_logs table
+    if (postData.content_type === "meal") {
+      const mealData = postData.content_data;
+      const foods = (mealData.foods as Array<{
+        id: string;
+        name: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fats: number;
+        servings?: number;
+        servingSize?: string;
+      }>) || [];
+
+      // Transform foods to match meal_logs schema (fats -> fat)
+      const transformedFoods = foods.map(f => ({
+        name: f.name,
+        servings: f.servings || 1,
+        servingSize: f.servingSize || "serving",
+        calories: f.calories,
+        protein: f.protein,
+        carbs: f.carbs,
+        fat: f.fats, // Note: CreateMealPage uses 'fats', meal_logs uses 'fat'
+      }));
+
+      await supabase
+        .from("meal_logs")
+        .insert({
+          user_id: user.id,
+          meal_type: mealData.mealType as string,
+          foods: transformedFoods,
+          total_calories: mealData.totalCalories as number,
+          total_protein: mealData.totalProtein as number,
+          total_carbs: mealData.totalCarbs as number,
+          total_fat: mealData.totalFats as number,
+        });
+    }
+
+    // If this is a workout, also save to workout_logs table
+    if (postData.content_type === "workout") {
+      const workoutData = postData.content_data;
+      await supabase
+        .from("workout_logs")
+        .insert({
+          user_id: user.id,
+          exercises: workoutData.exercises as Json,
+          notes: (workoutData.notes as string) || null,
+          photos: postData.images || [],
+        });
+    }
+
     const { data, error } = await supabase
       .from("posts")
       .insert({
