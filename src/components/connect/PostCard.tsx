@@ -226,6 +226,114 @@ const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
   );
 };
 
+// Workout types
+interface WorkoutSet {
+  weight?: number;
+  reps?: number;
+  distance?: number;
+  time?: string;
+}
+
+interface WorkoutExercise {
+  name: string;
+  notes?: string;
+  sets?: WorkoutSet[];
+  isCardio?: boolean;
+}
+
+interface WorkoutContentData {
+  name?: string;
+  exercises?: WorkoutExercise[];
+  notes?: string;
+}
+
+// Helper to generate workout name based on time
+const getAutoWorkoutName = (createdAt?: string): string => {
+  if (!createdAt) return "Workout";
+  const date = new Date(createdAt);
+  const hour = date.getHours();
+  
+  if (hour >= 5 && hour < 12) return "Morning Workout";
+  if (hour >= 12 && hour < 17) return "Afternoon Workout";
+  if (hour >= 17 && hour < 21) return "Evening Workout";
+  return "Night Workout";
+};
+
+// Workout Summary Card for workouts without photos/descriptions
+const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutContentData; createdAt?: string }) => {
+  const exercises = contentData.exercises || [];
+  const workoutName = contentData.name || getAutoWorkoutName(createdAt);
+  
+  // Calculate total volume (only for weight-based exercises)
+  let totalVolume = 0;
+  let hasWeightExercises = false;
+  
+  exercises.forEach(exercise => {
+    if (!exercise.isCardio && exercise.sets) {
+      exercise.sets.forEach(set => {
+        if (set.weight && set.reps) {
+          totalVolume += set.weight * set.reps;
+          hasWeightExercises = true;
+        }
+      });
+    }
+  });
+
+  return (
+    <div className="mx-4 my-2 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">💪</span>
+        <h4 className="font-semibold text-foreground">{workoutName}</h4>
+      </div>
+      
+      {/* Exercises */}
+      <div className="space-y-3 mb-4">
+        {exercises.map((exercise, idx) => (
+          <div key={idx} className="space-y-1">
+            <p className="text-sm font-medium text-foreground">{exercise.name}</p>
+            {exercise.notes && (
+              <p className="text-xs text-muted-foreground italic">"{exercise.notes}"</p>
+            )}
+            {exercise.sets && exercise.sets.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {exercise.sets.map((set, setIdx) => (
+                  <span key={setIdx} className="text-xs bg-muted/50 px-2 py-1 rounded-md text-muted-foreground">
+                    {exercise.isCardio || set.distance !== undefined ? (
+                      // Cardio display: distance and time
+                      <>
+                        {set.distance && `${set.distance} mi`}
+                        {set.distance && set.time && " • "}
+                        {set.time && set.time}
+                      </>
+                    ) : (
+                      // Strength display: weight and reps
+                      <>
+                        {set.weight && `${set.weight} lbs`}
+                        {set.weight && set.reps && " × "}
+                        {set.reps && `${set.reps} reps`}
+                      </>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      {/* Total volume - only show if there are weight-based exercises */}
+      {hasWeightExercises && (
+        <div className="pt-3 border-t border-primary/20">
+          <div className="text-center">
+            <p className="text-lg font-bold text-foreground">{totalVolume.toLocaleString()} lbs</p>
+            <p className="text-xs text-muted-foreground">Total Volume</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const PostCard = ({ post, onPostClick }: PostCardProps) => {
   const navigate = useNavigate();
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
@@ -397,6 +505,11 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
           {post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
             <MealSummaryCard contentData={post.contentData as MealContentData} />
           )}
+
+          {/* Workout summary card for workouts without photos/description */}
+          {post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
+            <WorkoutSummaryCard contentData={post.contentData as WorkoutContentData} createdAt={post.createdAt} />
+          )}
         </div>
 
       <div className="relative px-4 py-1.5">
@@ -452,8 +565,9 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
         </div>
       </div>
 
-      {/* Only show text content if it's not a meal without photos/description (since MealSummaryCard handles that) */}
-      {!(post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription) && (
+      {/* Only show text content if it's not a meal/workout without photos/description */}
+      {!(post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription) && 
+       !(post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription) && (
         <div className="px-4 pb-2">
           <p className="text-sm">
             <span className="font-semibold">{post.user.name}</span> {post.content}
