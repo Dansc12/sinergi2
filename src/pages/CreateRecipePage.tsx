@@ -50,14 +50,16 @@ const CreateRecipePage = () => {
   const [instructions, setInstructions] = useState<string[]>([""]);
   const [ingredientSearchValue, setIngredientSearchValue] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
+  const [isCoverPhotoMode, setIsCoverPhotoMode] = useState(false);
 
   // Restore state if coming back from share screen
   useEffect(() => {
     if (restoredState?.restored && restoredState.contentData) {
-      const data = restoredState.contentData;
+      const data = restoredState.contentData as typeof restoredState.contentData & { coverPhoto?: string };
       if (data.title) setTitle(data.title);
       if (data.description) setDescription(data.description);
       if (data.prepTime) setPrepTime(data.prepTime);
@@ -65,7 +67,8 @@ const CreateRecipePage = () => {
       if (data.servings) setServings(data.servings);
       if (data.ingredients) setIngredients(data.ingredients);
       if (data.instructions) setInstructions(data.instructions);
-      if (restoredState.images) setImages(restoredState.images);
+      if (data.coverPhoto) setCoverPhoto(data.coverPhoto);
+      if (restoredState.images) setAdditionalImages(restoredState.images);
       window.history.replaceState({}, document.title);
     }
   }, []);
@@ -124,28 +127,51 @@ const CreateRecipePage = () => {
   );
 
   const handleFinish = () => {
+    if (!coverPhoto) {
+      toast({ title: "Please add a cover photo", variant: "destructive" });
+      return;
+    }
     if (!title.trim()) {
       toast({ title: "Please enter a recipe title", variant: "destructive" });
       return;
     }
-    // Navigate to share screen with recipe data
+    // Navigate to share screen with recipe data - cover photo is first image
+    const allImages = [coverPhoto, ...additionalImages];
     navigate("/share", {
       state: {
         contentType: "recipe",
-        contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition },
-        images,
+        contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition, coverPhoto },
+        images: allImages,
         returnTo: "/create/recipe",
       },
     });
   };
 
   const handleCapturePhoto = (imageUrl: string) => {
-    setImages([...images, imageUrl]);
+    if (isCoverPhotoMode) {
+      setCoverPhoto(imageUrl);
+    } else {
+      setAdditionalImages([...additionalImages, imageUrl]);
+    }
     setIsCameraOpen(false);
+    setIsCoverPhotoMode(false);
   };
 
   const handleSelectFromGallery = (imageUrls: string[]) => {
-    setImages([...images, ...imageUrls]);
+    if (isCoverPhotoMode && imageUrls.length > 0) {
+      setCoverPhoto(imageUrls[0]);
+      if (imageUrls.length > 1) {
+        setAdditionalImages([...additionalImages, ...imageUrls.slice(1)]);
+      }
+    } else {
+      setAdditionalImages([...additionalImages, ...imageUrls]);
+    }
+    setIsCoverPhotoMode(false);
+  };
+
+  const openCoverPhotoCamera = () => {
+    setIsCoverPhotoMode(true);
+    setIsCameraOpen(true);
   };
 
   return (
@@ -179,6 +205,38 @@ const CreateRecipePage = () => {
 
         {/* Form */}
         <div className="space-y-6">
+          {/* Cover Photo Section */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              Cover Photo <span className="text-destructive">*</span>
+            </Label>
+            {coverPhoto ? (
+              <div className="relative">
+                <img
+                  src={coverPhoto}
+                  alt="Cover"
+                  className="w-full h-48 object-cover rounded-xl"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute bottom-2 right-2"
+                  onClick={openCoverPhotoCamera}
+                >
+                  Change
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={openCoverPhotoCamera}
+                className="w-full h-48 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+              >
+                <Camera size={32} />
+                <span className="text-sm">Add Cover Photo</span>
+              </button>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Recipe Title</Label>
             <Input
@@ -322,14 +380,17 @@ const CreateRecipePage = () => {
           onClick={() => setIsCameraOpen(true)}
         >
           <Camera size={20} />
-          Take a Photo
+          Add More Photos
         </Button>
       </div>
 
       {/* Camera Modal */}
       <CameraCapture
         isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
+        onClose={() => {
+          setIsCameraOpen(false);
+          setIsCoverPhotoMode(false);
+        }}
         onCapture={handleCapturePhoto}
         onSelectFromGallery={handleSelectFromGallery}
       />

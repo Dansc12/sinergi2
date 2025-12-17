@@ -35,6 +35,7 @@ interface RecipeIngredient {
   protein?: number;
   carbs?: number;
   fat?: number;
+  fats?: number;
 }
 
 interface RoutineExercise {
@@ -171,46 +172,120 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   };
 
   const renderRecipeDetails = () => {
-    const recipeName = contentData?.name as string;
+    const title = contentData?.title as string;
+    const description = contentData?.description as string;
+    const prepTime = contentData?.prepTime as string;
+    const cookTime = contentData?.cookTime as string;
+    const servingsCount = contentData?.servings as string;
     const ingredients = (contentData?.ingredients as RecipeIngredient[]) || [];
-    const instructions = contentData?.instructions as string;
+    const instructions = (contentData?.instructions as string[]) || [];
+    const totalNutrition = contentData?.totalNutrition as { calories?: number; protein?: number; carbs?: number; fats?: number } | undefined;
+    const coverPhoto = contentData?.coverPhoto as string;
+
+    // Calculate totals if not provided
+    const totalCalories = totalNutrition?.calories || ingredients.reduce((sum, i) => sum + (i.calories || 0), 0);
+    const totalProtein = totalNutrition?.protein || ingredients.reduce((sum, i) => sum + (i.protein || 0), 0);
+    const totalCarbs = totalNutrition?.carbs || ingredients.reduce((sum, i) => sum + (i.carbs || 0), 0);
+    const totalFat = totalNutrition?.fats || ingredients.reduce((sum, i) => sum + (i.fat || i.fats || 0), 0);
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-rose-400">
-          <BookOpen size={20} />
-          <h4 className="font-semibold">{recipeName || "Recipe"}</h4>
-        </div>
-        
-        {ingredients.length > 0 && (
-          <div className="space-y-2">
-            <h5 className="text-sm font-medium text-muted-foreground">Ingredients</h5>
-            {ingredients.map((ingredient, idx) => (
-              <div key={idx} className="bg-muted/50 rounded-xl p-3 flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{ingredient.name}</p>
-                  {ingredient.servings && (
-                    <p className="text-xs text-muted-foreground">
-                      {ingredient.servings} {ingredient.servingSize || 'serving'}
-                    </p>
-                  )}
-                </div>
-                {ingredient.calories && (
-                  <p className="text-sm text-muted-foreground">{ingredient.calories} cal</p>
-                )}
-              </div>
-            ))}
-          </div>
+      <div className="space-y-6 -mx-4 -mt-4">
+        {/* Cover Photo */}
+        {coverPhoto && (
+          <img
+            src={coverPhoto}
+            alt={title || "Recipe"}
+            className="w-full h-64 object-cover"
+          />
         )}
         
-        {instructions && (
-          <div className="space-y-2">
-            <h5 className="text-sm font-medium text-muted-foreground">Instructions</h5>
-            <div className="bg-muted/30 rounded-xl p-4">
-              <p className="text-sm whitespace-pre-wrap">{instructions}</p>
+        <div className="px-4 space-y-6">
+          {/* Title and Description */}
+          <div>
+            <h2 className="text-2xl font-bold">{title || "Recipe"}</h2>
+            {description && (
+              <p className="text-muted-foreground mt-1">{description}</p>
+            )}
+          </div>
+          
+          {/* Prep Time, Cook Time, Servings */}
+          {(prepTime || cookTime || servingsCount) && (
+            <div className="flex justify-between bg-muted/50 rounded-xl p-4">
+              {prepTime && (
+                <div className="text-center flex-1">
+                  <p className="text-lg font-semibold">{prepTime}</p>
+                  <p className="text-xs text-muted-foreground">Prep Time</p>
+                </div>
+              )}
+              {cookTime && (
+                <div className="text-center flex-1">
+                  <p className="text-lg font-semibold">{cookTime}</p>
+                  <p className="text-xs text-muted-foreground">Cook Time</p>
+                </div>
+              )}
+              {servingsCount && (
+                <div className="text-center flex-1">
+                  <p className="text-lg font-semibold">{servingsCount}</p>
+                  <p className="text-xs text-muted-foreground">Servings</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Calories and Macros */}
+          <div className="grid grid-cols-4 gap-2 bg-rose-500/10 rounded-xl p-4">
+            <div className="text-center">
+              <p className="text-xl font-bold">{Math.round(totalCalories)}</p>
+              <p className="text-xs text-muted-foreground">cal</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-primary">{Math.round(totalProtein)}g</p>
+              <p className="text-xs text-muted-foreground">protein</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-success">{Math.round(totalCarbs)}g</p>
+              <p className="text-xs text-muted-foreground">carbs</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-amber-500">{Math.round(totalFat)}g</p>
+              <p className="text-xs text-muted-foreground">fat</p>
             </div>
           </div>
-        )}
+          
+          {/* Ingredients */}
+          {ingredients.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold">Ingredients</h4>
+              <div className="space-y-2">
+                {ingredients.map((ingredient, idx) => (
+                  <div key={idx} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <span className="text-sm font-medium text-primary min-w-[60px]">
+                      {ingredient.servings || 1} {ingredient.servingSize || 'serving'}
+                    </span>
+                    <span className="text-sm flex-1">{ingredient.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Instructions */}
+          {instructions.length > 0 && instructions.some(i => i.trim()) && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold">Instructions</h4>
+              <div className="space-y-4">
+                {instructions.filter(i => i.trim()).map((step, idx) => (
+                  <div key={idx} className="flex gap-3">
+                    <span className="w-7 h-7 rounded-full bg-primary/20 text-primary text-sm flex items-center justify-center flex-shrink-0 font-medium">
+                      {idx + 1}
+                    </span>
+                    <p className="text-sm pt-1">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -309,8 +384,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
         
         <ScrollArea className="max-h-[calc(85vh-80px)]">
           <div className="p-4 space-y-4">
-            {/* Images */}
-            {post.images && post.images.length > 0 && (
+            {/* Images - skip for recipe as it has its own layout */}
+            {post.type !== "recipe" && post.images && post.images.length > 0 && (
               <div className="space-y-2">
                 {post.images.map((img, idx) => (
                   <img
@@ -323,8 +398,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
             
-            {/* Description if present */}
-            {post.hasDescription && post.content && (
+            {/* Description if present - skip for recipe as it handles its own */}
+            {post.type !== "recipe" && post.hasDescription && post.content && (
               <p className="text-sm">{post.content}</p>
             )}
             
