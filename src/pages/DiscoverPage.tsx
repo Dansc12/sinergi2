@@ -1,29 +1,12 @@
-import { useState, useRef, useCallback } from "react";
-import { Search, MoreHorizontal, Users, UserPlus, Compass } from "lucide-react";
+import { useState } from "react";
+import { Search, Users, UserPlus, Compass } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { usePosts, Post } from "@/hooks/usePosts";
+import { usePosts } from "@/hooks/usePosts";
 import { formatDistanceToNow } from "date-fns";
 import { Json } from "@/integrations/supabase/types";
-
-interface FeedPost {
-  id: string;
-  user: {
-    name: string;
-    avatar?: string;
-    handle: string;
-  };
-  content: string;
-  images?: string[];
-  type: "workout" | "meal" | "recipe" | "post" | "routine";
-  stats: {
-    likes: number;
-    comments: number;
-  };
-  timeAgo: string;
-}
+import { PostCard } from "@/components/connect/PostCard";
 
 interface SuggestedGroup {
   name: string;
@@ -37,26 +20,6 @@ interface SuggestedUser {
   handle: string;
   mutualFriends: number;
 }
-
-interface FloatingEmoji {
-  id: number;
-  emoji: string;
-  originX: number;
-  originY: number;
-}
-
-const typeLabels: Record<string, { label: string; color: string }> = {
-  workout: { label: "Workout", color: "bg-primary/20 text-primary" },
-  meal: { label: "Meal", color: "bg-success/20 text-success" },
-  recipe: { label: "Recipe", color: "bg-rose-500/20 text-rose-400" },
-  post: { label: "Post", color: "bg-accent/20 text-accent" },
-  routine: { label: "Routine", color: "bg-violet-500/20 text-violet-400" },
-};
-
-const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
-
-const LONG_PRESS_THRESHOLD = 300;
-const DOUBLE_TAP_DELAY = 300;
 
 // Helper to generate post description from content data
 const generateDescription = (contentType: string, contentData: Json, description: string | null): string => {
@@ -89,265 +52,6 @@ const generateDescription = (contentType: string, contentData: Json, description
   }
 };
 
-const ImageCarousel = ({ 
-  images, 
-  onDoubleTap 
-}: { 
-  images: string[]; 
-  onDoubleTap: () => void;
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
-  const lastTapRef = useRef<number>(0);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    const threshold = 50;
-
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
-        setCurrentIndex((prev) => (prev + 1) % images.length);
-      } else {
-        setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-      }
-    }
-  };
-
-  const handleClick = () => {
-    const now = Date.now();
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      onDoubleTap();
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-    }
-  };
-
-  const imageContainerClass = "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
-
-  if (images.length === 1) {
-    return (
-      <div className="px-4 py-1 flex justify-center">
-        <div 
-          className={imageContainerClass}
-          onClick={handleClick}
-        >
-          <img src={images[0]} alt="Post" className="w-full h-full object-cover" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative py-1 px-2">
-      <div 
-        className="flex items-center justify-center gap-3 overflow-hidden touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
-          <img 
-            src={images[(currentIndex - 1 + images.length) % images.length]} 
-            alt="Previous" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <motion.div 
-          key={currentIndex}
-          initial={{ opacity: 0.9, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className={imageContainerClass}
-          onClick={handleClick}
-        >
-          <img 
-            src={images[currentIndex]} 
-            alt="Post" 
-            className="w-full h-full object-cover"
-          />
-        </motion.div>
-
-        <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
-          <img 
-            src={images[(currentIndex + 1) % images.length]} 
-            alt="Next" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const PostCard = ({ post }: { post: FeedPost }) => {
-  const [reactions, setReactions] = useState<Record<string, number>>({});
-  const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
-  const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const isLongPressActiveRef = useRef(false);
-  const cardRef = useRef<HTMLElement>(null);
-
-  const addReaction = useCallback((emoji: string, originX?: number, originY?: number) => {
-    setReactions((prev) => ({
-      ...prev,
-      [emoji]: (prev[emoji] || 0) + 1,
-    }));
-
-    const button = buttonRefs.current[emoji];
-    const finalOriginX = originX ?? (button ? button.getBoundingClientRect().left + button.offsetWidth / 2 : window.innerWidth / 2);
-    const finalOriginY = originY ?? (button ? button.getBoundingClientRect().top : 200);
-
-    const newEmoji: FloatingEmoji = {
-      id: Date.now() + Math.random(),
-      emoji,
-      originX: finalOriginX,
-      originY: finalOriginY,
-    };
-    setFloatingEmojis((prev) => [...prev, newEmoji]);
-
-    setTimeout(() => {
-      setFloatingEmojis((prev) => prev.filter((e) => e.id !== newEmoji.id));
-    }, 1000);
-  }, []);
-
-  const handleDoubleTap = useCallback(() => {
-    const cardRect = cardRef.current?.getBoundingClientRect();
-    const centerX = cardRect ? cardRect.left + cardRect.width / 2 : window.innerWidth / 2;
-    const centerY = cardRect ? cardRect.top + cardRect.height / 2 : 300;
-    addReaction("❤️", centerX, centerY);
-  }, [addReaction]);
-
-  const startContinuousReactions = useCallback((emoji: string) => {
-    addReaction(emoji);
-    holdIntervalRef.current = setInterval(() => {
-      addReaction(emoji);
-    }, 150);
-  }, [addReaction]);
-
-  const handlePointerDown = useCallback((emoji: string) => {
-    isLongPressActiveRef.current = false;
-    
-    longPressTimerRef.current = setTimeout(() => {
-      isLongPressActiveRef.current = true;
-      startContinuousReactions(emoji);
-    }, LONG_PRESS_THRESHOLD);
-  }, [startContinuousReactions]);
-
-  const handlePointerUp = useCallback(() => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    
-    if (holdIntervalRef.current) {
-      clearInterval(holdIntervalRef.current);
-      holdIntervalRef.current = null;
-    }
-    
-    isLongPressActiveRef.current = false;
-  }, []);
-
-  return (
-    <motion.article
-      ref={cardRef}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-card border-b border-border"
-    >
-      <div className="flex items-center gap-3 p-4">
-        <Avatar className="w-10 h-10 border border-border">
-          <AvatarImage src={post.user.avatar} />
-          <AvatarFallback className="bg-muted">{post.user.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm">{post.user.name}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}>
-              {typeLabels[post.type].label}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">{post.user.handle} • {post.timeAgo}</p>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreHorizontal size={18} />
-        </Button>
-      </div>
-
-      {post.images && post.images.length > 0 && (
-        <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
-      )}
-
-      <div className="relative px-4 py-1.5">
-        <AnimatePresence>
-          {floatingEmojis.map((floating) => (
-            <motion.span
-              key={floating.id}
-              initial={{ opacity: 1, y: 0, scale: 1 }}
-              animate={{ opacity: 0, y: -60, scale: 1.3 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="fixed text-2xl pointer-events-none z-50"
-              style={{ 
-                left: floating.originX, 
-                top: floating.originY, 
-                transform: "translate(-50%, -50%)" 
-              }}
-            >
-              {floating.emoji}
-            </motion.span>
-          ))}
-        </AnimatePresence>
-
-        <div className="flex items-center justify-center gap-4">
-          {reactionEmojis.map((emoji) => (
-            <button
-              key={emoji}
-              ref={(el) => (buttonRefs.current[emoji] = el)}
-              onPointerDown={() => handlePointerDown(emoji)}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className="relative text-xl p-2 rounded-full hover:bg-muted/50 transition-colors select-none touch-none"
-            >
-              {emoji}
-              {reactions[emoji] > 0 && (
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-lg border border-background">
-                  {reactions[emoji]}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-4 pb-4">
-        <p className="text-sm">
-          <span className="font-semibold">{post.user.name}</span>{" "}
-          {post.content}
-        </p>
-        {post.stats.comments > 0 && (
-          <button className="text-sm text-muted-foreground mt-1">
-            View all {post.stats.comments} comments
-          </button>
-        )}
-      </div>
-    </motion.article>
-  );
-};
-
 const EmptyFeedState = () => {
   const navigate = useNavigate();
   
@@ -376,8 +80,8 @@ const DiscoverPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { posts, isLoading } = usePosts();
   
-  // Transform database posts to FeedPost format
-  const feedPosts: FeedPost[] = posts.map((post) => ({
+  // Transform database posts to format expected by PostCard
+  const feedPosts = posts.map((post) => ({
     id: post.id,
     user: {
       name: post.profile?.first_name || "User",
@@ -387,10 +91,6 @@ const DiscoverPage = () => {
     content: generateDescription(post.content_type, post.content_data, post.description),
     images: post.images || undefined,
     type: post.content_type as "workout" | "meal" | "recipe" | "post" | "routine",
-    stats: {
-      likes: 0,
-      comments: 0,
-    },
     timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
   }));
   
