@@ -341,6 +341,84 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
   );
 };
 
+// Routine types
+interface RoutineSet {
+  id: string;
+  minReps: string;
+  maxReps: string;
+}
+
+interface RoutineExercise {
+  name: string;
+  sets?: RoutineSet[] | number;
+  minReps?: number;
+  maxReps?: number;
+}
+
+interface RoutineContentData {
+  routineName?: string;
+  exercises?: RoutineExercise[];
+  scheduledDays?: string[];
+  recurring?: string;
+}
+
+// Routine Summary Card for routines without photos/descriptions
+const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }) => {
+  const routineName = contentData.routineName || "Workout Routine";
+  const exercises = contentData.exercises || [];
+  const scheduledDays = contentData.scheduledDays || [];
+  const recurring = contentData.recurring;
+
+  // Format scheduled days
+  const daysDisplay = scheduledDays.length > 0 
+    ? scheduledDays.map(d => d.substring(0, 3)).join(", ")
+    : null;
+
+  return (
+    <div className="mx-4 my-2 bg-gradient-to-br from-violet-500/10 to-violet-500/5 border border-violet-500/20 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">📋</span>
+        <h4 className="font-semibold text-foreground">{routineName}</h4>
+      </div>
+      
+      {/* Schedule info */}
+      {(daysDisplay || recurring) && (
+        <div className="mb-3 text-sm text-muted-foreground">
+          {daysDisplay && <span>{daysDisplay}</span>}
+          {daysDisplay && recurring && recurring !== "Currently not recurring" && <span> • </span>}
+          {recurring && recurring !== "Currently not recurring" && <span>{recurring}</span>}
+        </div>
+      )}
+      
+      {/* Exercises */}
+      <div className="space-y-2 mb-2">
+        {exercises.slice(0, 4).map((exercise, idx) => {
+          const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
+          const setCount = Array.isArray(exercise.sets) ? exercise.sets.length : (exercise.sets || 0);
+          const firstSet = setsArray[0];
+          const minReps = firstSet?.minReps || exercise.minReps || 0;
+          const maxReps = firstSet?.maxReps || exercise.maxReps || 0;
+          
+          return (
+            <div key={idx} className="flex items-center justify-between py-1.5">
+              <span className="text-sm font-medium text-foreground">{exercise.name}</span>
+              <span className="text-sm text-muted-foreground">
+                {setCount} sets × {minReps}-{maxReps} reps
+              </span>
+            </div>
+          );
+        })}
+        {exercises.length > 4 && (
+          <p className="text-xs text-muted-foreground">+{exercises.length - 4} more exercises</p>
+        )}
+      </div>
+      
+      {/* Tap to view details hint */}
+      <p className="text-xs text-center text-muted-foreground mt-3">Tap to view details</p>
+    </div>
+  );
+};
+
 export const PostCard = ({ post, onPostClick }: PostCardProps) => {
   const navigate = useNavigate();
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
@@ -517,6 +595,11 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
           {post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
             <WorkoutSummaryCard contentData={post.contentData as WorkoutContentData} createdAt={post.createdAt} />
           )}
+
+          {/* Routine summary card for routines without photos/description */}
+          {post.type === "routine" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
+            <RoutineSummaryCard contentData={post.contentData as RoutineContentData} />
+          )}
         </div>
 
       <div className="relative px-4 py-1.5">
@@ -572,9 +655,10 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
         </div>
       </div>
 
-      {/* Only show text content if it's not a meal/workout without photos/description */}
+      {/* Only show text content if it's not a meal/workout/routine without photos/description */}
       {!(post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription) && 
-       !(post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription) && (
+       !(post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription) &&
+       !(post.type === "routine" && (!post.images || post.images.length === 0) && !post.hasDescription) && (
         <div className="px-4 pb-2">
           <p className="text-sm">
             <span className="font-semibold">{post.user.name}</span> {post.content}
