@@ -405,6 +405,32 @@ interface RoutineContentData {
   recurring?: string;
 }
 
+// Recipe types
+interface RecipeIngredient {
+  id: string;
+  name: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
+  servings?: number;
+  servingSize?: string;
+}
+
+interface RecipeContentData {
+  title?: string;
+  description?: string;
+  prepTime?: string;
+  cookTime?: string;
+  servings?: string;
+  ingredients?: RecipeIngredient[];
+  steps?: string[];
+  totalCalories?: number;
+  totalProtein?: number;
+  totalCarbs?: number;
+  totalFats?: number;
+}
+
 // Routine Summary Card for routines without photos/descriptions
 const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }) => {
   const routineName = contentData.routineName || contentData.name || "Workout Routine";
@@ -454,6 +480,69 @@ const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }
           );
         })}
       </div>
+    </div>
+  );
+};
+
+// Recipe Summary Card for recipes
+const RecipeSummaryCard = ({ contentData }: { contentData: RecipeContentData }) => {
+  const title = contentData.title || "Recipe";
+  const description = contentData.description || "";
+  const prepTime = contentData.prepTime;
+  const cookTime = contentData.cookTime;
+  const servings = contentData.servings;
+  const ingredients = contentData.ingredients || [];
+  const totalCalories = contentData.totalCalories;
+
+  return (
+    <div className="h-full w-full bg-gradient-to-br from-rose-500/15 to-pink-500/5 border border-rose-500/30 rounded-xl p-5 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-2 shrink-0">
+        <span className="text-2xl">🍳</span>
+        <h4 className="text-xl font-bold text-foreground truncate">{title}</h4>
+      </div>
+
+      {/* Description */}
+      {description && (
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2 shrink-0">{description}</p>
+      )}
+
+      {/* Time and servings info */}
+      <div className="flex flex-wrap gap-3 mb-4 shrink-0">
+        {prepTime && (
+          <span className="text-sm text-muted-foreground">⏱️ Prep: {prepTime}</span>
+        )}
+        {cookTime && (
+          <span className="text-sm text-muted-foreground">🔥 Cook: {cookTime}</span>
+        )}
+        {servings && (
+          <span className="text-sm text-muted-foreground">🍽️ {servings} servings</span>
+        )}
+      </div>
+
+      {/* Calories if available */}
+      {totalCalories && (
+        <div className="mb-3 shrink-0">
+          <span className="text-base font-semibold text-foreground">{totalCalories} cal</span>
+          <span className="text-sm text-muted-foreground"> per serving</span>
+        </div>
+      )}
+
+      {/* Ingredients preview */}
+      {ingredients.length > 0 && (
+        <div className="flex-1 overflow-hidden">
+          <p className="text-sm font-medium text-muted-foreground mb-2">Ingredients</p>
+          <div className="space-y-1">
+            {ingredients.slice(0, 4).map((ing, idx) => (
+              <p key={idx} className="text-sm text-foreground truncate">
+                • {ing.name}
+              </p>
+            ))}
+            {ingredients.length > 4 && (
+              <p className="text-sm text-muted-foreground">+{ingredients.length - 4} more</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -648,6 +737,11 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
                 carouselItems.push({
                   type: 'summary',
                   content: <RoutineSummaryCard contentData={post.contentData as RoutineContentData} />
+                });
+              } else if (post.type === "recipe") {
+                carouselItems.push({
+                  type: 'summary',
+                  content: <RecipeSummaryCard contentData={post.contentData as RecipeContentData} />
                 });
               }
             }
