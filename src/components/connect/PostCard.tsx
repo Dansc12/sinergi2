@@ -146,9 +146,9 @@ const ContentCarousel = ({
     }
   };
 
-  // Fixed container class for consistent sizing
-  const itemContainerClass = "relative aspect-square w-full max-w-[280px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
-  const previewContainerClass = "relative aspect-square w-[70px] bg-muted rounded-lg overflow-hidden flex-shrink-0";
+  // Fixed container class for consistent sizing - same for images and summary cards
+  const itemContainerClass = "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
+  const previewContainerClass = "relative aspect-square w-[80px] bg-muted rounded-lg overflow-hidden flex-shrink-0";
 
   if (items.length === 1) {
     const item = items[0];
