@@ -23,11 +23,15 @@ export interface Post {
 }
 
 export const usePosts = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPosts = useCallback(async () => {
+    if (authLoading) {
+      return; // Wait for auth to resolve
+    }
+    
     if (!user) {
       setPosts([]);
       setIsLoading(false);
@@ -64,7 +68,7 @@ export const usePosts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     fetchPosts();
