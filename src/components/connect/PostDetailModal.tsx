@@ -392,6 +392,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     const description = contentData?.description as string;
     const category = contentData?.category as string;
     const privacy = contentData?.privacy as string;
+    const coverPhoto = contentData?.coverPhoto as string;
     const isPublic = privacy === 'public';
     const creatorId = post.userId;
 
@@ -404,47 +405,58 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     };
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-amber-400">
-          <span className="text-2xl">👥</span>
-          <h4 className="font-semibold text-lg">{name || "Group"}</h4>
-        </div>
-        
-        {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+      <div className="space-y-6 -mx-4 -mt-4">
+        {/* Cover Photo at top - like Recipe */}
+        {coverPhoto && (
+          <img
+            src={coverPhoto}
+            alt={name || "Group"}
+            className="w-full h-64 object-cover"
+          />
         )}
         
-        <div className="flex flex-wrap gap-2">
-          {category && (
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm capitalize">
-              {category}
+        <div className="px-4 space-y-4">
+          {/* Group Name */}
+          <h2 className="text-2xl font-bold">{name || "Group"}</h2>
+          
+          {/* Category and Privacy - horizontally aligned */}
+          <div className="flex flex-wrap gap-3">
+            {category && (
+              <span className="px-4 py-1.5 bg-amber-500/20 text-amber-400 rounded-full text-base font-medium capitalize">
+                {category}
+              </span>
+            )}
+            <span className="px-4 py-1.5 bg-muted text-muted-foreground rounded-full text-base font-medium">
+              {isPublic ? "Public" : "Private"}
             </span>
-          )}
-          <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-sm">
-            {isPublic ? "Public" : "Private"}
-          </span>
-        </div>
-
-        {/* Join/Request Button */}
-        {isMember ? (
-          <div className="flex items-center gap-2 text-success">
-            <Check size={18} />
-            <span className="text-sm font-medium">You're a member</span>
           </div>
-        ) : hasRequestedInvite ? (
-          <Button disabled className="w-full">
-            Invite Sent
-          </Button>
-        ) : (
-          <Button 
-            onClick={handleJoinClick} 
-            className="w-full"
-            disabled={joinLoading}
-          >
-            <Users size={18} className="mr-2" />
-            {isPublic ? 'Join Group' : 'Request Invite'}
-          </Button>
-        )}
+          
+          {/* Description */}
+          {description && (
+            <p className="text-base text-muted-foreground">{description}</p>
+          )}
+
+          {/* Join/Request Button */}
+          {isMember ? (
+            <div className="flex items-center gap-2 text-success">
+              <Check size={18} />
+              <span className="text-sm font-medium">You're a member</span>
+            </div>
+          ) : hasRequestedInvite ? (
+            <Button disabled className="w-full">
+              Invite Sent
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleJoinClick} 
+              className="w-full"
+              disabled={joinLoading}
+            >
+              <Users size={18} className="mr-2" />
+              {isPublic ? 'Join Group' : 'Request Invite'}
+            </Button>
+          )}
+        </div>
       </div>
     );
   };

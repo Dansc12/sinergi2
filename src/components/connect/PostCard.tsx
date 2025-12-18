@@ -554,37 +554,47 @@ interface GroupContentData {
   description?: string;
   category?: string;
   privacy?: string;
+  coverPhoto?: string;
 }
 
-// Group Summary Card for groups
+// Group Summary Card for groups - styled like RecipeSummaryCard
 const GroupSummaryCard = ({ contentData }: { contentData: GroupContentData }) => {
   const name = contentData.name || "Group";
-  const description = contentData.description || "";
   const category = contentData.category || "";
   const privacy = contentData.privacy || "public";
+  const coverPhoto = contentData.coverPhoto;
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-amber-500/15 to-orange-500/5 border border-amber-500/30 rounded-xl p-5 flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 mb-3 shrink-0">
-        <span className="text-2xl">👥</span>
-        <h4 className="text-xl font-bold text-foreground truncate">{name}</h4>
-      </div>
-
-      {/* Description */}
-      {description && (
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">{description}</p>
+    <div className="h-full w-full bg-gradient-to-br from-amber-500/15 to-orange-500/5 border border-amber-500/30 rounded-xl overflow-hidden flex flex-col">
+      {/* Cover Photo */}
+      {coverPhoto && (
+        <div className="w-full h-32 shrink-0">
+          <img
+            src={coverPhoto}
+            alt={name}
+            className="w-full h-full object-cover"
+          />
+        </div>
       )}
+      
+      <div className="p-5 flex flex-col flex-1">
+        {/* Group Name */}
+        <div className="flex items-center gap-2 mb-2 shrink-0">
+          <span className="text-2xl">👥</span>
+          <h4 className="text-xl font-bold text-foreground truncate">{name}</h4>
+        </div>
 
-      {/* Category and Privacy */}
-      <div className="mt-auto pt-3 border-t border-amber-500/30 flex flex-wrap gap-3">
-        {category && (
-          <span className="text-sm bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full capitalize">
-            {category}
+        {/* Category and Privacy - horizontally aligned */}
+        <div className="flex flex-wrap gap-3 mt-auto">
+          {category && (
+            <span className="text-base bg-amber-500/20 text-amber-300 px-3 py-1.5 rounded-full capitalize font-medium">
+              {category}
+            </span>
+          )}
+          <span className="text-base bg-muted text-muted-foreground px-3 py-1.5 rounded-full capitalize font-medium">
+            {privacy === "public" ? "Public" : "Private"}
           </span>
-        )}
-        <span className="text-sm bg-muted text-muted-foreground px-3 py-1 rounded-full capitalize">
-          {privacy === "public" ? "Public" : "Private"}
-        </span>
+        </div>
       </div>
     </div>
   );
