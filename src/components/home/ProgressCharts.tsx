@@ -196,8 +196,6 @@ export const ProgressCharts = () => {
           data={hasWeightData ? weightChartData : []}
           color="hsl(270, 91%, 65%)"
           onClick={() => setWeightDetailOpen(true)}
-          onAddClick={() => setWeighInModalOpen(true)}
-          showAddButton={true}
           subtitle={weightSubtitle}
         />
         <ChartCard
