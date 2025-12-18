@@ -187,7 +187,9 @@ const ProfilePage = () => {
     );
   }
 
-  const displayName = profile?.first_name || "Your Name";
+  const displayName = profile?.last_name 
+    ? `${profile.first_name} ${profile.last_name}` 
+    : (profile?.first_name || "Your Name");
   const userBio = profile?.bio || "Add a bio to tell others about yourself";
   const avatarUrl = profile?.avatar_url;
   const interests = profile?.hobbies || [];

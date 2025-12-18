@@ -72,46 +72,18 @@ const UserProfilePage = () => {
 
       setFriendsCount(friendsAccepted || 0);
 
-      // Fetch stats
-      const { count: mealsCount } = await supabase
-        .from('meal_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
+      // Fetch stats using database function that bypasses RLS for counting
+      const { data: statsData } = await supabase
+        .rpc('get_user_stats', { target_user_id: userId });
 
-      const { count: workoutsCount } = await supabase
-        .from('workout_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-
-      // Calculate days since first activity
-      const { data: firstMeal } = await supabase
-        .from('meal_logs')
-        .select('created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single();
-
-      const { data: firstWorkout } = await supabase
-        .from('workout_logs')
-        .select('created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single();
-
-      let daysActive = 0;
-      const dates = [firstMeal?.created_at, firstWorkout?.created_at].filter(Boolean);
-      if (dates.length > 0) {
-        const earliest = new Date(Math.min(...dates.map(d => new Date(d!).getTime())));
-        daysActive = Math.floor((Date.now() - earliest.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (statsData) {
+        const stats = statsData as { meals: number; days: number; workouts: number };
+        setStats({
+          meals: stats.meals || 0,
+          days: stats.days || 0,
+          workouts: stats.workouts || 0
+        });
       }
-
-      setStats({
-        meals: mealsCount || 0,
-        days: daysActive,
-        workouts: workoutsCount || 0
-      });
 
     } catch (error) {
       console.error('Error fetching profile:', error);
