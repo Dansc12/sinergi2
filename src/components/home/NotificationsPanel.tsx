@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Bell, Heart, MessageCircle, UserPlus, Check, Trash2, CheckCheck, UserCheck } from 'lucide-react';
+import { Bell, Heart, MessageCircle, UserPlus, Check, Trash2, CheckCheck, UserCheck, Users } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { acceptGroupInviteRequest } from '@/hooks/useGroupJoin';
 
 const reactionOrder = ["🙌", "💯", "❤️", "💪", "🎉"];
 
@@ -21,6 +22,9 @@ const getNotificationIcon = (type: string) => {
     case 'friend_request':
     case 'friend_accepted':
       return <UserPlus size={16} className="text-green-500" />;
+    case 'group_invite_request':
+    case 'group_invite_accepted':
+      return <Users size={16} className="text-amber-500" />;
     default:
       return <Bell size={16} className="text-muted-foreground" />;
   }
@@ -117,6 +121,7 @@ function NotificationItem({
   onMarkAsRead, 
   onDelete,
   onAcceptFriendRequest,
+  onAcceptGroupInvite,
   onNavigateToProfile,
   onClose
 }: { 
@@ -124,10 +129,12 @@ function NotificationItem({
   onMarkAsRead: () => void;
   onDelete: () => void;
   onAcceptFriendRequest?: () => void;
+  onAcceptGroupInvite?: () => void;
   onNavigateToProfile?: () => void;
   onClose?: () => void;
 }) {
   const isFriendRequest = notification.type === 'friend_request';
+  const isGroupInviteRequest = notification.type === 'group_invite_request';
   
   // Extract name from message for friend requests
   const extractName = () => {
@@ -135,8 +142,15 @@ function NotificationItem({
     const match = notification.message.match(/^(\w+)\s+sent you/);
     return match ? match[1] : null;
   };
+
+  // Extract name from group invite request message
+  const extractGroupInviteName = () => {
+    if (!notification.message) return null;
+    const match = notification.message.match(/^(\w+)\s+wants to join/);
+    return match ? match[1] : null;
+  };
   
-  const senderName = extractName();
+  const senderName = isFriendRequest ? extractName() : (isGroupInviteRequest ? extractGroupInviteName() : null);
 
   const handleNameClick = () => {
     if (notification.related_user_id && onNavigateToProfile) {
@@ -182,6 +196,16 @@ function NotificationItem({
                   </button>
                   {' sent you a friend request'}
                 </>
+              ) : isGroupInviteRequest && senderName ? (
+                <>
+                  <button
+                    onClick={handleNameClick}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {senderName}
+                  </button>
+                  {notification.message.replace(senderName, '').trim()}
+                </>
               ) : (
                 <span className="truncate">{notification.message}</span>
               )}
@@ -199,6 +223,21 @@ function NotificationItem({
               onClick={(e) => {
                 e.stopPropagation();
                 onAcceptFriendRequest();
+              }}
+            >
+              <UserCheck size={14} className="mr-1" />
+              Accept
+            </Button>
+          )}
+
+          {/* Accept button for group invite requests */}
+          {isGroupInviteRequest && onAcceptGroupInvite && (
+            <Button
+              size="sm"
+              className="mt-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAcceptGroupInvite();
               }}
             >
               <UserCheck size={14} className="mr-1" />
@@ -300,6 +339,21 @@ export function NotificationsPanel() {
     }
   };
 
+  const handleAcceptGroupInvite = async (notification: AggregatedNotification) => {
+    if (!notification.related_user_id || !notification.related_content_id) return;
+
+    const success = await acceptGroupInviteRequest(
+      notification.related_user_id,
+      notification.related_content_id
+    );
+
+    if (success) {
+      handleMarkAsRead(notification);
+      handleDelete(notification);
+      refreshNotifications();
+    }
+  };
+
   const handleNavigateToProfile = (userId: string) => {
     setIsOpen(false);
     navigate(`/user/${userId}`);
@@ -368,6 +422,11 @@ export function NotificationsPanel() {
                   onAcceptFriendRequest={
                     notification.type === 'friend_request' 
                       ? () => handleAcceptFriendRequest(notification) 
+                      : undefined
+                  }
+                  onAcceptGroupInvite={
+                    notification.type === 'group_invite_request'
+                      ? () => handleAcceptGroupInvite(notification)
                       : undefined
                   }
                   onNavigateToProfile={

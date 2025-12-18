@@ -189,13 +189,51 @@ export const usePosts = () => {
         });
     }
 
-    // Create post first to get the ID
+    // If this is a group, create the group first and get the ID
+    let groupId: string | null = null;
+    if (postData.content_type === "group") {
+      const groupData = postData.content_data;
+      const groupName = (groupData.name as string) || "Unnamed Group";
+      const groupSlug = groupName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+      
+      const { data: newGroup, error: groupError } = await supabase
+        .from("groups")
+        .insert({
+          name: groupName,
+          slug: groupSlug,
+          description: (groupData.description as string) || null,
+          creator_id: user.id,
+          visibility: postData.visibility === "public" ? "public" : "private",
+          avatar_url: postData.images?.[0] || null,
+        })
+        .select()
+        .single();
+
+      if (groupError) throw groupError;
+      groupId = newGroup.id;
+
+      // Add creator as group member with admin role
+      await supabase
+        .from("group_members")
+        .insert({
+          group_id: groupId,
+          user_id: user.id,
+          role: "admin",
+        });
+    }
+
+    // Include groupId in content_data for group posts
+    const finalContentData = groupId
+      ? { ...postData.content_data, groupId }
+      : postData.content_data;
+
+    // Create post
     const { data, error } = await supabase
       .from("posts")
       .insert({
         user_id: user.id,
         content_type: postData.content_type,
-        content_data: postData.content_data as Json,
+        content_data: finalContentData as Json,
         description: postData.description || null,
         images: postData.images || [],
         visibility: postData.visibility,

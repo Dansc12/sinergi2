@@ -1,8 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { Dumbbell, UtensilsCrossed, BookOpen, Calendar } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, BookOpen, Calendar, Users, Check } from "lucide-react";
+import { useGroupJoin } from "@/hooks/useGroupJoin";
 
 interface Exercise {
   name: string;
@@ -60,6 +62,7 @@ interface PostDetailModalProps {
   onClose: () => void;
   post: {
     id: string;
+    userId?: string;
     user: {
       name: string;
       avatar?: string;
@@ -77,6 +80,8 @@ interface PostDetailModalProps {
 
 export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) => {
   const contentData = post.contentData as Record<string, unknown> | undefined;
+  const groupId = post.type === 'group' ? (contentData?.groupId as string) : undefined;
+  const { isMember, hasRequestedInvite, isLoading: joinLoading, joinPublicGroup, requestInvite } = useGroupJoin(groupId);
 
   const renderWorkoutDetails = () => {
     const exercises = (contentData?.exercises as Exercise[]) || [];
@@ -387,6 +392,16 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     const description = contentData?.description as string;
     const category = contentData?.category as string;
     const privacy = contentData?.privacy as string;
+    const isPublic = privacy === 'public';
+    const creatorId = post.userId;
+
+    const handleJoinClick = () => {
+      if (isPublic) {
+        joinPublicGroup();
+      } else if (creatorId) {
+        requestInvite(creatorId, name || 'the group');
+      }
+    };
 
     return (
       <div className="space-y-4">
@@ -406,9 +421,30 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </span>
           )}
           <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-sm">
-            {privacy === "public" ? "Public" : "Private"}
+            {isPublic ? "Public" : "Private"}
           </span>
         </div>
+
+        {/* Join/Request Button */}
+        {isMember ? (
+          <div className="flex items-center gap-2 text-success">
+            <Check size={18} />
+            <span className="text-sm font-medium">You're a member</span>
+          </div>
+        ) : hasRequestedInvite ? (
+          <Button disabled className="w-full">
+            Invite Sent
+          </Button>
+        ) : (
+          <Button 
+            onClick={handleJoinClick} 
+            className="w-full"
+            disabled={joinLoading}
+          >
+            <Users size={18} className="mr-2" />
+            {isPublic ? 'Join Group' : 'Request Invite'}
+          </Button>
+        )}
       </div>
     );
   };
