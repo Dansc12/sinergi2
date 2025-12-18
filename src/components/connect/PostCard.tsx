@@ -338,36 +338,37 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
   const workoutName = (rawTitle && rawTitle.trim()) ? rawTitle : getAutoWorkoutName(createdAt);
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 rounded-xl p-4 flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 mb-3 shrink-0">
-        <span className="text-xl">💪</span>
-        <h4 className="text-lg font-bold text-foreground truncate">{workoutName}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 rounded-xl p-5 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-4 shrink-0">
+        <span className="text-2xl">💪</span>
+        <h4 className="text-xl font-bold text-foreground truncate">{workoutName}</h4>
       </div>
 
       {/* Exercises with individual set details */}
-      <div className="space-y-3 flex-1 overflow-hidden">
+      <div className="space-y-4 flex-1 overflow-hidden">
         {exercises.map((exercise, idx) => {
-          const isCardio = exercise.isCardio || (exercise.sets && exercise.sets.some(s => s.distance !== undefined));
+          // Check if this is a cardio exercise - only true if explicitly marked or has meaningful distance values
+          const isCardio = exercise.isCardio === true;
 
           return (
             <div key={idx} className="space-y-1">
-              <p className="text-sm font-semibold text-foreground truncate">{exercise.name}</p>
+              <p className="text-base font-semibold text-foreground truncate">{exercise.name}</p>
               {exercise.notes && (
-                <p className="text-xs text-muted-foreground italic truncate">"{exercise.notes}"</p>
+                <p className="text-sm text-muted-foreground italic truncate">"{exercise.notes}"</p>
               )}
               {exercise.sets && exercise.sets.length > 0 && (
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                <div className="flex flex-col gap-0.5">
                   {exercise.sets.map((set, setIdx) => {
                     const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : set.weight || 0;
                     const reps = typeof set.reps === 'string' ? parseFloat(set.reps) || 0 : set.reps || 0;
                     const distance = typeof set.distance === 'string' ? parseFloat(set.distance) || 0 : set.distance || 0;
                     
                     return (
-                      <span key={setIdx} className="text-xs text-muted-foreground whitespace-nowrap">
+                      <span key={setIdx} className="text-sm text-muted-foreground">
                         {isCardio ? (
-                          <>{distance} mi{set.time ? ` • ${set.time}` : ''}</>
+                          <>Set {setIdx + 1}: {distance} mi{set.time ? ` • ${set.time}` : ''}</>
                         ) : (
-                          <>{weight} × {reps}</>
+                          <>Set {setIdx + 1}: {weight} lbs × {reps} reps</>
                         )}
                       </span>
                     );
@@ -415,35 +416,35 @@ const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }
     : null;
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-violet-500/15 to-violet-500/5 border border-violet-500/30 rounded-xl p-4 flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 mb-2 shrink-0">
-        <span className="text-xl">📋</span>
-        <h4 className="text-lg font-bold text-foreground truncate">{routineName}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-violet-500/15 to-violet-500/5 border border-violet-500/30 rounded-xl p-5 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
+        <span className="text-2xl">📋</span>
+        <h4 className="text-xl font-bold text-foreground truncate">{routineName}</h4>
       </div>
 
       {/* Schedule info */}
       {daysDisplay && (
-        <p className="text-xs text-muted-foreground mb-3 shrink-0">{daysDisplay}</p>
+        <p className="text-sm text-muted-foreground mb-4 shrink-0">{daysDisplay}</p>
       )}
 
-      {/* Exercises with individual set details */}
-      <div className="space-y-3 flex-1 overflow-hidden">
+      {/* Exercises with individual set details stacked vertically */}
+      <div className="space-y-4 flex-1 overflow-hidden">
         {exercises.map((exercise, idx) => {
           const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
           const setCount = Array.isArray(exercise.sets) ? exercise.sets.length : (exercise.sets || 0);
 
           return (
             <div key={idx} className="space-y-1">
-              <p className="text-sm font-semibold text-foreground truncate">{exercise.name}</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+              <p className="text-base font-semibold text-foreground truncate">{exercise.name}</p>
+              <div className="flex flex-col gap-0.5">
                 {setsArray.length > 0 ? (
                   setsArray.map((set, setIdx) => (
-                    <span key={setIdx} className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span key={setIdx} className="text-sm text-muted-foreground">
                       Set {setIdx + 1}: {set.minReps}-{set.maxReps} reps
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     {setCount} sets × {exercise.minReps || 0}-{exercise.maxReps || 0} reps
                   </span>
                 )}
