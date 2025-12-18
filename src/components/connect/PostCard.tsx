@@ -399,6 +399,7 @@ interface RoutineExercise {
 
 interface RoutineContentData {
   routineName?: string;
+  name?: string; // Legacy fallback
   exercises?: RoutineExercise[];
   scheduledDays?: string[];
   recurring?: string;
@@ -406,7 +407,7 @@ interface RoutineContentData {
 
 // Routine Summary Card for routines without photos/descriptions
 const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }) => {
-  const routineName = contentData.routineName || "Workout Routine";
+  const routineName = contentData.routineName || contentData.name || "Workout Routine";
   const exercises = contentData.exercises || [];
   const scheduledDays = contentData.scheduledDays || [];
 
