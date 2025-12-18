@@ -334,70 +334,50 @@ const calculateExerciseVolume = (exercise: WorkoutExercise): number => {
 // Workout Summary Card for workouts without photos/descriptions (Preview mode)
 const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutContentData; createdAt?: string }) => {
   const exercises = contentData.exercises || [];
-  // Check both title (from CreateWorkoutPage) and name fields - ensure non-empty string
   const rawTitle = contentData.title || contentData.name;
   const workoutName = (rawTitle && rawTitle.trim()) ? rawTitle : getAutoWorkoutName(createdAt);
-  
-  // Calculate total volume (only for weight-based exercises)
-  let totalVolume = 0;
-  let hasWeightExercises = false;
-  
-  exercises.forEach(exercise => {
-    const exerciseVolume = calculateExerciseVolume(exercise);
-    if (exerciseVolume > 0) {
-      totalVolume += exerciseVolume;
-      hasWeightExercises = true;
-    }
-  });
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 rounded-xl p-5 flex flex-col">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">💪</span>
-        <h4 className="text-xl font-bold text-foreground">{workoutName}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 rounded-xl p-4 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
+        <span className="text-xl">💪</span>
+        <h4 className="text-lg font-bold text-foreground truncate">{workoutName}</h4>
       </div>
 
-      {/* Exercises - simplified preview showing exercise name + per-exercise volume */}
-      <div className="space-y-3 mb-4 flex-1 overflow-hidden">
+      {/* Exercises with individual set details */}
+      <div className="space-y-3 flex-1 overflow-hidden">
         {exercises.map((exercise, idx) => {
-          const exerciseVolume = calculateExerciseVolume(exercise);
           const isCardio = exercise.isCardio || (exercise.sets && exercise.sets.some(s => s.distance !== undefined));
 
-          // For cardio, show total distance/time summary
-          let cardioSummary = "";
-          if (isCardio && exercise.sets) {
-            const totalDistance = exercise.sets.reduce((sum, s) => {
-              const dist = typeof s.distance === 'string' ? parseFloat(s.distance) || 0 : s.distance || 0;
-              return sum + dist;
-            }, 0);
-            if (totalDistance > 0) {
-              cardioSummary = `${totalDistance} mi`;
-            }
-          }
-
           return (
-            <div key={idx} className="flex items-center justify-between py-1">
-              <span className="text-base font-medium text-foreground">{exercise.name}</span>
-              <span className="text-base text-muted-foreground">
-                {isCardio ? cardioSummary : (exerciseVolume > 0 ? `${exerciseVolume.toLocaleString()} lbs` : "")}
-              </span>
+            <div key={idx} className="space-y-1">
+              <p className="text-sm font-semibold text-foreground truncate">{exercise.name}</p>
+              {exercise.notes && (
+                <p className="text-xs text-muted-foreground italic truncate">"{exercise.notes}"</p>
+              )}
+              {exercise.sets && exercise.sets.length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  {exercise.sets.map((set, setIdx) => {
+                    const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : set.weight || 0;
+                    const reps = typeof set.reps === 'string' ? parseFloat(set.reps) || 0 : set.reps || 0;
+                    const distance = typeof set.distance === 'string' ? parseFloat(set.distance) || 0 : set.distance || 0;
+                    
+                    return (
+                      <span key={setIdx} className="text-xs text-muted-foreground whitespace-nowrap">
+                        {isCardio ? (
+                          <>{distance} mi{set.time ? ` • ${set.time}` : ''}</>
+                        ) : (
+                          <>{weight} × {reps}</>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* Total volume - only show if there are weight-based exercises */}
-      {hasWeightExercises && (
-        <div className="pt-4 border-t border-primary/30">
-          <div className="text-center">
-            <p className="text-xl font-bold text-foreground">{totalVolume.toLocaleString()} lbs</p>
-            <p className="text-sm text-muted-foreground">Total Volume</p>
-          </div>
-        </div>
-      )}
-
-      {/* Tap to view details hint */}
-      <p className="text-sm text-center text-muted-foreground mt-auto pt-3">Tap to view details</p>
     </div>
   );
 };
@@ -428,7 +408,6 @@ const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }
   const routineName = contentData.routineName || "Workout Routine";
   const exercises = contentData.exercises || [];
   const scheduledDays = contentData.scheduledDays || [];
-  const recurring = contentData.recurring;
 
   // Format scheduled days
   const daysDisplay = scheduledDays.length > 0 
@@ -436,44 +415,43 @@ const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }
     : null;
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-violet-500/15 to-violet-500/5 border border-violet-500/30 rounded-xl p-5 flex flex-col">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">📋</span>
-        <h4 className="text-xl font-bold text-foreground">{routineName}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-violet-500/15 to-violet-500/5 border border-violet-500/30 rounded-xl p-4 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-2 shrink-0">
+        <span className="text-xl">📋</span>
+        <h4 className="text-lg font-bold text-foreground truncate">{routineName}</h4>
       </div>
 
-      {/* Schedule info - only show days, not duration */}
+      {/* Schedule info */}
       {daysDisplay && (
-        <div className="mb-3 text-base text-muted-foreground">
-          <span>{daysDisplay}</span>
-        </div>
+        <p className="text-xs text-muted-foreground mb-3 shrink-0">{daysDisplay}</p>
       )}
 
-      {/* Exercises */}
-      <div className="space-y-3 mb-2 flex-1 overflow-hidden">
-        {exercises.slice(0, 4).map((exercise, idx) => {
+      {/* Exercises with individual set details */}
+      <div className="space-y-3 flex-1 overflow-hidden">
+        {exercises.map((exercise, idx) => {
           const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
           const setCount = Array.isArray(exercise.sets) ? exercise.sets.length : (exercise.sets || 0);
-          const firstSet = setsArray[0];
-          const minReps = firstSet?.minReps || exercise.minReps || 0;
-          const maxReps = firstSet?.maxReps || exercise.maxReps || 0;
 
           return (
-            <div key={idx} className="flex items-center justify-between py-1">
-              <span className="text-base font-medium text-foreground">{exercise.name}</span>
-              <span className="text-base text-muted-foreground">
-                {setCount} sets × {minReps}-{maxReps} reps
-              </span>
+            <div key={idx} className="space-y-1">
+              <p className="text-sm font-semibold text-foreground truncate">{exercise.name}</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                {setsArray.length > 0 ? (
+                  setsArray.map((set, setIdx) => (
+                    <span key={setIdx} className="text-xs text-muted-foreground whitespace-nowrap">
+                      Set {setIdx + 1}: {set.minReps}-{set.maxReps} reps
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    {setCount} sets × {exercise.minReps || 0}-{exercise.maxReps || 0} reps
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}
-        {exercises.length > 4 && (
-          <p className="text-sm text-muted-foreground">+{exercises.length - 4} more exercises</p>
-        )}
       </div>
-
-      {/* Tap to view details hint */}
-      <p className="text-sm text-center text-muted-foreground mt-auto pt-3">Tap to view details</p>
     </div>
   );
 };
