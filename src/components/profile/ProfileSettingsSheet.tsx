@@ -22,6 +22,7 @@ interface ProfileSettingsSheetProps {
   onOpenChange: (open: boolean) => void;
   profile: {
     first_name: string | null;
+    last_name: string | null;
     bio: string | null;
     avatar_url: string | null;
     hobbies: string[] | null;
@@ -36,6 +37,7 @@ export const ProfileSettingsSheet = ({
   onSave 
 }: ProfileSettingsSheetProps) => {
   const [firstName, setFirstName] = useState(profile?.first_name || "");
+  const [lastName, setLastName] = useState(profile?.last_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>(profile?.hobbies || []);
@@ -47,6 +49,7 @@ export const ProfileSettingsSheet = ({
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
       setFirstName(profile?.first_name || "");
+      setLastName(profile?.last_name || "");
       setBio(profile?.bio || "");
       setAvatarUrl(profile?.avatar_url || "");
       setSelectedHobbies(profile?.hobbies || []);
@@ -125,6 +128,7 @@ export const ProfileSettingsSheet = ({
         .from('profiles')
         .update({
           first_name: firstName.trim(),
+          last_name: lastName.trim() || null,
           bio: bio.trim() || null,
           avatar_url: avatarUrl || null,
           hobbies: selectedHobbies.length > 0 ? selectedHobbies : null,
@@ -183,16 +187,27 @@ export const ProfileSettingsSheet = ({
             <p className="text-xs text-muted-foreground mt-2">Tap to change photo</p>
           </div>
 
-          {/* Name */}
+          {/* Name Fields */}
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Your name"
-              maxLength={50}
-            />
+            <Label>Name</Label>
+            <div className="flex gap-3">
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                maxLength={50}
+                className="flex-1"
+              />
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name (optional)"
+                maxLength={50}
+                className="flex-1"
+              />
+            </div>
           </div>
 
           {/* Bio */}
