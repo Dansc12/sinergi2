@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
-import { CameraCapture } from "@/components/CameraCapture";
+import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
+import { usePhotoPicker } from "@/hooks/useCamera";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SelectedFood {
@@ -46,9 +47,15 @@ const CreateMealPage = () => {
   const [selectedFoods, setSelectedFoods] = useState<SelectedFood[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [showFoodsList, setShowFoodsList] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodItem | null>(null);
   const [isFoodDetailOpen, setIsFoodDetailOpen] = useState(false);
+
+  const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
+    setPhotos([...photos, ...urls]);
+    toast({ title: "Photos added!", description: `${urls.length} photo(s) added.` });
+  });
 
   // Restore state if coming back from share screen or preselect meal type
   useEffect(() => {
@@ -427,12 +434,36 @@ const CreateMealPage = () => {
           variant="outline"
           size="lg"
           className="w-full gap-2 rounded-xl border-border bg-card hover:bg-muted"
-          onClick={() => setIsCameraOpen(true)}
+          onClick={() => setIsChoiceDialogOpen(true)}
         >
           <Camera size={20} />
           Take a Photo {photos.length > 0 && `(${photos.length})`}
         </Button>
       </div>
+
+      {/* Hidden file input for gallery */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Photo Choice Dialog */}
+      <PhotoChoiceDialog
+        isOpen={isChoiceDialogOpen}
+        onClose={() => setIsChoiceDialogOpen(false)}
+        onChooseCamera={() => {
+          setIsChoiceDialogOpen(false);
+          setIsCameraOpen(true);
+        }}
+        onChooseGallery={() => {
+          setIsChoiceDialogOpen(false);
+          openPicker();
+        }}
+      />
 
       {/* Camera Capture Modal */}
       <CameraCapture

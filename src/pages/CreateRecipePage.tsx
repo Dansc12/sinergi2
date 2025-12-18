@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
-import { CameraCapture } from "@/components/CameraCapture";
+import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
+import { usePhotoPicker } from "@/hooks/useCamera";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
 
 interface Ingredient {
@@ -50,11 +51,21 @@ const CreateRecipePage = () => {
   const [instructions, setInstructions] = useState<string[]>([""]);
   const [ingredientSearchValue, setIngredientSearchValue] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
   const [isCoverPhotoMode, setIsCoverPhotoMode] = useState(false);
+
+  const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
+    if (isCoverPhotoMode && urls.length > 0) {
+      setCoverPhoto(urls[0]);
+    } else {
+      setAdditionalImages([...additionalImages, ...urls]);
+    }
+    setIsCoverPhotoMode(false);
+  });
 
   // Restore state if coming back from share screen
   useEffect(() => {
@@ -171,7 +182,7 @@ const CreateRecipePage = () => {
 
   const openCoverPhotoCamera = () => {
     setIsCoverPhotoMode(true);
-    setIsCameraOpen(true);
+    setIsChoiceDialogOpen(true);
   };
 
   return (
@@ -377,12 +388,36 @@ const CreateRecipePage = () => {
         <Button 
           variant="outline" 
           className="w-full h-14 gap-2 border-border"
-          onClick={() => setIsCameraOpen(true)}
+          onClick={() => setIsChoiceDialogOpen(true)}
         >
           <Camera size={20} />
           Add More Photos
         </Button>
       </div>
+
+      {/* Hidden file input for gallery */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Photo Choice Dialog */}
+      <PhotoChoiceDialog
+        isOpen={isChoiceDialogOpen}
+        onClose={() => setIsChoiceDialogOpen(false)}
+        onChooseCamera={() => {
+          setIsChoiceDialogOpen(false);
+          setIsCameraOpen(true);
+        }}
+        onChooseGallery={() => {
+          setIsChoiceDialogOpen(false);
+          openPicker();
+        }}
+      />
 
       {/* Camera Modal */}
       <CameraCapture
