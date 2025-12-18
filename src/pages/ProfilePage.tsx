@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings, Flame, Users, Camera, Loader2 } from "lucide-react";
+import { ChevronLeft, Settings, Flame, Users, Camera, Loader2, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileContentFeed } from "@/components/profile/ProfileContentFeed";
@@ -269,27 +275,33 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Content Tabs */}
-        <div className="border-b border-border mb-4">
-          <div className="flex overflow-x-auto hide-scrollbar -mx-4 px-4">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors relative",
-                  activeTab === tab.id
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+        {/* Content Type Selector */}
+        <div className="mb-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between text-base font-medium"
               >
-                {tab.label}
-                {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
+                {tabs.find(t => t.id === activeTab)?.label}
+                <ChevronDown size={18} className="text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[calc(100vw-2rem)] bg-card border border-border">
+              {tabs.map((tab) => (
+                <DropdownMenuItem
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "text-base py-3 cursor-pointer",
+                    activeTab === tab.id && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  {tab.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Content Feed */}
