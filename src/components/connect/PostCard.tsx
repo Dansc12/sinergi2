@@ -71,11 +71,17 @@ interface PostCardProps {
   onPostClick?: (post: PostData) => void;
 }
 
-const ImageCarousel = ({
-  images,
+// Unified content carousel that can display images and summary cards
+interface CarouselItem {
+  type: 'image' | 'summary';
+  content: string | React.ReactNode;
+}
+
+const ContentCarousel = ({
+  items,
   onDoubleTap,
 }: {
-  images: string[];
+  items: CarouselItem[];
   onDoubleTap: () => void;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -97,9 +103,9 @@ const ImageCarousel = ({
 
     if (Math.abs(diff) > threshold) {
       if (diff > 0) {
-        setCurrentIndex((prev) => (prev + 1) % images.length);
+        setCurrentIndex((prev) => (prev + 1) % items.length);
       } else {
-        setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+        setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
       }
     }
   };
@@ -114,18 +120,41 @@ const ImageCarousel = ({
     }
   };
 
+  const renderItem = (item: CarouselItem, isCenter: boolean = true) => {
+    if (item.type === 'image') {
+      return (
+        <img
+          src={item.content as string}
+          alt="Post"
+          className="w-full h-full object-cover"
+        />
+      );
+    } else {
+      // Summary card - render as-is for center, show placeholder for edges
+      if (isCenter) {
+        return <div className="w-full h-full flex items-center justify-center">{item.content}</div>;
+      }
+      return <div className="w-full h-full bg-muted/50 flex items-center justify-center text-muted-foreground text-xs">📋</div>;
+    }
+  };
+
   const imageContainerClass =
     "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
 
-  if (images.length === 1) {
+  if (items.length === 1) {
+    const item = items[0];
+    if (item.type === 'summary') {
+      // For single summary card, render without the image container constraints
+      return (
+        <div className="py-1" onClick={handleClick}>
+          {item.content}
+        </div>
+      );
+    }
     return (
       <div className="px-4 py-1 flex justify-center">
         <div className={imageContainerClass} onClick={handleClick}>
-          <img
-            src={images[0]}
-            alt="Post"
-            className="w-full h-full object-cover"
-          />
+          {renderItem(item)}
         </div>
       </div>
     );
@@ -139,37 +168,42 @@ const ImageCarousel = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Previous item preview */}
         <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
-          <img
-            src={images[(currentIndex - 1 + images.length) % images.length]}
-            alt="Previous"
-            className="w-full h-full object-cover"
-          />
+          {renderItem(items[(currentIndex - 1 + items.length) % items.length], false)}
         </div>
 
+        {/* Current item */}
         <motion.div
           key={currentIndex}
           initial={{ opacity: 0.9, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className={imageContainerClass}
+          className={items[currentIndex].type === 'summary' ? "w-full max-w-[320px] flex-shrink-0" : imageContainerClass}
           onClick={handleClick}
         >
-          <img
-            src={images[currentIndex]}
-            alt="Post"
-            className="w-full h-full object-cover"
-          />
+          {renderItem(items[currentIndex], true)}
         </motion.div>
 
+        {/* Next item preview */}
         <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
-          <img
-            src={images[(currentIndex + 1) % images.length]}
-            alt="Next"
-            className="w-full h-full object-cover"
-          />
+          {renderItem(items[(currentIndex + 1) % items.length], false)}
         </div>
       </div>
+      
+      {/* Dot indicators for multi-item carousels */}
+      {items.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-2">
+          {items.map((_, idx) => (
+            <div
+              key={idx}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                idx === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -578,26 +612,47 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
           </Button>
         </div>
 
-        {/* Clickable content area */}
+        {/* Clickable content area - unified carousel with images + summary card */}
         <div onClick={handleCardClick} className="cursor-pointer">
-          {post.images && post.images.length > 0 && (
-            <ImageCarousel images={post.images} onDoubleTap={handleDoubleTap} />
-          )}
-
-          {/* Meal summary card for meals without photos/description */}
-          {post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
-            <MealSummaryCard contentData={post.contentData as MealContentData} />
-          )}
-
-          {/* Workout summary card for workouts without photos/description */}
-          {post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
-            <WorkoutSummaryCard contentData={post.contentData as WorkoutContentData} createdAt={post.createdAt} />
-          )}
-
-          {/* Routine summary card for routines without photos/description */}
-          {post.type === "routine" && (!post.images || post.images.length === 0) && !post.hasDescription && post.contentData && (
-            <RoutineSummaryCard contentData={post.contentData as RoutineContentData} />
-          )}
+          {(() => {
+            // Build carousel items: images first, then summary card (for meal/workout/routine/recipe)
+            const carouselItems: CarouselItem[] = [];
+            
+            // Add images first
+            if (post.images && post.images.length > 0) {
+              post.images.forEach(img => {
+                carouselItems.push({ type: 'image', content: img });
+              });
+            }
+            
+            // Add summary card for supported content types
+            if (post.contentData) {
+              if (post.type === "meal") {
+                carouselItems.push({
+                  type: 'summary',
+                  content: <MealSummaryCard contentData={post.contentData as MealContentData} />
+                });
+              } else if (post.type === "workout") {
+                carouselItems.push({
+                  type: 'summary',
+                  content: <WorkoutSummaryCard contentData={post.contentData as WorkoutContentData} createdAt={post.createdAt} />
+                });
+              } else if (post.type === "routine") {
+                carouselItems.push({
+                  type: 'summary',
+                  content: <RoutineSummaryCard contentData={post.contentData as RoutineContentData} />
+                });
+              }
+            }
+            
+            // If there are carousel items, render the carousel
+            if (carouselItems.length > 0) {
+              return <ContentCarousel items={carouselItems} onDoubleTap={handleDoubleTap} />;
+            }
+            
+            // For posts without images and without content data (plain posts), show nothing here
+            return null;
+          })()}
         </div>
 
       <div className="relative px-4 py-1.5">
@@ -653,10 +708,8 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
         </div>
       </div>
 
-      {/* Only show text content if it's not a meal/workout/routine without photos/description */}
-      {!(post.type === "meal" && (!post.images || post.images.length === 0) && !post.hasDescription) && 
-       !(post.type === "workout" && (!post.images || post.images.length === 0) && !post.hasDescription) &&
-       !(post.type === "routine" && (!post.images || post.images.length === 0) && !post.hasDescription) && (
+      {/* Caption - always shown below carousel if there's content */}
+      {post.content && post.content.trim() && (
         <div className="px-4 pb-2">
           <p className="text-sm">
             <span className="font-semibold">{post.user.name}</span> {post.content}
