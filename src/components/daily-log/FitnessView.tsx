@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Footprints, Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, X, Play } from "lucide-react";
+import { Footprints, Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, Play, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useScheduledRoutines } from "@/hooks/useScheduledRoutines";
@@ -64,12 +65,36 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
     time: string | null;
   } | null>(null);
   
+  // Steps state
+  const [steps, setSteps] = useState(0);
+  const [showStepsInput, setShowStepsInput] = useState(false);
+  const [stepsInputValue, setStepsInputValue] = useState("");
+  const [showAddPrompt, setShowAddPrompt] = useState(false);
+  
   const { workoutLogs, isLoading } = useDailyLogs(selectedDate || new Date());
   const { routineInstances, isLoading: routinesLoading } = useScheduledRoutines(selectedDate || new Date());
   
-  const steps = 0;
   const stepsGoal = 10000;
-  const stepsLeft = stepsGoal - steps;
+  const stepsLeft = Math.max(stepsGoal - steps, 0);
+
+  // Periodic "Click to add steps" prompt
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowAddPrompt(true);
+      setTimeout(() => setShowAddPrompt(false), 2500);
+    }, 12000); // Show every 12 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStepsSubmit = () => {
+    const newSteps = parseInt(stepsInputValue);
+    if (!isNaN(newSteps) && newSteps > 0) {
+      setSteps(prev => prev + newSteps);
+    }
+    setStepsInputValue("");
+    setShowStepsInput(false);
+  };
 
   const toggleWorkout = (workoutId: string) => {
     setExpandedWorkout(expandedWorkout === workoutId ? null : workoutId);
@@ -152,9 +177,12 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Steps Progress - No Frame */}
+      {/* Steps Progress - Clickable */}
       <div className="text-center">
-        <div className="relative w-40 h-40 mx-auto mb-4">
+        <button
+          onClick={() => setShowStepsInput(true)}
+          className="relative w-40 h-40 mx-auto mb-4 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+        >
           <svg className="w-full h-full -rotate-90">
             <circle
               cx="80"
@@ -182,12 +210,75 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
             </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <Footprints className="text-primary mb-1" size={24} />
-            <span className="text-3xl font-bold">{steps.toLocaleString()}</span>
-            <span className="text-sm text-muted-foreground">{stepsLeft.toLocaleString()} to go</span>
+            <AnimatePresence mode="wait">
+              {showAddPrompt ? (
+                <motion.div
+                  key="prompt"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="flex flex-col items-center"
+                >
+                  <Plus className="text-primary mb-1" size={28} />
+                  <span className="text-sm font-medium text-primary">Click to add</span>
+                  <span className="text-sm font-medium text-primary">steps</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="steps"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="flex flex-col items-center"
+                >
+                  <Footprints className="text-primary mb-1" size={24} />
+                  <span className="text-3xl font-bold">{steps.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">{stepsLeft.toLocaleString()} to go</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
+        </button>
       </div>
+
+      {/* Steps Input Dialog */}
+      <Dialog open={showStepsInput} onOpenChange={setShowStepsInput}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Footprints size={20} className="text-primary" />
+              Add Steps
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="number"
+              placeholder="Enter steps..."
+              value={stepsInputValue}
+              onChange={(e) => setStepsInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleStepsSubmit()}
+              autoFocus
+              className="text-center text-lg"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowStepsInput(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleStepsSubmit}
+                disabled={!stepsInputValue || parseInt(stepsInputValue) <= 0}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Scheduled Routines Section */}
       <div>
