@@ -417,20 +417,6 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
         
         <ScrollArea className="max-h-[calc(85vh-80px)]">
           <div className="p-4 space-y-4">
-            {/* Images - skip for recipe as it has its own layout */}
-            {post.type !== "recipe" && post.images && post.images.length > 0 && (
-              <div className="space-y-2">
-                {post.images.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt={`${post.type} image ${idx + 1}`}
-                    className="w-full rounded-xl object-cover"
-                  />
-                ))}
-              </div>
-            )}
-            
             {/* Description if present - skip for recipe as it handles its own */}
             {post.type !== "recipe" && post.hasDescription && post.content && (
               <p className="text-sm">{post.content}</p>
