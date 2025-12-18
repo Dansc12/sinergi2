@@ -1,23 +1,10 @@
-import { Users, UserPlus, Compass } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRef, useEffect, useCallback, memo } from "react";
+import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { usePosts } from "@/hooks/usePosts";
+import { usePaginatedPosts, FeedPost } from "@/hooks/usePaginatedPosts";
 import { formatDistanceToNow } from "date-fns";
 import { PostCard } from "@/components/connect/PostCard";
-
-interface SuggestedGroup {
-  name: string;
-  members: number;
-  image: string;
-}
-
-interface SuggestedUser {
-  name: string;
-  avatar?: string;
-  handle: string;
-  mutualFriends: number;
-}
 
 const EmptyFeedState = () => {
   const navigate = useNavigate();
@@ -43,30 +30,85 @@ const EmptyFeedState = () => {
   );
 };
 
+interface PostData {
+  id: string;
+  userId: string;
+  user: {
+    name: string;
+    avatar?: string;
+    handle: string;
+  };
+  content: string;
+  images?: string[];
+  type: "workout" | "meal" | "recipe" | "post" | "routine" | "group";
+  timeAgo: string;
+  contentData: unknown;
+  hasDescription: boolean;
+  createdAt: string;
+}
+
+const transformPost = (post: FeedPost): PostData => ({
+  id: post.id,
+  userId: post.user_id,
+  user: {
+    name: post.profile?.first_name || "User",
+    avatar: post.profile?.avatar_url || undefined,
+    handle: post.profile?.username ? `@${post.profile.username}` : "@user",
+  },
+  content: post.description || "",
+  images: post.images || undefined,
+  type: post.content_type as PostData["type"],
+  timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
+  contentData: post.content_data,
+  hasDescription: !!post.description,
+  createdAt: post.created_at,
+});
+
+// Memoized post card to prevent unnecessary re-renders
+const MemoizedPostCard = memo(({ post }: { post: PostData }) => (
+  <PostCard post={post} />
+));
+MemoizedPostCard.displayName = "MemoizedPostCard";
+
 const DiscoverPage = () => {
-  const { posts, isLoading } = usePosts();
-  
-  // Transform database posts to format expected by PostCard
-  const feedPosts = posts.map((post) => ({
-    id: post.id,
-    userId: post.user_id,
-    user: {
-      name: post.profile?.first_name || "User",
-      avatar: post.profile?.avatar_url || undefined,
-      handle: post.profile?.username ? `@${post.profile.username}` : "@user",
-    },
-    content: post.description || "",
-    images: post.images || undefined,
-    type: post.content_type as "workout" | "meal" | "recipe" | "post" | "routine",
-    timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
-    contentData: post.content_data,
-    hasDescription: !!post.description,
-    createdAt: post.created_at,
-  }));
-  
-  // Empty arrays for suggested content
-  const suggestedGroups: SuggestedGroup[] = [];
-  const suggestedUsers: SuggestedUser[] = [];
+  const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePaginatedPosts();
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const isLoadingMoreRef = useRef(isLoadingMore);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isLoadingMoreRef.current = isLoadingMore;
+  }, [isLoadingMore]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMoreRef.current) {
+          loadMore();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    if (loadMoreTriggerRef.current) {
+      observerRef.current.observe(loadMoreTriggerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadMore]);
+
+  // Transform posts for display
+  const feedPosts = posts.map(transformPost);
 
   const renderFeed = () => {
     if (isLoading) {
@@ -82,73 +124,34 @@ const DiscoverPage = () => {
       return <EmptyFeedState />;
     }
 
-    const elements: React.ReactNode[] = [];
-    
-    feedPosts.forEach((post, index) => {
-      elements.push(
-        <PostCard key={post.id} post={post} />
-      );
-      
-      if (index === 1 && suggestedGroups.length > 0) {
-        elements.push(
-          <section key="groups-section" className="bg-card border-b border-border py-4">
-            <div className="flex items-center justify-between px-4 mb-3">
-              <h3 className="font-semibold">Suggested Groups</h3>
-              <button className="text-sm text-primary font-medium">See All</button>
-            </div>
-            <div className="flex gap-3 overflow-x-auto px-4 hide-scrollbar">
-              {suggestedGroups.map((group) => (
-                <div key={group.name} className="min-w-[140px] rounded-xl overflow-hidden border border-border bg-background">
-                  <img src={group.image} alt={group.name} className="w-full h-20 object-cover" />
-                  <div className="p-3">
-                    <h4 className="font-semibold text-sm truncate">{group.name}</h4>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Users size={12} />
-                      {group.members.toLocaleString()}
-                    </p>
-                    <Button size="sm" className="w-full mt-2 h-7 text-xs">Join</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      }
-      
-      if (index === 3 && suggestedUsers.length > 0) {
-        elements.push(
-          <section key="users-section" className="bg-card border-b border-border py-4">
-            <div className="flex items-center justify-between px-4 mb-3">
-              <h3 className="font-semibold">People to Follow</h3>
-              <button className="text-sm text-primary font-medium">See All</button>
-            </div>
-            <div className="flex gap-3 overflow-x-auto px-4 hide-scrollbar">
-              {suggestedUsers.map((user) => (
-                <div key={user.handle} className="min-w-[140px] rounded-xl border border-border bg-background p-4 flex flex-col items-center text-center">
-                  <Avatar className="w-16 h-16 mb-2 border-2 border-primary/30">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback className="bg-primary/20 text-primary">{user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <h4 className="font-semibold text-sm truncate w-full">{user.name}</h4>
-                  <p className="text-xs text-muted-foreground mb-2">{user.mutualFriends} mutual friends</p>
-                  <Button size="sm" variant="outline" className="w-full h-7 text-xs gap-1">
-                    <UserPlus size={14} />
-                    Follow
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      }
-    });
-    
-    return elements;
+    return (
+      <>
+        {feedPosts.map((post) => (
+          <MemoizedPostCard key={post.id} post={post} />
+        ))}
+        
+        {/* Load more trigger - invisible element that triggers loading when scrolled into view */}
+        <div ref={loadMoreTriggerRef} className="h-1" />
+        
+        {/* Loading indicator */}
+        {isLoadingMore && (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+          </div>
+        )}
+        
+        {/* End of feed message */}
+        {!hasMore && posts.length > 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">You're all caught up! 🎉</p>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
     <div className="min-h-screen bg-background">
-
       <div className="animate-fade-in pb-24">
         {renderFeed()}
       </div>
