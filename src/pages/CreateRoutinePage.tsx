@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, RotateCcw, Trash2, Camera, Plus, ChevronDown, ChevronUp, Dumbbell } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2, Camera, Plus, ChevronDown, ChevronUp, Dumbbell, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -506,16 +506,17 @@ const CreateRoutinePage = () => {
             onClick={() => setIsChoiceDialogOpen(true)}
           >
             <Camera size={20} />
-            Take a Photo {photos.length > 0 && `(${photos.length})`}
+            Take a Photo
           </Button>
           <Button
             variant="outline"
             size="lg"
-            className="flex-1 rounded-xl border-border bg-card hover:bg-muted"
+            className="flex-1 gap-1 rounded-xl border-border bg-card hover:bg-muted"
             onClick={() => setIsPhotoGalleryOpen(true)}
             disabled={photos.length === 0}
           >
-            View
+            <Images size={20} />
+            {photos.length > 0 && <span className="text-sm">{photos.length}</span>}
           </Button>
         </div>
       </div>

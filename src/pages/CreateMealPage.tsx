@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock } from "lucide-react";
+import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
@@ -396,29 +396,6 @@ const CreateMealPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Photo Preview */}
-      {photos.length > 0 && (
-        <div className="fixed bottom-36 left-0 right-0 px-4">
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
-            {photos.map((photo, index) => (
-              <div key={index} className="relative flex-shrink-0">
-                <img
-                  src={photo}
-                  alt={`Meal photo ${index + 1}`}
-                  className="w-16 h-16 rounded-lg object-cover border border-border"
-                />
-                <button
-                  onClick={() => removePhoto(index)}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full flex items-center justify-center"
-                >
-                  <X size={12} className="text-destructive-foreground" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Bottom Buttons */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8 space-y-3">
         {selectedFoods.length > 0 && (
@@ -440,16 +417,17 @@ const CreateMealPage = () => {
             onClick={() => setIsChoiceDialogOpen(true)}
           >
             <Camera size={20} />
-            Take a Photo {photos.length > 0 && `(${photos.length})`}
+            Take a Photo
           </Button>
           <Button
             variant="outline"
             size="lg"
-            className="flex-1 rounded-xl border-border bg-card hover:bg-muted"
+            className="flex-1 gap-1 rounded-xl border-border bg-card hover:bg-muted"
             onClick={() => setIsPhotoGalleryOpen(true)}
             disabled={photos.length === 0}
           >
-            View
+            <Images size={20} />
+            {photos.length > 0 && <span className="text-sm">{photos.length}</span>}
           </Button>
         </div>
       </div>

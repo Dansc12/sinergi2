@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChefHat, Trash2, Camera } from "lucide-react";
+import { ArrowLeft, ChefHat, Trash2, Camera, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -398,15 +398,16 @@ const CreateRecipePage = () => {
             onClick={() => setIsChoiceDialogOpen(true)}
           >
             <Camera size={20} />
-            Add More Photos {additionalImages.length > 0 && `(${additionalImages.length})`}
+            Add More Photos
           </Button>
           <Button
             variant="outline"
-            className="flex-1 h-14 border-border"
+            className="flex-1 h-14 gap-1 border-border"
             onClick={() => setIsPhotoGalleryOpen(true)}
             disabled={additionalImages.length === 0}
           >
-            View
+            <Images size={20} />
+            {additionalImages.length > 0 && <span className="text-sm">{additionalImages.length}</span>}
           </Button>
         </div>
       </div>
