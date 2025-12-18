@@ -22,6 +22,7 @@ import CreateRoutinePage from "./pages/CreateRoutinePage";
 import SharePostScreen from "./pages/SharePostScreen";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
+import FeedbackPage from "./pages/FeedbackPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,6 +105,8 @@ const AppRoutes = () => {
               <Route path="/create/recipe" element={<CreateRecipePage />} />
               <Route path="/create/routine" element={<CreateRoutinePage />} />
               <Route path="/share" element={<SharePostScreen />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="*" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
