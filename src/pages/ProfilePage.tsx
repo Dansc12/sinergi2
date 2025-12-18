@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileContentFeed } from "@/components/profile/ProfileContentFeed";
+import { ProfileSettingsSheet } from "@/components/profile/ProfileSettingsSheet";
 
 type ContentTab = "posts" | "workouts" | "meals" | "recipes" | "routines" | "groups";
 
@@ -68,6 +69,7 @@ const ProfilePage = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [streakCount, setStreakCount] = useState(0);
   const [friendsCount, setFriendsCount] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [stats, setStats] = useState({
     meals: 0,
     days: 0,
@@ -198,7 +200,7 @@ const ProfilePage = () => {
           <ChevronLeft size={24} />
         </Button>
         <h1 className="font-semibold">Profile</h1>
-        <Button variant="ghost" size="icon-sm">
+        <Button variant="ghost" size="icon-sm" onClick={() => setSettingsOpen(true)}>
           <Settings size={20} />
         </Button>
       </header>
@@ -303,6 +305,14 @@ const ProfilePage = () => {
           )}
         </div>
       </div>
+
+      {/* Settings Sheet */}
+      <ProfileSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        profile={profile}
+        onSave={fetchProfileData}
+      />
     </div>
   );
 };
