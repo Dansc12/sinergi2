@@ -3,7 +3,6 @@ import { ArrowLeft, ChevronUp, Send, Trash2, MessageSquare } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useFeedback } from "@/hooks/useFeedback";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
@@ -109,24 +108,11 @@ const FeedbackPage = () => {
                 key={message.id}
                 className="bg-card border border-border rounded-xl p-4 space-y-3"
               >
-                {/* Author info */}
+                {/* Header with timestamp and delete */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={message.profile?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                        {message.profile?.first_name?.charAt(0) || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {message.profile?.first_name || "Anonymous"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                  </p>
                   
                   {/* Delete button (only for own messages) */}
                   {user?.id === message.user_id && (
