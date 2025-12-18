@@ -392,7 +392,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     const description = contentData?.description as string;
     const category = contentData?.category as string;
     const privacy = contentData?.privacy as string;
-    const coverPhoto = contentData?.coverPhoto as string;
+    // Use first image as cover photo (that's where it's stored from CreateGroupPage)
+    const coverPhoto = post.images && post.images.length > 0 ? post.images[0] : (contentData?.coverPhoto as string);
     const isPublic = privacy === 'public';
     const creatorId = post.userId;
 

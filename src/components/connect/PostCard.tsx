@@ -558,19 +558,19 @@ interface GroupContentData {
 }
 
 // Group Summary Card for groups - styled like RecipeSummaryCard
-const GroupSummaryCard = ({ contentData }: { contentData: GroupContentData }) => {
+const GroupSummaryCard = ({ contentData, coverPhoto }: { contentData: GroupContentData; coverPhoto?: string }) => {
   const name = contentData.name || "Group";
   const category = contentData.category || "";
   const privacy = contentData.privacy || "public";
-  const coverPhoto = contentData.coverPhoto;
+  const photo = coverPhoto || contentData.coverPhoto;
 
   return (
     <div className="h-full w-full bg-gradient-to-br from-amber-500/15 to-orange-500/5 border border-amber-500/30 rounded-xl overflow-hidden flex flex-col">
       {/* Cover Photo */}
-      {coverPhoto && (
+      {photo && (
         <div className="w-full h-32 shrink-0">
           <img
-            src={coverPhoto}
+            src={photo}
             alt={name}
             className="w-full h-full object-cover"
           />
@@ -797,9 +797,11 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
                   content: <RecipeSummaryCard contentData={post.contentData as RecipeContentData} />
                 });
               } else if (post.type === "group") {
+                // For groups, pass the first image as cover photo since it's stored separately
+                const groupCoverPhoto = post.images && post.images.length > 0 ? post.images[0] : undefined;
                 carouselItems.push({
                   type: 'summary',
-                  content: <GroupSummaryCard contentData={post.contentData as GroupContentData} />
+                  content: <GroupSummaryCard contentData={post.contentData as GroupContentData} coverPhoto={groupCoverPhoto} />
                 });
               }
             }
