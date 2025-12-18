@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { Search, Users, UserPlus, Compass } from "lucide-react";
+import { Users, UserPlus, Compass } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { usePosts } from "@/hooks/usePosts";
 import { formatDistanceToNow } from "date-fns";
-import { Json } from "@/integrations/supabase/types";
 import { PostCard } from "@/components/connect/PostCard";
 
 interface SuggestedGroup {
@@ -20,37 +18,6 @@ interface SuggestedUser {
   handle: string;
   mutualFriends: number;
 }
-
-// Helper to generate post description from content data
-const generateDescription = (contentType: string, contentData: Json, description: string | null): string => {
-  if (description) return description;
-  
-  const data = contentData as Record<string, unknown>;
-  
-  switch (contentType) {
-    case "workout":
-      const exercises = data.exercises as Array<{ name: string }> | undefined;
-      if (exercises?.length) {
-        return `Completed ${exercises.length} exercise${exercises.length > 1 ? 's' : ''}: ${exercises.map(e => e.name).join(', ')}`;
-      }
-      return "Logged a workout";
-    case "meal":
-      const mealType = data.mealType as string | undefined;
-      const foods = data.foods as Array<{ name: string }> | undefined;
-      if (mealType && foods?.length) {
-        return `${mealType}: ${foods.map(f => f.name).join(', ')}`;
-      }
-      return `Logged a ${mealType || 'meal'}`;
-    case "recipe":
-      const title = data.title as string | undefined;
-      return title ? `Shared a recipe: ${title}` : "Shared a new recipe";
-    case "routine":
-      const routineName = data.routineName as string | undefined;
-      return routineName ? `Created routine: ${routineName}` : "Created a new routine";
-    default:
-      return "Shared a post";
-  }
-};
 
 const EmptyFeedState = () => {
   const navigate = useNavigate();
@@ -77,7 +44,6 @@ const EmptyFeedState = () => {
 };
 
 const DiscoverPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
   const { posts, isLoading } = usePosts();
   
   // Transform database posts to format expected by PostCard
@@ -89,7 +55,7 @@ const DiscoverPage = () => {
       avatar: post.profile?.avatar_url || undefined,
       handle: post.profile?.username ? `@${post.profile.username}` : "@user",
     },
-    content: generateDescription(post.content_type, post.content_data, post.description),
+    content: post.description || "",
     images: post.images || undefined,
     type: post.content_type as "workout" | "meal" | "recipe" | "post" | "routine",
     timeAgo: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
@@ -182,20 +148,6 @@ const DiscoverPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 glass-elevated">
-        <div className="px-4 py-3">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search posts, people, groups..."
-              className="w-full bg-muted border-0 rounded-xl py-3 pl-12 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-        </div>
-      </header>
 
       <div className="animate-fade-in pb-24">
         {renderFeed()}
