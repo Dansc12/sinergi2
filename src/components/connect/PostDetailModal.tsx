@@ -2,8 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
-import { Dumbbell, UtensilsCrossed, BookOpen, Calendar, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Dumbbell, UtensilsCrossed, BookOpen, Calendar } from "lucide-react";
 
 interface Exercise {
   name: string;
@@ -401,7 +400,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b border-border flex-row items-center justify-between">
+        <DialogHeader className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10 border border-border">
               <AvatarImage src={post.user.avatar} />
@@ -414,9 +413,6 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X size={20} />
-          </Button>
         </DialogHeader>
         
         <ScrollArea className="max-h-[calc(85vh-80px)]">
