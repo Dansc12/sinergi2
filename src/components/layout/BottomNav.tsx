@@ -17,14 +17,14 @@ const NavItem = ({ icon, label, isActive, onClick, showBadge }: NavItemProps) =>
   <button
     onClick={onClick}
     className={cn(
-      "flex flex-col items-center justify-center gap-1 py-2 px-3 transition-all duration-200",
+      "flex flex-col items-center justify-center gap-1 py-2 px-3 transition-all duration-200 min-w-[60px]",
       isActive 
         ? "text-primary" 
         : "text-muted-foreground hover:text-foreground"
     )}
   >
     <div className={cn(
-      "relative",
+      "relative h-6 flex items-center justify-center",
       isActive && "after:absolute after:-bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-primary"
     )}>
       {icon}
