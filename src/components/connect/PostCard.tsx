@@ -85,29 +85,34 @@ const ContentCarousel = ({
   onDoubleTap: () => void;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
   const lastTapRef = useRef<number>(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
+    if (!isDragging) return;
+    const diff = e.touches[0].clientX - touchStartX.current;
+    setDragOffset(diff);
   };
 
   const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
     const threshold = 50;
-
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
+    
+    if (Math.abs(dragOffset) > threshold) {
+      if (dragOffset < 0) {
         setCurrentIndex((prev) => (prev + 1) % items.length);
       } else {
         setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
       }
     }
+    setDragOffset(0);
+    setIsDragging(false);
   };
 
   const handleClick = () => {
@@ -120,7 +125,7 @@ const ContentCarousel = ({
     }
   };
 
-  const renderItem = (item: CarouselItem, isCenter: boolean = true) => {
+  const renderItem = (item: CarouselItem, isPreview: boolean = false) => {
     if (item.type === 'image') {
       return (
         <img
@@ -130,80 +135,96 @@ const ContentCarousel = ({
         />
       );
     } else {
-      // Summary card - render as-is for center, show placeholder for edges
-      if (isCenter) {
-        return <div className="w-full h-full flex items-center justify-center">{item.content}</div>;
-      }
-      return <div className="w-full h-full bg-muted/50 flex items-center justify-center text-muted-foreground text-xs">📋</div>;
-    }
-  };
-
-  const imageContainerClass =
-    "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
-
-  if (items.length === 1) {
-    const item = items[0];
-    if (item.type === 'summary') {
-      // For single summary card, render without the image container constraints
+      // Summary card - render full content in fixed container
       return (
-        <div className="py-1" onClick={handleClick}>
-          {item.content}
+        <div className="w-full h-full flex items-center justify-center overflow-hidden p-2">
+          <div className={`w-full ${isPreview ? 'scale-[0.85] origin-center' : ''}`}>
+            {item.content}
+          </div>
         </div>
       );
     }
+  };
+
+  // Fixed container class for consistent sizing
+  const itemContainerClass = "relative aspect-square w-full max-w-[280px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
+  const previewContainerClass = "relative aspect-square w-[70px] bg-muted rounded-lg overflow-hidden flex-shrink-0";
+
+  if (items.length === 1) {
+    const item = items[0];
     return (
       <div className="px-4 py-1 flex justify-center">
-        <div className={imageContainerClass} onClick={handleClick}>
+        <div className={itemContainerClass} onClick={handleClick}>
           {renderItem(item)}
         </div>
       </div>
     );
   }
 
+  const prevIndex = (currentIndex - 1 + items.length) % items.length;
+  const nextIndex = (currentIndex + 1) % items.length;
+
   return (
-    <div className="relative py-1 px-2">
+    <div className="relative py-1 overflow-hidden">
       <div
-        className="flex items-center justify-center gap-3 overflow-hidden touch-pan-y"
+        className="flex items-center justify-center gap-2 touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {/* Previous item preview */}
-        <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
-          {renderItem(items[(currentIndex - 1 + items.length) % items.length], false)}
-        </div>
+        <motion.div 
+          className={previewContainerClass}
+          style={{ opacity: 0.6 }}
+          animate={{ 
+            x: isDragging ? dragOffset * 0.3 : 0,
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
+          {renderItem(items[prevIndex], true)}
+        </motion.div>
 
         {/* Current item */}
         <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0.9, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className={items[currentIndex].type === 'summary' ? "w-full max-w-[320px] flex-shrink-0" : imageContainerClass}
+          className={itemContainerClass}
           onClick={handleClick}
+          animate={{ 
+            x: isDragging ? dragOffset : 0,
+            scale: isDragging ? 0.98 : 1,
+          }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 400, 
+            damping: 30,
+            mass: 0.8
+          }}
         >
-          {renderItem(items[currentIndex], true)}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              className="w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              {renderItem(items[currentIndex])}
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
 
         {/* Next item preview */}
-        <div className="w-10 h-20 rounded-lg overflow-hidden opacity-30 flex-shrink-0">
-          {renderItem(items[(currentIndex + 1) % items.length], false)}
-        </div>
+        <motion.div 
+          className={previewContainerClass}
+          style={{ opacity: 0.6 }}
+          animate={{ 
+            x: isDragging ? dragOffset * 0.3 : 0,
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
+          {renderItem(items[nextIndex], true)}
+        </motion.div>
       </div>
-      
-      {/* Dot indicators for multi-item carousels */}
-      {items.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-2">
-          {items.map((_, idx) => (
-            <div
-              key={idx}
-              className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                idx === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-              }`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 };
