@@ -128,11 +128,13 @@ const ContentCarousel = ({
   const renderItem = (item: CarouselItem, isPreview: boolean = false) => {
     if (item.type === 'image') {
       return (
-        <img
-          src={item.content as string}
-          alt="Post"
-          className="w-full h-full object-cover"
-        />
+        <div className="w-full h-full bg-muted">
+          <img
+            src={item.content as string}
+            alt="Post"
+            className="w-full h-full object-cover"
+          />
+        </div>
       );
     } else {
       // Summary card - force it to fill the exact same frame as images
@@ -148,9 +150,9 @@ const ContentCarousel = ({
     }
   };
 
-  // Fixed container class for consistent sizing - same for images and summary cards
-  const itemContainerClass = "relative aspect-square w-full max-w-[320px] bg-muted rounded-xl overflow-hidden flex-shrink-0";
-  const previewContainerClass = "relative aspect-square w-[80px] bg-muted rounded-lg overflow-hidden flex-shrink-0";
+  // Fixed container class for consistent sizing - images get bg-muted, summary cards don't
+  const itemContainerClass = "relative aspect-square w-full max-w-[320px] rounded-xl overflow-hidden flex-shrink-0";
+  const previewContainerClass = "relative aspect-square w-[80px] rounded-lg overflow-hidden flex-shrink-0";
 
   if (items.length === 1) {
     const item = items[0];
@@ -241,20 +243,20 @@ const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
   const totalFat = contentData.totalFats || foods.reduce((sum, f) => sum + (f.fat || f.fats || 0), 0);
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-success/10 to-success/5 border border-success/20 rounded-xl p-4 flex flex-col">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">🍽️</span>
-        <h4 className="font-semibold text-foreground">{mealType}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-success/15 to-success/5 border border-success/30 rounded-xl p-5 flex flex-col">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">🍽️</span>
+        <h4 className="text-xl font-bold text-foreground">{mealType}</h4>
       </div>
 
       {/* Food items */}
-      <div className="space-y-1.5 mb-4 flex-1 overflow-hidden">
+      <div className="space-y-2 mb-4 flex-1 overflow-hidden">
         {foods.map((food, idx) => (
-          <div key={idx} className="flex items-center gap-2 text-sm min-w-0">
+          <div key={idx} className="flex items-center gap-2 text-base min-w-0">
             <span className="text-muted-foreground">•</span>
-            <span className="text-foreground truncate">{food.name}</span>
+            <span className="text-foreground truncate font-medium">{food.name}</span>
             {food.servings && food.servings !== 1 && (
-              <span className="text-muted-foreground text-xs shrink-0">
+              <span className="text-muted-foreground text-sm shrink-0">
                 ({food.servings} {food.servingSize || "servings"})
               </span>
             )}
@@ -263,22 +265,22 @@ const MealSummaryCard = ({ contentData }: { contentData: MealContentData }) => {
       </div>
 
       {/* Macros summary */}
-      <div className="mt-auto grid grid-cols-4 gap-2 pt-3 border-t border-success/20">
+      <div className="mt-auto grid grid-cols-4 gap-3 pt-4 border-t border-success/30">
         <div className="text-center">
-          <p className="text-lg font-bold text-foreground">{Math.round(totalCalories)}</p>
-          <p className="text-xs text-muted-foreground">cal</p>
+          <p className="text-xl font-bold text-foreground">{Math.round(totalCalories)}</p>
+          <p className="text-sm text-muted-foreground">cal</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-primary">{Math.round(totalProtein)}g</p>
-          <p className="text-xs text-muted-foreground">protein</p>
+          <p className="text-xl font-bold text-primary">{Math.round(totalProtein)}g</p>
+          <p className="text-sm text-muted-foreground">protein</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-success">{Math.round(totalCarbs)}g</p>
-          <p className="text-xs text-muted-foreground">carbs</p>
+          <p className="text-xl font-bold text-success">{Math.round(totalCarbs)}g</p>
+          <p className="text-sm text-muted-foreground">carbs</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-amber-500">{Math.round(totalFat)}g</p>
-          <p className="text-xs text-muted-foreground">fat</p>
+          <p className="text-xl font-bold text-amber-500">{Math.round(totalFat)}g</p>
+          <p className="text-sm text-muted-foreground">fat</p>
         </div>
       </div>
     </div>
@@ -349,14 +351,14 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
   });
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">💪</span>
-        <h4 className="font-semibold text-foreground">{workoutName}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 rounded-xl p-5 flex flex-col">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">💪</span>
+        <h4 className="text-xl font-bold text-foreground">{workoutName}</h4>
       </div>
 
       {/* Exercises - simplified preview showing exercise name + per-exercise volume */}
-      <div className="space-y-2 mb-4 flex-1 overflow-hidden">
+      <div className="space-y-3 mb-4 flex-1 overflow-hidden">
         {exercises.map((exercise, idx) => {
           const exerciseVolume = calculateExerciseVolume(exercise);
           const isCardio = exercise.isCardio || (exercise.sets && exercise.sets.some(s => s.distance !== undefined));
@@ -374,9 +376,9 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
           }
 
           return (
-            <div key={idx} className="flex items-center justify-between py-1.5">
-              <span className="text-sm font-medium text-foreground">{exercise.name}</span>
-              <span className="text-sm text-muted-foreground">
+            <div key={idx} className="flex items-center justify-between py-1">
+              <span className="text-base font-medium text-foreground">{exercise.name}</span>
+              <span className="text-base text-muted-foreground">
                 {isCardio ? cardioSummary : (exerciseVolume > 0 ? `${exerciseVolume.toLocaleString()} lbs` : "")}
               </span>
             </div>
@@ -386,16 +388,16 @@ const WorkoutSummaryCard = ({ contentData, createdAt }: { contentData: WorkoutCo
 
       {/* Total volume - only show if there are weight-based exercises */}
       {hasWeightExercises && (
-        <div className="pt-3 border-t border-primary/20">
+        <div className="pt-4 border-t border-primary/30">
           <div className="text-center">
-            <p className="text-lg font-bold text-foreground">{totalVolume.toLocaleString()} lbs</p>
-            <p className="text-xs text-muted-foreground">Total Volume</p>
+            <p className="text-xl font-bold text-foreground">{totalVolume.toLocaleString()} lbs</p>
+            <p className="text-sm text-muted-foreground">Total Volume</p>
           </div>
         </div>
       )}
 
       {/* Tap to view details hint */}
-      <p className="text-xs text-center text-muted-foreground mt-auto pt-3">Tap to view details</p>
+      <p className="text-sm text-center text-muted-foreground mt-auto pt-3">Tap to view details</p>
     </div>
   );
 };
@@ -434,21 +436,21 @@ const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }
     : null;
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-violet-500/10 to-violet-500/5 border border-violet-500/20 rounded-xl p-4 flex flex-col">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">📋</span>
-        <h4 className="font-semibold text-foreground">{routineName}</h4>
+    <div className="h-full w-full bg-gradient-to-br from-violet-500/15 to-violet-500/5 border border-violet-500/30 rounded-xl p-5 flex flex-col">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">📋</span>
+        <h4 className="text-xl font-bold text-foreground">{routineName}</h4>
       </div>
 
       {/* Schedule info - only show days, not duration */}
       {daysDisplay && (
-        <div className="mb-3 text-sm text-muted-foreground">
+        <div className="mb-3 text-base text-muted-foreground">
           <span>{daysDisplay}</span>
         </div>
       )}
 
       {/* Exercises */}
-      <div className="space-y-2 mb-2 flex-1 overflow-hidden">
+      <div className="space-y-3 mb-2 flex-1 overflow-hidden">
         {exercises.slice(0, 4).map((exercise, idx) => {
           const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
           const setCount = Array.isArray(exercise.sets) ? exercise.sets.length : (exercise.sets || 0);
@@ -457,21 +459,21 @@ const RoutineSummaryCard = ({ contentData }: { contentData: RoutineContentData }
           const maxReps = firstSet?.maxReps || exercise.maxReps || 0;
 
           return (
-            <div key={idx} className="flex items-center justify-between py-1.5">
-              <span className="text-sm font-medium text-foreground">{exercise.name}</span>
-              <span className="text-sm text-muted-foreground">
+            <div key={idx} className="flex items-center justify-between py-1">
+              <span className="text-base font-medium text-foreground">{exercise.name}</span>
+              <span className="text-base text-muted-foreground">
                 {setCount} sets × {minReps}-{maxReps} reps
               </span>
             </div>
           );
         })}
         {exercises.length > 4 && (
-          <p className="text-xs text-muted-foreground">+{exercises.length - 4} more exercises</p>
+          <p className="text-sm text-muted-foreground">+{exercises.length - 4} more exercises</p>
         )}
       </div>
 
       {/* Tap to view details hint */}
-      <p className="text-xs text-center text-muted-foreground mt-auto pt-3">Tap to view details</p>
+      <p className="text-sm text-center text-muted-foreground mt-auto pt-3">Tap to view details</p>
     </div>
   );
 };
