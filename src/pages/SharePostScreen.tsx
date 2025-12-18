@@ -27,7 +27,7 @@ interface LocationState {
   routineInstanceId?: string;
 }
 
-const visibilityOptions = [
+const allVisibilityOptions = [
   { value: "public" as Visibility, label: "Public", icon: Globe, description: "Share with everyone" },
   { value: "friends" as Visibility, label: "Friends Only", icon: Users, description: "Share with friends" },
   { value: "private" as Visibility, label: "Private", icon: Lock, description: "Save for yourself" },
@@ -40,6 +40,12 @@ const SharePostScreen = () => {
   const { createPost } = usePosts();
 
   const isPostType = state?.contentType === "post";
+  const isGroupType = state?.contentType === "group";
+
+  // Groups only allow Public and Friends Only visibility
+  const visibilityOptions = isGroupType 
+    ? allVisibilityOptions.filter(opt => opt.value !== "private")
+    : allVisibilityOptions;
 
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<Visibility>(isPostType ? "public" : "friends");
@@ -143,7 +149,7 @@ const SharePostScreen = () => {
   };
 
   const getCurrentVisibilityOption = () => {
-    return visibilityOptions.find((opt) => opt.value === visibility) || visibilityOptions[2];
+    return visibilityOptions.find((opt) => opt.value === visibility) || visibilityOptions[0];
   };
 
   const showDescription = visibility === "public" || visibility === "friends";
@@ -237,6 +243,17 @@ const SharePostScreen = () => {
                 </p>
               </div>
             ))}
+          </div>
+        );
+      case "group":
+        return (
+          <div className="space-y-3">
+            <p className="text-sm font-medium">{data.name as string}</p>
+            {data.description && <p className="text-xs text-muted-foreground">{data.description as string}</p>}
+            <div className="flex gap-3 text-xs text-muted-foreground">
+              {data.category && <span className="capitalize">Category: {data.category as string}</span>}
+              {data.privacy && <span className="capitalize">Privacy: {data.privacy as string}</span>}
+            </div>
           </div>
         );
       default:

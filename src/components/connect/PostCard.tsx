@@ -23,6 +23,7 @@ const typeLabels: Record<string, { label: string; color: string }> = {
   recipe: { label: "Recipe", color: "bg-rose-500/20 text-rose-400" },
   post: { label: "Post", color: "bg-accent/20 text-accent" },
   routine: { label: "Routine", color: "bg-violet-500/20 text-violet-400" },
+  group: { label: "Group", color: "bg-amber-500/20 text-amber-400" },
 };
 
 const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
@@ -59,7 +60,7 @@ export interface PostData {
   };
   content: string;
   images?: string[];
-  type: "workout" | "meal" | "recipe" | "post" | "routine";
+  type: "workout" | "meal" | "recipe" | "post" | "routine" | "group";
   timeAgo: string;
   contentData?: unknown;
   hasDescription?: boolean;
@@ -547,6 +548,48 @@ const RecipeSummaryCard = ({ contentData }: { contentData: RecipeContentData }) 
   );
 };
 
+// Group types
+interface GroupContentData {
+  name?: string;
+  description?: string;
+  category?: string;
+  privacy?: string;
+}
+
+// Group Summary Card for groups
+const GroupSummaryCard = ({ contentData }: { contentData: GroupContentData }) => {
+  const name = contentData.name || "Group";
+  const description = contentData.description || "";
+  const category = contentData.category || "";
+  const privacy = contentData.privacy || "public";
+
+  return (
+    <div className="h-full w-full bg-gradient-to-br from-amber-500/15 to-orange-500/5 border border-amber-500/30 rounded-xl p-5 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-3 shrink-0">
+        <span className="text-2xl">👥</span>
+        <h4 className="text-xl font-bold text-foreground truncate">{name}</h4>
+      </div>
+
+      {/* Description */}
+      {description && (
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-3 flex-1">{description}</p>
+      )}
+
+      {/* Category and Privacy */}
+      <div className="mt-auto pt-3 border-t border-amber-500/30 flex flex-wrap gap-3">
+        {category && (
+          <span className="text-sm bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full capitalize">
+            {category}
+          </span>
+        )}
+        <span className="text-sm bg-muted text-muted-foreground px-3 py-1 rounded-full capitalize">
+          {privacy === "public" ? "Public" : "Private"}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const PostCard = ({ post, onPostClick }: PostCardProps) => {
   const navigate = useNavigate();
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
@@ -742,6 +785,11 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
                 carouselItems.push({
                   type: 'summary',
                   content: <RecipeSummaryCard contentData={post.contentData as RecipeContentData} />
+                });
+              } else if (post.type === "group") {
+                carouselItems.push({
+                  type: 'summary',
+                  content: <GroupSummaryCard contentData={post.contentData as GroupContentData} />
                 });
               }
             }

@@ -67,7 +67,7 @@ interface PostDetailModalProps {
     };
     content: string;
     images?: string[];
-    type: "workout" | "meal" | "recipe" | "post" | "routine";
+    type: "workout" | "meal" | "recipe" | "post" | "routine" | "group";
     timeAgo: string;
     contentData?: unknown;
     hasDescription?: boolean;
@@ -382,6 +382,37 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     );
   };
 
+  const renderGroupDetails = () => {
+    const name = contentData?.name as string;
+    const description = contentData?.description as string;
+    const category = contentData?.category as string;
+    const privacy = contentData?.privacy as string;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-amber-400">
+          <span className="text-2xl">👥</span>
+          <h4 className="font-semibold text-lg">{name || "Group"}</h4>
+        </div>
+        
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
+        
+        <div className="flex flex-wrap gap-2">
+          {category && (
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm capitalize">
+              {category}
+            </span>
+          )}
+          <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-sm">
+            {privacy === "public" ? "Public" : "Private"}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   const renderContentDetails = () => {
     switch (post.type) {
       case "workout":
@@ -392,6 +423,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
         return renderRecipeDetails();
       case "routine":
         return renderRoutineDetails();
+      case "group":
+        return renderGroupDetails();
       default:
         return renderPostDetails();
     }
