@@ -41,7 +41,7 @@ interface DaySchedule {
 interface RestoredState {
   restored?: boolean;
   contentData?: { 
-    name?: string;
+    routineName?: string;
     description?: string;
     selectedDays?: Record<string, DaySchedule>;
     exercises?: RoutineExercise[];
@@ -92,7 +92,7 @@ const CreateRoutinePage = () => {
   useEffect(() => {
     if (restoredState?.restored && restoredState.contentData) {
       const data = restoredState.contentData;
-      if (data.name) setName(data.name);
+      if (data.routineName) setName(data.routineName);
       if (data.description) setDescription(data.description);
       if (data.selectedDays) setSelectedDays(data.selectedDays);
       if (data.exercises) setExercises(data.exercises);
@@ -208,7 +208,7 @@ const CreateRoutinePage = () => {
     navigate("/share", {
       state: {
         contentType: "routine",
-        contentData: { name, description, selectedDays, exercises, recurring },
+        contentData: { routineName: name, description, selectedDays, exercises, recurring },
         images: photos,
         returnTo: "/create/routine",
       },
