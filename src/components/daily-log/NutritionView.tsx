@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Droplets, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
@@ -95,7 +95,7 @@ interface NutritionViewProps {
 export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { mealsByType, waterLog, totals, isLoading } = useDailyLogs(selectedDate || new Date());
+  const { mealsByType, totals, isLoading } = useDailyLogs(selectedDate || new Date());
   const [caloriesGoal, setCaloriesGoal] = useState(2200);
   const [macroGoals, setMacroGoals] = useState({ protein: 150, carbs: 250, fat: 70 });
 
@@ -130,9 +130,6 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
 
   const caloriesConsumed = totals.calories;
   const caloriesLeft = Math.max(caloriesGoal - caloriesConsumed, 0);
-  
-  const waterConsumed = waterLog?.glasses || 0;
-  const waterGoal = waterLog?.target_glasses || 8;
 
   const handleAddFood = (mealType: string) => {
     navigate("/create/meal", { state: { preselectedMealType: mealType } });
@@ -148,9 +145,8 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Calories & Water Rings */}
-      <div className="flex gap-4 justify-center">
-        {/* Calories Ring */}
+      {/* Calories Ring - Centered */}
+      <div className="flex justify-center">
         <div className="relative w-36 h-36">
           <svg className="w-full h-full -rotate-90">
             <circle
@@ -181,35 +177,6 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold">{caloriesLeft}</span>
             <span className="text-xs text-muted-foreground">cal left</span>
-          </div>
-        </div>
-
-        {/* Water Ring */}
-        <div className="relative w-36 h-36">
-          <svg className="w-full h-full -rotate-90">
-            <circle
-              cx="72"
-              cy="72"
-              r="60"
-              strokeWidth="12"
-              stroke="hsl(var(--muted))"
-              fill="none"
-            />
-            <circle
-              cx="72"
-              cy="72"
-              r="60"
-              strokeWidth="12"
-              stroke="hsl(200, 90%, 55%)"
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={`${Math.min((waterConsumed / waterGoal) * 377, 377)} 377`}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <Droplets className="text-blue-400 mb-1" size={20} />
-            <span className="text-lg font-bold">{waterConsumed}/{waterGoal}</span>
-            <span className="text-xs text-muted-foreground">glasses</span>
           </div>
         </div>
       </div>

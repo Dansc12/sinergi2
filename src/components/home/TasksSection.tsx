@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Utensils, Dumbbell, Droplets, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, Utensils, Dumbbell, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
@@ -8,7 +8,7 @@ interface Task {
   id: string;
   title: string;
   icon: React.ReactNode;
-  type: "meal" | "workout" | "water";
+  type: "meal" | "workout";
 }
 
 const dailyTasks: Task[] = [
@@ -16,13 +16,11 @@ const dailyTasks: Task[] = [
   { id: "lunch", title: "Log Lunch", icon: <Utensils size={18} />, type: "meal" },
   { id: "dinner", title: "Log Dinner", icon: <Utensils size={18} />, type: "meal" },
   { id: "workout", title: "Log a Workout", icon: <Dumbbell size={18} />, type: "workout" },
-  { id: "water", title: "Reach Water Goal", icon: <Droplets size={18} />, type: "water" },
 ];
 
 const typeStyles = {
   meal: "bg-primary/20 text-primary",
   workout: "bg-accent/20 text-accent",
-  water: "bg-blue-500/20 text-blue-400",
 };
 
 interface TasksSectionProps {
