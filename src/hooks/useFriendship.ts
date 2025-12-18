@@ -56,6 +56,26 @@ export function useFriendship(otherUserId: string | null) {
       });
 
       if (error) throw error;
+
+      // Get sender's name for the notification
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('user_id', currentUserId)
+        .single();
+
+      const senderName = senderProfile?.first_name || 'Someone';
+
+      // Create notification for the receiver
+      await supabase.from('notifications').insert({
+        user_id: otherUserId,
+        type: 'friend_request',
+        title: 'New friend request',
+        message: `${senderName} sent you a friend request`,
+        related_user_id: currentUserId,
+        related_content_type: 'friend_request'
+      });
+
       setStatus('pending_sent');
       toast.success('Friend request sent!');
     } catch (error) {

@@ -1,11 +1,14 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Bell, Heart, MessageCircle, UserPlus, Check, Trash2, CheckCheck } from 'lucide-react';
+import { Bell, Heart, MessageCircle, UserPlus, Check, Trash2, CheckCheck, UserCheck } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const reactionOrder = ["🙌", "💯", "❤️", "💪", "🎉"];
 
@@ -112,12 +115,36 @@ function aggregateReactionNotifications(notifications: Notification[]): Aggregat
 function NotificationItem({ 
   notification, 
   onMarkAsRead, 
-  onDelete 
+  onDelete,
+  onAcceptFriendRequest,
+  onNavigateToProfile,
+  onClose
 }: { 
   notification: AggregatedNotification; 
   onMarkAsRead: () => void;
   onDelete: () => void;
+  onAcceptFriendRequest?: () => void;
+  onNavigateToProfile?: () => void;
+  onClose?: () => void;
 }) {
+  const isFriendRequest = notification.type === 'friend_request';
+  
+  // Extract name from message for friend requests
+  const extractName = () => {
+    if (!notification.message) return null;
+    const match = notification.message.match(/^(\w+)\s+sent you/);
+    return match ? match[1] : null;
+  };
+  
+  const senderName = extractName();
+
+  const handleNameClick = () => {
+    if (notification.related_user_id && onNavigateToProfile) {
+      onClose?.();
+      onNavigateToProfile();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -143,14 +170,41 @@ function NotificationItem({
           {notification.message && (
             <p className={cn(
               "text-sm mt-0.5",
-              notification.type === 'reaction' ? "text-foreground" : "text-muted-foreground truncate"
+              notification.type === 'reaction' ? "text-foreground" : "text-muted-foreground"
             )}>
-              {notification.message}
+              {isFriendRequest && senderName ? (
+                <>
+                  <button
+                    onClick={handleNameClick}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {senderName}
+                  </button>
+                  {' sent you a friend request'}
+                </>
+              ) : (
+                <span className="truncate">{notification.message}</span>
+              )}
             </p>
           )}
           <p className="text-xs text-muted-foreground mt-1">
             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
           </p>
+          
+          {/* Accept button for friend requests */}
+          {isFriendRequest && onAcceptFriendRequest && (
+            <Button
+              size="sm"
+              className="mt-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAcceptFriendRequest();
+              }}
+            >
+              <UserCheck size={14} className="mr-1" />
+              Accept
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
@@ -186,13 +240,15 @@ function NotificationItem({
 
 export function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const { 
     notifications, 
     unreadCount, 
     isLoading, 
     markAsRead, 
     markAllAsRead, 
-    deleteNotification 
+    deleteNotification,
+    refreshNotifications
   } = useNotifications();
 
   const aggregatedNotifications = useMemo(
@@ -214,6 +270,39 @@ export function NotificationsPanel() {
     } else {
       deleteNotification(notification.id);
     }
+  };
+
+  const handleAcceptFriendRequest = async (notification: AggregatedNotification) => {
+    if (!notification.related_user_id) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Update the friendship status to accepted
+      const { error } = await supabase
+        .from('friendships')
+        .update({ status: 'accepted' })
+        .eq('requester_id', notification.related_user_id)
+        .eq('addressee_id', user.id);
+
+      if (error) throw error;
+
+      // Mark notification as read and delete it
+      handleMarkAsRead(notification);
+      handleDelete(notification);
+      
+      toast.success('Friend request accepted!');
+      refreshNotifications();
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      toast.error('Failed to accept friend request');
+    }
+  };
+
+  const handleNavigateToProfile = (userId: string) => {
+    setIsOpen(false);
+    navigate(`/user/${userId}`);
   };
 
   return (
@@ -276,6 +365,17 @@ export function NotificationsPanel() {
                   notification={notification}
                   onMarkAsRead={() => handleMarkAsRead(notification)}
                   onDelete={() => handleDelete(notification)}
+                  onAcceptFriendRequest={
+                    notification.type === 'friend_request' 
+                      ? () => handleAcceptFriendRequest(notification) 
+                      : undefined
+                  }
+                  onNavigateToProfile={
+                    notification.related_user_id 
+                      ? () => handleNavigateToProfile(notification.related_user_id!) 
+                      : undefined
+                  }
+                  onClose={() => setIsOpen(false)}
                 />
               ))}
             </AnimatePresence>
