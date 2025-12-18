@@ -15,6 +15,8 @@ const HIDDEN_NAV_ROUTES = [
   "/create/recipe",
   "/create/routine",
   "/share",
+  "/profile",
+  "/user",
 ];
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
