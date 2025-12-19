@@ -111,11 +111,11 @@ export function GroupJoinScreen({ isAuthenticated = false }: GroupJoinScreenProp
       // Get user's first name for the join notification
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name')
+        .select('first_name, username')
         .eq('user_id', user.id)
         .single();
 
-      const userName = profile?.first_name || 'Someone';
+      const userName = profile?.first_name || profile?.username || 'A new member';
       
       // Send join notification to the group chat
       await sendJoinNotification(groupId, userName);

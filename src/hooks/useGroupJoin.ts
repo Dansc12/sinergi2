@@ -76,11 +76,11 @@ export function useGroupJoin(groupId: string | undefined) {
       // Get user's name for join notification
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name')
+        .select('first_name, username')
         .eq('user_id', user.id)
         .single();
 
-      const userName = profile?.first_name || 'Someone';
+      const userName = profile?.first_name || profile?.username || 'A new member';
 
       // Add user to group
       const { error } = await supabase
@@ -129,11 +129,11 @@ export function useGroupJoin(groupId: string | undefined) {
       // Get requester's name for notification
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name')
+        .select('first_name, username')
         .eq('user_id', user.id)
         .single();
 
-      const requesterName = profile?.first_name || 'Someone';
+      const requesterName = profile?.first_name || profile?.username || 'Someone';
 
       // Send notification to group creator
       const { error: notificationError } = await supabase
@@ -210,11 +210,11 @@ export async function acceptGroupInviteRequest(
     // Get requester's name for join notification
     const { data: requesterProfile } = await supabase
       .from('profiles')
-      .select('first_name')
+      .select('first_name, username')
       .eq('user_id', requestUserId)
       .single();
 
-    const requesterName = requesterProfile?.first_name || 'Someone';
+    const requesterName = requesterProfile?.first_name || requesterProfile?.username || 'A new member';
 
     // Send join notification to group chat
     await sendJoinNotification(groupId, requesterName);
