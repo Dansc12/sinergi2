@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,13 @@ export const AddCustomExerciseModal = ({
   const [category, setCategory] = useState("");
   const [muscleGroup, setMuscleGroup] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync name when modal opens with a new initialName
+  useEffect(() => {
+    if (isOpen) {
+      setName(initialName);
+    }
+  }, [isOpen, initialName]);
 
   const handleSave = async () => {
     if (!name.trim()) {
