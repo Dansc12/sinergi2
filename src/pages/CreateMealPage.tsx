@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
+import { AddCustomFoodModal } from "@/components/AddCustomFoodModal";
 import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
@@ -53,6 +54,8 @@ const CreateMealPage = () => {
   const [showFoodsList, setShowFoodsList] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodItem | null>(null);
   const [isFoodDetailOpen, setIsFoodDetailOpen] = useState(false);
+  const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
+  const [customFoodInitialName, setCustomFoodInitialName] = useState("");
 
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     setPhotos([...photos, ...urls]);
@@ -81,40 +84,27 @@ const CreateMealPage = () => {
     setIsFoodDetailOpen(true);
   };
 
+  const handleAddCustomFood = (searchTerm: string) => {
+    setCustomFoodInitialName(searchTerm);
+    setIsCustomFoodModalOpen(true);
+  };
+
+  const handleCustomFoodCreated = (food: FoodItem) => {
+    // After custom food is created, open detail modal to add it
+    setPendingFood(food);
+    setIsFoodDetailOpen(true);
+    setSearchValue("");
+  };
+
   const handleFoodConfirm = (food: FoodItem, servings: number, servingSize: string) => {
-    // The FoodDetailModal now calculates the proper multiplier based on serving size
-    // We need to apply the same logic here
-    const parseServingSize = (servingSizeStr?: string): { value: number; unit: string } => {
-      if (!servingSizeStr) return { value: 100, unit: "g" };
-      const match = servingSizeStr.match(/^([\d.]+)\s*(.*)$/);
-      if (match) {
-        return { value: parseFloat(match[1]) || 100, unit: match[2] || "g" };
-      }
-      return { value: 100, unit: "g" };
-    };
-
-    const getServingSizeMultiplier = (selectedSize: string, baseServing: { value: number; unit: string }): number => {
-      const baseGrams = baseServing.unit.toLowerCase() === "g" ? baseServing.value : 100;
-      switch (selectedSize) {
-        case "serving": return baseGrams / 100;
-        case "100g": return 1;
-        case "1oz": return 28 / 100;
-        case "cup": return 240 / 100;
-        default: return 1;
-      }
-    };
-
-    const baseServing = parseServingSize(food.servingSize);
-    const sizeMultiplier = getServingSizeMultiplier(servingSize, baseServing);
-    const totalMultiplier = servings * sizeMultiplier;
-
+    // FoodDetailModal now returns pre-calculated values
     const newFood: SelectedFood = {
       id: Date.now().toString(),
       name: food.description,
-      calories: Math.round(food.calories * totalMultiplier),
-      protein: food.protein * totalMultiplier,
-      carbs: food.carbs * totalMultiplier,
-      fats: food.fats * totalMultiplier,
+      calories: Math.round(food.calories),
+      protein: food.protein,
+      carbs: food.carbs,
+      fats: food.fats,
       servings,
       servingSize,
     };
@@ -122,7 +112,7 @@ const CreateMealPage = () => {
     setSearchValue("");
     setIsFoodDetailOpen(false);
     setPendingFood(null);
-    toast({ title: "Food added!", description: `${servings} ${servingSize === "serving" ? (food.servingSize || "serving") : servingSize} of ${food.description}` });
+    toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
   };
 
   const handleFoodDetailClose = () => {
@@ -218,6 +208,7 @@ const CreateMealPage = () => {
             value={searchValue}
             onChange={setSearchValue}
             onSelect={handleFoodSelect}
+            onAddCustom={handleAddCustomFood}
             placeholder="Search for a food..."
           />
         </div>
@@ -478,6 +469,14 @@ const CreateMealPage = () => {
         onClose={() => setIsPhotoGalleryOpen(false)}
         photos={photos}
         onDeletePhoto={removePhoto}
+      />
+
+      {/* Add Custom Food Modal */}
+      <AddCustomFoodModal
+        isOpen={isCustomFoodModalOpen}
+        onClose={() => setIsCustomFoodModalOpen(false)}
+        onSuccess={handleCustomFoodCreated}
+        initialName={customFoodInitialName}
       />
     </div>
   );

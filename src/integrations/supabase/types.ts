@@ -84,6 +84,45 @@ export type Database = {
           },
         ]
       }
+      custom_foods: {
+        Row: {
+          base_unit: string
+          calories: number
+          carbs: number
+          created_at: string
+          fat: number
+          id: string
+          name: string
+          protein: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_unit?: string
+          calories?: number
+          carbs?: number
+          created_at?: string
+          fat?: number
+          id?: string
+          name: string
+          protein?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_unit?: string
+          calories?: number
+          carbs?: number
+          created_at?: string
+          fat?: number
+          id?: string
+          name?: string
+          protein?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       direct_messages: {
         Row: {
           content: string

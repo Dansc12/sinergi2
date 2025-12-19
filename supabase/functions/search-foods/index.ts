@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +21,8 @@ interface FoodResult {
   servingSize?: string;
   servingSizeValue?: number;
   servingSizeUnit?: string;
+  isCustom?: boolean;
+  baseUnit?: string;
 }
 
 // Rank foods based on search term relevance
@@ -29,6 +32,10 @@ const rankFoods = (foods: FoodResult[], searchTerm: string): FoodResult[] => {
   return foods.sort((a, b) => {
     const aDesc = a.description.toLowerCase();
     const bDesc = b.description.toLowerCase();
+    
+    // Priority 0: Custom foods first
+    if (a.isCustom && !b.isCustom) return -1;
+    if (b.isCustom && !a.isCustom) return 1;
     
     // Priority 1: Exact match
     const aExact = aDesc === lowerSearch;
@@ -66,6 +73,43 @@ serve(async (req) => {
 
     console.log(`Searching foods for: ${query}`);
 
+    // Get the authorization header to fetch custom foods for the user
+    const authHeader = req.headers.get('Authorization');
+    let customFoods: FoodResult[] = [];
+
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      // Get user's custom foods that match the query
+      const { data: userCustomFoods, error } = await supabase
+        .from('custom_foods')
+        .select('*')
+        .ilike('name', `%${query}%`)
+        .limit(10);
+
+      if (!error && userCustomFoods) {
+        customFoods = userCustomFoods.map((cf: any) => ({
+          fdcId: -cf.id.hashCode?.() || Math.random() * -1000000, // Negative ID for custom foods
+          description: cf.name,
+          brandName: 'Custom',
+          calories: Number(cf.calories),
+          protein: Number(cf.protein),
+          carbs: Number(cf.carbs),
+          fats: Number(cf.fat),
+          servingSize: cf.base_unit === 'g' ? '1 g' : '1 oz',
+          servingSizeValue: 1,
+          servingSizeUnit: cf.base_unit,
+          isCustom: true,
+          baseUnit: cf.base_unit,
+        }));
+        console.log(`Found ${customFoods.length} custom foods`);
+      }
+    }
+
     // Only search Foundation and SR Legacy data types (exclude Branded)
     const response = await fetch(
       `${USDA_API_URL}?api_key=${USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=50&dataType=Foundation,SR Legacy`,
@@ -83,7 +127,7 @@ serve(async (req) => {
     const data = await response.json();
     const lowerQuery = query.toLowerCase().trim();
     
-    let foods: FoodResult[] = (data.foods || [])
+    let usdaFoods: FoodResult[] = (data.foods || [])
       // Filter: description must contain the search term
       .filter((food: any) => 
         food.description?.toLowerCase().includes(lowerQuery)
@@ -117,8 +161,13 @@ serve(async (req) => {
           servingSize: servingDescription,
           servingSizeValue: servingSizeValue,
           servingSizeUnit: servingSizeUnit,
+          isCustom: false,
+          baseUnit: 'g', // USDA is always per 100g
         };
       });
+
+    // Combine custom foods and USDA foods
+    let foods = [...customFoods, ...usdaFoods];
 
     // Rank results by relevance
     foods = rankFoods(foods, query);
@@ -126,7 +175,7 @@ serve(async (req) => {
     // Limit to 15 results
     foods = foods.slice(0, 15);
 
-    console.log(`Found ${foods.length} foods after filtering and ranking`);
+    console.log(`Found ${foods.length} foods after filtering and ranking (${customFoods.length} custom, ${foods.length - customFoods.length} USDA)`);
 
     return new Response(
       JSON.stringify({ foods }),

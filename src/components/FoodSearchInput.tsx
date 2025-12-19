@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface FoodItem {
@@ -13,12 +13,17 @@ export interface FoodItem {
   carbs: number;
   fats: number;
   servingSize?: string;
+  servingSizeValue?: number;
+  servingSizeUnit?: string;
+  isCustom?: boolean;
+  baseUnit?: string;
 }
 
 interface FoodSearchInputProps {
   value: string;
   onChange: (value: string) => void;
   onSelect: (food: FoodItem) => void;
+  onAddCustom?: (searchTerm: string) => void;
   placeholder?: string;
 }
 
@@ -26,6 +31,7 @@ export const FoodSearchInput = ({
   value,
   onChange,
   onSelect,
+  onAddCustom,
   placeholder = "Search for a food...",
 }: FoodSearchInputProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -87,6 +93,13 @@ export const FoodSearchInput = ({
     setIsOpen(false);
   };
 
+  const handleAddCustomClick = () => {
+    if (onAddCustom) {
+      onAddCustom(value);
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
@@ -106,32 +119,80 @@ export const FoodSearchInput = ({
       </div>
 
       <AnimatePresence>
-        {isOpen && results.length > 0 && (
+        {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto"
+            className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto"
           >
-            {results.map((food) => (
+            {/* Add Custom Food CTA - Always shown at top */}
+            {onAddCustom && (
               <button
-                key={food.fdcId}
                 type="button"
-                onClick={() => handleSelect(food)}
-                className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border last:border-0"
+                onClick={handleAddCustomClick}
+                className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border flex items-center gap-3 bg-primary/5"
               >
-                <div className="font-medium text-sm truncate">{food.description}</div>
-                {food.brandName && (
-                  <div className="text-xs text-muted-foreground truncate">{food.brandName}</div>
-                )}
-                <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                  <span>{food.calories} cal</span>
-                  <span>P: {food.protein}g</span>
-                  <span>C: {food.carbs}g</span>
-                  <span>F: {food.fats}g</span>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Plus size={16} className="text-primary" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm text-primary">Can't find it? Add a custom food</div>
+                  <div className="text-xs text-muted-foreground">
+                    {value.trim() ? `Create "${value.trim()}"` : "Enter your own food with macros"}
+                  </div>
                 </div>
               </button>
-            ))}
+            )}
+
+            {results.length > 0 ? (
+              results.map((food) => (
+                <button
+                  key={`${food.fdcId}-${food.isCustom ? 'custom' : 'usda'}`}
+                  type="button"
+                  onClick={() => handleSelect(food)}
+                  className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border last:border-0"
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{food.description}</div>
+                      {food.brandName && (
+                        <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                          {food.isCustom && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                              Custom
+                            </span>
+                          )}
+                          {!food.isCustom && food.brandName}
+                        </div>
+                      )}
+                      {food.isCustom && !food.brandName && (
+                        <div className="text-xs text-muted-foreground">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                            Custom
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                    <span>{food.calories} cal</span>
+                    <span>P: {food.protein}g</span>
+                    <span>C: {food.carbs}g</span>
+                    <span>F: {food.fats}g</span>
+                    {food.isCustom && (
+                      <span className="text-muted-foreground/70">per 1{food.baseUnit}</span>
+                    )}
+                  </div>
+                </button>
+              ))
+            ) : (
+              !onAddCustom && value.trim().length >= 2 && !isLoading && (
+                <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                  No foods found
+                </div>
+              )
+            )}
           </motion.div>
         )}
       </AnimatePresence>
