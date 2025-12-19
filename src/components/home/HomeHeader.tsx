@@ -27,9 +27,10 @@ export const HomeHeader = ({ userName, streakCount, avatarUrl, onProfileClick }:
             
             <button 
               onClick={() => navigate("/feedback")}
-              className="flex items-center justify-center h-10 w-10 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 transition-all animate-pulse"
             >
-              <MessageCircleWarning size={20} className="text-foreground" />
+              <MessageCircleWarning size={16} className="text-primary" />
+              <span className="text-xs font-medium text-primary">Feedback</span>
             </button>
           </div>
 
