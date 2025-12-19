@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronUp, Send, Trash2, MessageSquare } from "lucide-react";
+import { ArrowLeft, ChevronUp, Send, Trash2, MessageSquare, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,6 +61,12 @@ const FeedbackPage = () => {
       </header>
 
       <div className="p-4 space-y-4">
+        {/* Anonymous Notice */}
+        <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg">
+          <ShieldCheck size={18} className="text-primary flex-shrink-0" />
+          <p className="text-xs text-primary font-medium">Your feedback is completely anonymous. Share openly!</p>
+        </div>
+
         {/* New Message Input */}
         <div className="bg-card border border-border rounded-xl p-4 space-y-3">
           <h2 className="font-semibold text-sm text-muted-foreground">Share your feedback</h2>
