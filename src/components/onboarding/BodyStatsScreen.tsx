@@ -11,9 +11,8 @@ export function BodyStatsScreen() {
 
   const handleContinue = () => {
     if (data.heightFeet && data.currentWeight && data.goalWeight) {
-      // Skip weight loss rate screen if not weight loss goal
-      const nextStep = data.primaryGoal === 'weight_loss' ? 7 : 8;
-      setCurrentStep(nextStep);
+      // Step 7 is WeightLossRateScreen for weight_loss, or HobbiesScreen for other goals
+      setCurrentStep(7);
     }
   };
 
