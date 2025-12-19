@@ -1,10 +1,11 @@
-import { useRef, useEffect, useCallback, memo } from "react";
-import { Compass } from "lucide-react";
+import { useRef, useEffect, useCallback, memo, useState } from "react";
+import { Compass, Filter, Dumbbell, Utensils, BookOpen, FileText, CalendarClock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { usePaginatedPosts, FeedPost } from "@/hooks/usePaginatedPosts";
+import { usePaginatedPosts, FeedPost, PostFilters } from "@/hooks/usePaginatedPosts";
 import { formatDistanceToNow } from "date-fns";
 import { PostCard } from "@/components/connect/PostCard";
+import { cn } from "@/lib/utils";
 
 const EmptyFeedState = () => {
   const navigate = useNavigate();
@@ -70,11 +71,41 @@ const MemoizedPostCard = memo(({ post }: { post: PostData }) => (
 ));
 MemoizedPostCard.displayName = "MemoizedPostCard";
 
+const POST_TYPES = [
+  { value: "workout", label: "Workout", icon: Dumbbell },
+  { value: "meal", label: "Meal", icon: Utensils },
+  { value: "recipe", label: "Recipe", icon: BookOpen },
+  { value: "post", label: "Post", icon: FileText },
+  { value: "routine", label: "Routine", icon: CalendarClock },
+  { value: "group", label: "Group", icon: Users },
+];
+
 const DiscoverPage = () => {
-  const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePaginatedPosts();
+  const [filters, setFilters] = useState<PostFilters>({ types: [], visibility: "all" });
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePaginatedPosts(filters);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(isLoadingMore);
+
+  const toggleType = (type: string) => {
+    setFilters(prev => ({
+      ...prev,
+      types: prev.types.includes(type)
+        ? prev.types.filter(t => t !== type)
+        : [...prev.types, type]
+    }));
+  };
+
+  const toggleVisibility = () => {
+    setFilters(prev => ({
+      ...prev,
+      visibility: prev.visibility === "all" ? "friends" : "all"
+    }));
+  };
+
+  const activeFilterCount = filters.types.length + (filters.visibility === "friends" ? 1 : 0);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -152,6 +183,74 @@ const DiscoverPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Filter Bar */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+              showFilters || activeFilterCount > 0
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            <Filter size={16} />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-primary-foreground text-primary text-xs px-1.5 py-0.5 rounded-full">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          {/* Visibility Toggle */}
+          <div className="flex items-center gap-2">
+            <span className={cn("text-sm", filters.visibility === "all" ? "text-foreground font-medium" : "text-muted-foreground")}>
+              Everyone
+            </span>
+            <button
+              onClick={toggleVisibility}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors",
+                filters.visibility === "friends" ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
+                  filters.visibility === "friends" ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
+            <span className={cn("text-sm", filters.visibility === "friends" ? "text-foreground font-medium" : "text-muted-foreground")}>
+              Friends
+            </span>
+          </div>
+        </div>
+
+        {/* Type Filters */}
+        {showFilters && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
+            {POST_TYPES.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                onClick={() => toggleType(value)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                  filters.types.includes(value)
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                <Icon size={14} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="animate-fade-in pb-24">
         {renderFeed()}
       </div>

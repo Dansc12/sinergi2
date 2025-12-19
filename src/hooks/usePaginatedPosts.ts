@@ -24,9 +24,14 @@ interface Cursor {
   id: string;
 }
 
+export interface PostFilters {
+  types: string[];
+  visibility: "all" | "friends";
+}
+
 const PAGE_SIZE = 15;
 
-export const usePaginatedPosts = () => {
+export const usePaginatedPosts = (filters?: PostFilters) => {
   const { user, isLoading: authLoading } = useAuth();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,10 +57,21 @@ export const usePaginatedPosts = () => {
       let query = supabase
         .from("posts")
         .select("id, user_id, content_type, content_data, description, images, visibility, created_at")
-        .neq("visibility", "private")
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })
         .limit(PAGE_SIZE);
+
+      // Apply visibility filter
+      if (filters?.visibility === "friends") {
+        query = query.eq("visibility", "friends");
+      } else {
+        query = query.neq("visibility", "private");
+      }
+
+      // Apply type filter
+      if (filters?.types && filters.types.length > 0) {
+        query = query.in("content_type", filters.types);
+      }
 
       // Cursor-based pagination
       if (cursor) {
@@ -118,16 +134,16 @@ export const usePaginatedPosts = () => {
       setIsLoadingMore(false);
       fetchingRef.current = false;
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, filters?.types, filters?.visibility]);
 
-  // Initial fetch
+  // Initial fetch - re-fetch when filters change
   useEffect(() => {
     cursorRef.current = null;
     setHasMore(true);
     setPosts([]);
     setIsLoading(true);
     fetchPosts();
-  }, [fetchPosts]);
+  }, [fetchPosts, filters?.types?.join(","), filters?.visibility]);
 
   // Real-time subscription for new posts (prepend to top)
   useEffect(() => {
