@@ -25,6 +25,8 @@ interface FoodDetailModalProps {
   food: FoodItem | null;
   onClose: () => void;
   onConfirm: (food: FoodItem, servings: number, servingSize: string) => void;
+  initialQuantity?: number;
+  initialUnit?: string;
 }
 
 // Standard serving units with gram equivalents
@@ -69,6 +71,8 @@ export const FoodDetailModal = ({
   food,
   onClose,
   onConfirm,
+  initialQuantity,
+  initialUnit,
 }: FoodDetailModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const [quantityInput, setQuantityInput] = useState("1");
@@ -112,9 +116,9 @@ export const FoodDetailModal = ({
 
   useEffect(() => {
     if (isOpen && food) {
-      // Set default unit based on food type
-      const defaultUnit = isUSDA ? "g" : (food.baseUnit || "g");
-      const defaultQty = getDefaultQuantity(defaultUnit);
+      // Use initial values if provided, otherwise use defaults
+      const defaultUnit = initialUnit || (isUSDA ? "g" : (food.baseUnit || "g"));
+      const defaultQty = initialQuantity ?? getDefaultQuantity(defaultUnit);
       
       setSelectedUnit(defaultUnit);
       setQuantity(defaultQty);
@@ -129,7 +133,7 @@ export const FoodDetailModal = ({
       setManualCarbs(Math.round(food.carbs * initMultiplier * 10) / 10);
       setManualFats(Math.round(food.fats * initMultiplier * 10) / 10);
     }
-  }, [isOpen, food]);
+  }, [isOpen, food, initialQuantity, initialUnit]);
 
   // Update manual values when quantity/unit changes
   useEffect(() => {

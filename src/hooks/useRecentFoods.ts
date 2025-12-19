@@ -62,6 +62,12 @@ export const useRecentFoods = (limit: number = 10) => {
           if (Array.isArray(foods)) {
             foods.forEach((food) => {
               const key = food.name.toLowerCase();
+              // Parse servingSize to extract quantity and unit (format: "50 ml" or "100 g")
+              const servingSizeStr = food.servingSize || "1 g";
+              const match = servingSizeStr.match(/^([\d.]+)\s*(.+)$/);
+              const rawQuantity = match ? parseFloat(match[1]) : 1;
+              const rawUnit = match ? match[2].trim() : "g";
+              
               // Only keep the most recent entry for each food
               if (!foodsMap.has(key)) {
                 foodsMap.set(key, {
@@ -71,8 +77,8 @@ export const useRecentFoods = (limit: number = 10) => {
                   protein: food.protein || 0,
                   carbs: food.carbs || 0,
                   fats: food.fats || 0,
-                  servings: food.servings || 1,
-                  servingSize: food.servingSize || "serving",
+                  servings: rawQuantity,
+                  servingSize: rawUnit,
                   loggedAt: meal.created_at,
                 });
               }

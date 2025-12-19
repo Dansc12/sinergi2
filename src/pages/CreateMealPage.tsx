@@ -22,6 +22,8 @@ interface SelectedFood {
   fats: number;
   servings?: number;
   servingSize?: string;
+  rawQuantity?: number;
+  rawUnit?: string;
 }
 
 interface RestoredState {
@@ -48,6 +50,8 @@ const CreateMealPage = () => {
   const [isFoodDetailOpen, setIsFoodDetailOpen] = useState(false);
   const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
   const [customFoodInitialName, setCustomFoodInitialName] = useState("");
+  const [pendingFoodInitialQuantity, setPendingFoodInitialQuantity] = useState<number | undefined>();
+  const [pendingFoodInitialUnit, setPendingFoodInitialUnit] = useState<string | undefined>();
 
   const { recentFoods, isLoading: isLoadingRecentFoods } = useRecentFoods(10);
 
@@ -73,8 +77,10 @@ const CreateMealPage = () => {
     navigate("/");
   };
 
-  const handleFoodSelect = (food: FoodItem) => {
+  const handleFoodSelect = (food: FoodItem, initialQuantity?: number, initialUnit?: string) => {
     setPendingFood(food);
+    setPendingFoodInitialQuantity(initialQuantity);
+    setPendingFoodInitialUnit(initialUnit);
     setIsFoodDetailOpen(true);
   };
 
@@ -91,6 +97,11 @@ const CreateMealPage = () => {
   };
 
   const handleFoodConfirm = (food: FoodItem, servings: number, servingSize: string) => {
+    // Parse quantity and unit from servingSize (format: "50 ml")
+    const match = servingSize.match(/^([\d.]+)\s+(.+)$/);
+    const rawQuantity = match ? parseFloat(match[1]) : servings;
+    const rawUnit = match ? match[2] : "g";
+    
     // FoodDetailModal now returns pre-calculated values
     const newFood: SelectedFood = {
       id: Date.now().toString(),
@@ -101,17 +112,23 @@ const CreateMealPage = () => {
       fats: food.fats,
       servings,
       servingSize,
+      rawQuantity,
+      rawUnit,
     };
     setSelectedFoods([...selectedFoods, newFood]);
     setSearchValue("");
     setIsFoodDetailOpen(false);
     setPendingFood(null);
+    setPendingFoodInitialQuantity(undefined);
+    setPendingFoodInitialUnit(undefined);
     toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
   };
 
   const handleFoodDetailClose = () => {
     setIsFoodDetailOpen(false);
     setPendingFood(null);
+    setPendingFoodInitialQuantity(undefined);
+    setPendingFoodInitialUnit(undefined);
   };
 
   const removeFood = (id: string) => {
@@ -232,7 +249,7 @@ const CreateMealPage = () => {
                       protein: food.protein,
                       carbs: food.carbs,
                       fats: food.fats,
-                    })}
+                    }, food.servings, food.servingSize)}
                     className="w-full text-left p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
                     whileTap={{ scale: 0.98 }}
                   >
@@ -286,45 +303,74 @@ const CreateMealPage = () => {
               </div>
             </div>
 
-            {/* Recent Foods to add more */}
-            {recentFoods.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock size={16} />
-                  <span className="text-sm font-medium">Add More</span>
-                </div>
-                <div className="space-y-2">
-                  {recentFoods.slice(0, 3).map((food, index) => (
-                    <motion.button
-                      key={`add-more-${food.fdcId}-${index}`}
-                      onClick={() => handleFoodSelect({
-                        fdcId: food.fdcId,
-                        description: food.description,
-                        calories: food.calories,
-                        protein: food.protein,
-                        carbs: food.carbs,
-                        fats: food.fats,
-                      })}
-                      className="w-full text-left p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-sm text-foreground">{food.description}</div>
-                          <div className="text-xs text-primary">
-                            {food.servings} × {food.servingSize}
+            {/* Recent Foods to add more - combine session foods with DB foods */}
+            {(() => {
+              // Combine current session foods (reversed, most recent first) with DB recent foods
+              const sessionFoods = [...selectedFoods].reverse().map(f => ({
+                fdcId: -parseInt(f.id),
+                description: f.name,
+                calories: f.calories,
+                protein: f.protein,
+                carbs: f.carbs,
+                fats: f.fats,
+                servings: f.rawQuantity || f.servings || 1,
+                servingSize: f.rawUnit || "g",
+                loggedAt: new Date().toISOString(),
+                isSessionFood: true,
+              }));
+              
+              // Filter out duplicates from DB foods that are already in session
+              const sessionFoodNames = new Set(sessionFoods.map(f => f.description.toLowerCase()));
+              const filteredDbFoods = recentFoods.filter(f => !sessionFoodNames.has(f.description.toLowerCase()));
+              
+              const combinedFoods = [...sessionFoods, ...filteredDbFoods].slice(0, 5);
+              
+              if (combinedFoods.length === 0) return null;
+              
+              return (
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock size={16} />
+                    <span className="text-sm font-medium">Add More</span>
+                  </div>
+                  <div className="space-y-2">
+                    {combinedFoods.map((food, index) => (
+                      <motion.button
+                        key={`add-more-${food.fdcId}-${index}`}
+                        onClick={() => handleFoodSelect({
+                          fdcId: food.fdcId,
+                          description: food.description,
+                          calories: food.calories,
+                          protein: food.protein,
+                          carbs: food.carbs,
+                          fats: food.fats,
+                        }, food.servings, food.servingSize)}
+                        className="w-full text-left p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-sm text-foreground">
+                              {food.description}
+                              {'isSessionFood' in food && food.isSessionFood && (
+                                <span className="ml-2 text-xs text-primary">(just added)</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-primary">
+                              {food.servings} × {food.servingSize}
+                            </div>
+                            <div className="flex gap-2 mt-0.5 text-xs text-muted-foreground">
+                              <span>{food.calories} cal</span>
+                            </div>
                           </div>
-                          <div className="flex gap-2 mt-0.5 text-xs text-muted-foreground">
-                            <span>{food.calories} cal</span>
-                          </div>
+                          <ChevronRight size={18} className="text-muted-foreground" />
                         </div>
-                        <ChevronRight size={18} className="text-muted-foreground" />
-                      </div>
-                    </motion.button>
-                  ))}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
       </motion.div>
@@ -485,6 +531,8 @@ const CreateMealPage = () => {
         food={pendingFood}
         onClose={handleFoodDetailClose}
         onConfirm={handleFoodConfirm}
+        initialQuantity={pendingFoodInitialQuantity}
+        initialUnit={pendingFoodInitialUnit}
       />
 
       {/* Photo Gallery Sheet */}
