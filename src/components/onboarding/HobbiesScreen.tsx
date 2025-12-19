@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingProgress } from './OnboardingProgress';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Check } from 'lucide-react';
+import { ChevronLeft, Check, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 const hobbies = [
   'Running', 'Weightlifting', 'Yoga', 'HIIT', 'Swimming', 
@@ -14,6 +16,8 @@ const hobbies = [
 
 export function HobbiesScreen() {
   const { data, updateData, setCurrentStep } = useOnboarding();
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customHobby, setCustomHobby] = useState('');
 
   const toggleHobby = (hobby: string) => {
     const current = data.hobbies;
@@ -21,6 +25,15 @@ export function HobbiesScreen() {
       ? current.filter(h => h !== hobby)
       : [...current, hobby];
     updateData({ hobbies: updated });
+  };
+
+  const addCustomHobby = () => {
+    const trimmed = customHobby.trim();
+    if (trimmed && !data.hobbies.includes(trimmed)) {
+      updateData({ hobbies: [...data.hobbies, trimmed] });
+      setCustomHobby('');
+      setShowCustomInput(false);
+    }
   };
 
   const handleContinue = () => {
@@ -40,6 +53,9 @@ export function HobbiesScreen() {
     // For non-weight_loss: previous is BodyStatsScreen (step 6)
     return data.primaryGoal === 'weight_loss' ? 7 : 6;
   };
+
+  // Check if a hobby is a custom one (not in the default list)
+  const isCustomHobby = (hobby: string) => !hobbies.includes(hobby);
 
   return (
     <motion.div 
@@ -88,6 +104,71 @@ export function HobbiesScreen() {
               </motion.button>
             );
           })}
+
+          {/* Custom hobbies that user added */}
+          {data.hobbies.filter(isCustomHobby).map((hobby) => (
+            <motion.button
+              key={hobby}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => toggleHobby(hobby)}
+              className="px-4 py-2.5 rounded-full border-2 font-medium transition-all flex items-center gap-1.5 border-primary bg-primary/10 text-foreground"
+            >
+              <Check size={16} className="text-primary" />
+              {hobby}
+            </motion.button>
+          ))}
+
+          {/* Other button / Custom input */}
+          {showCustomInput ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-2"
+            >
+              <Input
+                type="text"
+                placeholder="Type your interest..."
+                value={customHobby}
+                onChange={(e) => setCustomHobby(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addCustomHobby()}
+                className="w-40 h-10 rounded-full px-4"
+                maxLength={30}
+                autoFocus
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full"
+                onClick={addCustomHobby}
+                disabled={!customHobby.trim()}
+              >
+                <Check size={18} />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full"
+                onClick={() => {
+                  setShowCustomInput(false);
+                  setCustomHobby('');
+                }}
+              >
+                <X size={18} />
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: hobbies.length * 0.02 }}
+              onClick={() => setShowCustomInput(true)}
+              className="px-4 py-2.5 rounded-full border-2 border-dashed border-border bg-card hover:border-primary/50 text-muted-foreground font-medium transition-all flex items-center gap-1.5"
+            >
+              <Plus size={16} />
+              Other
+            </motion.button>
+          )}
         </div>
       </div>
 
