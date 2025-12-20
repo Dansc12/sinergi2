@@ -98,6 +98,25 @@ export function FriendSuggestionsScreen({ isAuthenticated = false }: FriendSugge
 
       if (error) throw error;
 
+      // Get sender's name for the notification
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const senderName = senderProfile?.first_name || 'Someone';
+
+      // Create notification for the receiver
+      await supabase.from('notifications').insert({
+        user_id: addresseeId,
+        type: 'friend_request',
+        title: 'New friend request',
+        message: `${senderName} sent you a friend request`,
+        related_user_id: user.id,
+        related_content_type: 'friend_request'
+      });
+
       setRequestedUsers(prev => new Set([...prev, addresseeId]));
       toast.success('Friend request sent!');
     } catch (error: any) {
