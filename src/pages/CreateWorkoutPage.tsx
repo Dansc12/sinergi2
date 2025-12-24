@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check, Images } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check, Images, Bookmark, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,10 @@ import ExerciseSearchInput from "@/components/ExerciseSearchInput";
 import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
+import MySavedModal from "@/components/workout/MySavedModal";
+import DiscoverModal from "@/components/workout/DiscoverModal";
+import AutofillConfirmDialog from "@/components/workout/AutofillConfirmDialog";
+import { useSavedWorkouts, SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
 interface Set {
   id: string;
   weight: string;
@@ -53,6 +57,17 @@ const CreateWorkoutPage = () => {
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
   const [routineInstanceId, setRoutineInstanceId] = useState<string | null>(null);
+  
+  // New state for My Saved and Discover modals
+  const [isMySavedOpen, setIsMySavedOpen] = useState(false);
+  const [isDiscoverOpen, setIsDiscoverOpen] = useState(false);
+  const [pendingAutofill, setPendingAutofill] = useState<{
+    type: "routine" | "workout" | "communityRoutine" | "communityWorkout";
+    data: SavedRoutine | PastWorkout | CommunityRoutine | CommunityWorkout;
+    name: string;
+  } | null>(null);
+
+  const { savedRoutines, pastWorkouts, communityRoutines, communityWorkouts, isLoading: isSavedLoading } = useSavedWorkouts();
 
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     setPhotos([...photos, ...urls]);
@@ -223,6 +238,138 @@ const CreateWorkoutPage = () => {
     });
   };
 
+  // Convert routine exercises to workout exercises
+  const convertRoutineToExercises = (routineExercises: SavedRoutine["routine_data"]["exercises"]): Exercise[] => {
+    return routineExercises.map((ex, idx) => ({
+      id: Date.now().toString() + idx,
+      name: ex.name,
+      category: ex.category,
+      muscleGroup: ex.muscleGroup,
+      notes: ex.notes || "",
+      isExpanded: true,
+      isCardio: false,
+      sets: ex.sets.length > 0
+        ? ex.sets.map((s, sIdx) => ({
+            id: (Date.now() + sIdx).toString(),
+            weight: "",
+            reps: "",
+            distance: "",
+            time: "",
+            completed: false,
+            repRangeHint: s.minReps && s.maxReps ? `${s.minReps}-${s.maxReps}` : undefined,
+          }))
+        : [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false }],
+    }));
+  };
+
+  // Convert past workout exercises (already in correct format)
+  const convertWorkoutToExercises = (workoutExercises: PastWorkout["exercises"]): Exercise[] => {
+    return workoutExercises.map((ex, idx) => ({
+      ...ex,
+      id: Date.now().toString() + idx,
+      isExpanded: true,
+      sets: ex.sets.map((s, sIdx) => ({
+        ...s,
+        id: (Date.now() + sIdx).toString(),
+        completed: false,
+      })),
+    }));
+  };
+
+  // Handle autofill with confirmation if exercises exist
+  const handleAutofill = (newExercises: Exercise[], name: string, shouldReplace: boolean) => {
+    if (shouldReplace) {
+      setExercises(newExercises);
+      if (name) setTitle(name);
+    } else {
+      setExercises([...exercises, ...newExercises]);
+    }
+    toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+  };
+
+  // Handlers for My Saved modal
+  const handleUseRoutine = (routine: SavedRoutine) => {
+    const newExercises = convertRoutineToExercises(routine.routine_data.exercises);
+    if (exercises.length > 0) {
+      setPendingAutofill({ type: "routine", data: routine, name: routine.routine_name });
+    } else {
+      handleAutofill(newExercises, routine.routine_name, true);
+      setIsMySavedOpen(false);
+    }
+  };
+
+  const handleCopyWorkout = (workout: PastWorkout) => {
+    const newExercises = convertWorkoutToExercises(workout.exercises);
+    if (exercises.length > 0) {
+      setPendingAutofill({ type: "workout", data: workout, name: workout.title });
+    } else {
+      handleAutofill(newExercises, workout.title, true);
+      setIsMySavedOpen(false);
+    }
+  };
+
+  // Handlers for Discover modal
+  const handleUseCommunityRoutine = (routine: CommunityRoutine) => {
+    const newExercises = convertRoutineToExercises(routine.exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
+    if (exercises.length > 0) {
+      setPendingAutofill({ type: "communityRoutine", data: routine, name: routine.title });
+    } else {
+      handleAutofill(newExercises, routine.title, true);
+      setIsDiscoverOpen(false);
+    }
+  };
+
+  const handleUseCommunityWorkout = (workout: CommunityWorkout) => {
+    const newExercises = convertWorkoutToExercises(workout.exercises);
+    if (exercises.length > 0) {
+      setPendingAutofill({ type: "communityWorkout", data: workout, name: workout.title });
+    } else {
+      handleAutofill(newExercises, workout.title, true);
+      setIsDiscoverOpen(false);
+    }
+  };
+
+  // Handle confirmation dialog actions
+  const handleConfirmReplace = () => {
+    if (!pendingAutofill) return;
+    let newExercises: Exercise[] = [];
+    
+    if (pendingAutofill.type === "routine") {
+      newExercises = convertRoutineToExercises((pendingAutofill.data as SavedRoutine).routine_data.exercises);
+    } else if (pendingAutofill.type === "workout") {
+      newExercises = convertWorkoutToExercises((pendingAutofill.data as PastWorkout).exercises);
+    } else if (pendingAutofill.type === "communityRoutine") {
+      newExercises = convertRoutineToExercises((pendingAutofill.data as CommunityRoutine).exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
+    } else if (pendingAutofill.type === "communityWorkout") {
+      newExercises = convertWorkoutToExercises((pendingAutofill.data as CommunityWorkout).exercises);
+    }
+    
+    handleAutofill(newExercises, pendingAutofill.name, true);
+    setIsMySavedOpen(false);
+    setIsDiscoverOpen(false);
+    setPendingAutofill(null);
+  };
+
+  const handleConfirmAdd = () => {
+    if (!pendingAutofill) return;
+    let newExercises: Exercise[] = [];
+    
+    if (pendingAutofill.type === "routine") {
+      newExercises = convertRoutineToExercises((pendingAutofill.data as SavedRoutine).routine_data.exercises);
+    } else if (pendingAutofill.type === "workout") {
+      newExercises = convertWorkoutToExercises((pendingAutofill.data as PastWorkout).exercises);
+    } else if (pendingAutofill.type === "communityRoutine") {
+      newExercises = convertRoutineToExercises((pendingAutofill.data as CommunityRoutine).exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
+    } else if (pendingAutofill.type === "communityWorkout") {
+      newExercises = convertWorkoutToExercises((pendingAutofill.data as CommunityWorkout).exercises);
+    }
+    
+    handleAutofill(newExercises, "", false);
+    setIsMySavedOpen(false);
+    setIsDiscoverOpen(false);
+    setPendingAutofill(null);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32">
       <motion.div
@@ -259,11 +406,31 @@ const CreateWorkoutPage = () => {
         </div>
 
         {/* Exercise Search */}
-        <div className="mb-6">
+        <div className="mb-4">
           <ExerciseSearchInput
             onSelect={addExercise}
             placeholder="Add exercise..."
           />
+        </div>
+
+        {/* My Saved & Discover Buttons */}
+        <div className="flex gap-3 mb-6">
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+            onClick={() => setIsMySavedOpen(true)}
+          >
+            <Bookmark size={18} className="text-primary" />
+            <span>My Saved</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+            onClick={() => setIsDiscoverOpen(true)}
+          >
+            <Compass size={18} className="text-primary" />
+            <span>Discover</span>
+          </Button>
         </div>
 
         {/* Exercises List */}
@@ -500,6 +667,38 @@ const CreateWorkoutPage = () => {
         onClose={() => setIsPhotoGalleryOpen(false)}
         photos={photos}
         onDeletePhoto={removePhoto}
+      />
+
+      {/* My Saved Modal */}
+      <MySavedModal
+        open={isMySavedOpen}
+        onOpenChange={setIsMySavedOpen}
+        savedRoutines={savedRoutines}
+        pastWorkouts={pastWorkouts}
+        isLoading={isSavedLoading}
+        onUseRoutine={handleUseRoutine}
+        onCopyWorkout={handleCopyWorkout}
+      />
+
+      {/* Discover Modal */}
+      <DiscoverModal
+        open={isDiscoverOpen}
+        onOpenChange={setIsDiscoverOpen}
+        communityRoutines={communityRoutines}
+        communityWorkouts={communityWorkouts}
+        isLoading={isSavedLoading}
+        onUseRoutine={handleUseCommunityRoutine}
+        onUseWorkout={handleUseCommunityWorkout}
+      />
+
+      {/* Autofill Confirmation Dialog */}
+      <AutofillConfirmDialog
+        open={!!pendingAutofill}
+        onOpenChange={(open) => !open && setPendingAutofill(null)}
+        onReplace={handleConfirmReplace}
+        onAdd={handleConfirmAdd}
+        onCancel={() => setPendingAutofill(null)}
+        itemName={pendingAutofill?.name || ""}
       />
     </div>
   );
