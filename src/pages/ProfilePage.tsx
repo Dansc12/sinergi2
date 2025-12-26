@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings, Flame, Users, Camera, Loader2, ChevronDown } from "lucide-react";
+import { ChevronLeft, Settings, Flame, Camera, Loader2, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +75,7 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [streakCount, setStreakCount] = useState(0);
-  const [friendsCount, setFriendsCount] = useState(0);
+  
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [stats, setStats] = useState({
     meals: 0,
@@ -117,14 +117,6 @@ const ProfilePage = () => {
         setStreakCount(streakData.current_streak);
       }
 
-      // Fetch friends count (accepted friendships)
-      const { count: friendsAccepted } = await supabase
-        .from('friendships')
-        .select('*', { count: 'exact', head: true })
-        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
-        .eq('status', 'accepted');
-
-      setFriendsCount(friendsAccepted || 0);
 
       // Fetch stats
       const { count: mealsCount } = await supabase
@@ -215,62 +207,61 @@ const ProfilePage = () => {
       </header>
 
       <div className="px-4 py-6 animate-fade-in">
-        {/* Profile Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="relative mb-4">
-            <Avatar className="w-24 h-24 border-4 border-primary/30">
+        {/* Profile Header - Horizontal Layout */}
+        <div className="mb-6">
+          {/* Top Row: Avatar + Name/Username */}
+          <div className="flex items-start gap-4 mb-4">
+            <Avatar className="w-20 h-20 border-4 border-primary/30 flex-shrink-0">
               <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="text-2xl bg-muted">
-                <Camera size={32} className="text-muted-foreground" />
+              <AvatarFallback className="text-xl bg-muted">
+                <Camera size={28} className="text-muted-foreground" />
               </AvatarFallback>
             </Avatar>
-            {streakCount > 0 && (
-              <div className="absolute -top-1 -right-1 flex items-center gap-0.5 bg-streak text-primary-foreground px-2 py-1 rounded-full text-sm font-bold shadow-lg">
-                <Flame size={14} />
-                <span>{streakCount}</span>
+            
+            <div className="flex flex-col justify-center min-h-[5rem]">
+              <h2 className="text-xl font-bold">{displayName}</h2>
+              {profile?.username && (
+                <p className="text-muted-foreground text-sm">@{profile.username}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Streak Badge + Hobbies Row */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-1 bg-streak text-primary-foreground px-3 py-1.5 rounded-full text-sm font-bold shadow-md flex-shrink-0">
+              <Flame size={16} />
+              <span>{streakCount}</span>
+            </div>
+            
+            {interests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {interests.map((interest) => (
+                  <span
+                    key={interest}
+                    className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs font-medium"
+                  >
+                    {interest}
+                  </span>
+                ))}
               </div>
             )}
           </div>
-          
-          <h2 className="text-2xl font-bold mb-1">{displayName}</h2>
-          {profile?.username && (
-            <p className="text-muted-foreground text-sm mb-1">@{profile.username}</p>
-          )}
-          <p className="text-muted-foreground text-sm mb-2">{userBio}</p>
-          
-          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-            <Users size={14} />
-            <span>{friendsCount} friends</span>
-          </div>
 
-          {/* Interests */}
-          {interests.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              {interests.map((interest) => (
-                <span
-                  key={interest}
-                  className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-medium"
-                >
-                  {interest}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground mb-6">Complete onboarding to add your interests</p>
-          )}
+          {/* Bio */}
+          <p className="text-muted-foreground text-sm mb-4">{userBio}</p>
 
           {/* Stats */}
-          <div className="flex gap-6 w-full justify-center">
-            <div className="bg-card border border-border rounded-xl px-6 py-4 text-center">
-              <p className="text-2xl font-bold">{stats.meals}</p>
+          <div className="flex gap-4 w-full justify-center">
+            <div className="bg-card border border-border rounded-xl px-5 py-3 text-center flex-1">
+              <p className="text-xl font-bold">{stats.meals}</p>
               <p className="text-xs text-muted-foreground">Meals</p>
             </div>
-            <div className="bg-card border border-border rounded-xl px-6 py-4 text-center">
-              <p className="text-2xl font-bold">{stats.days}</p>
+            <div className="bg-card border border-border rounded-xl px-5 py-3 text-center flex-1">
+              <p className="text-xl font-bold">{stats.days}</p>
               <p className="text-xs text-muted-foreground">Days</p>
             </div>
-            <div className="bg-card border border-border rounded-xl px-6 py-4 text-center">
-              <p className="text-2xl font-bold">{stats.workouts}</p>
+            <div className="bg-card border border-border rounded-xl px-5 py-3 text-center flex-1">
+              <p className="text-xl font-bold">{stats.workouts}</p>
               <p className="text-xs text-muted-foreground">Workouts</p>
             </div>
           </div>
