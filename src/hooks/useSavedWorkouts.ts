@@ -218,9 +218,24 @@ export const useSavedWorkouts = () => {
       const communityWkts: CommunityWorkout[] = (workoutPosts || []).map((p) => {
         const contentData = p.content_data as Record<string, unknown>;
         const exercises = (contentData?.exercises as WorkoutExercise[]) || [];
+        
+        // Generate time-of-day based title if no title provided
+        let title = (contentData?.title as string) || (contentData?.name as string);
+        if (!title) {
+          const createdDate = new Date(p.created_at);
+          const hour = createdDate.getHours();
+          if (hour < 12) {
+            title = "Morning Workout";
+          } else if (hour < 17) {
+            title = "Afternoon Workout";
+          } else {
+            title = "Evening Workout";
+          }
+        }
+        
         return {
           id: p.id,
-          title: (contentData?.title as string) || "Workout",
+          title,
           description: p.description,
           exercises,
           creator: profileMap.get(p.user_id) || {
