@@ -33,6 +33,11 @@ const allVisibilityOptions = [
   { value: "private" as Visibility, label: "Private", icon: Lock, description: "Save for yourself" },
 ];
 
+const postVisibilityOptions = [
+  { value: "public" as Visibility, label: "Public", icon: Globe, description: "Share with everyone" },
+  { value: "friends" as Visibility, label: "Friends Only", icon: Users, description: "Share with friends" },
+];
+
 const SharePostScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,14 +46,16 @@ const SharePostScreen = () => {
 
   const isPostType = state?.contentType === "post";
   const isGroupType = state?.contentType === "group";
+  const fromSelection = (state as LocationState & { fromSelection?: boolean })?.fromSelection;
 
-  // Groups only allow Public and Friends Only visibility
-  const visibilityOptions = isGroupType 
-    ? allVisibilityOptions.filter(opt => opt.value !== "private")
+  // Posts from selection only allow Public and Friends Only visibility
+  // Groups also only allow Public and Friends Only visibility
+  const visibilityOptions = (isPostType && fromSelection) || isGroupType
+    ? postVisibilityOptions
     : allVisibilityOptions;
 
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>(isPostType ? "public" : "friends");
+  const [visibility, setVisibility] = useState<Visibility>((isPostType && fromSelection) ? "public" : "friends");
   const [images, setImages] = useState<string[]>(state?.images || []);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -353,7 +360,9 @@ const SharePostScreen = () => {
               <span className="text-sm">Gallery</span>
             </motion.button>
           </div>
-          <p className="text-xs text-muted-foreground">Photos are optional</p>
+          <p className="text-xs text-muted-foreground">
+            {fromSelection ? "At least one photo is required" : "Photos are optional"}
+          </p>
         </div>
 
         {/* Description - Only visible for public/friends */}
@@ -412,7 +421,7 @@ const SharePostScreen = () => {
           <Button 
             className="flex-[2] glow-primary h-14 text-lg" 
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (fromSelection && images.length === 0)}
           >
             {isSubmitting ? (
               <Loader2 className="animate-spin mr-2" size={20} />
