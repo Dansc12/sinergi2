@@ -225,7 +225,7 @@ const ProfilePage = () => {
               )}
               
               {/* Stats - Instagram style */}
-              <div className="flex gap-4">
+              <div className="flex justify-between flex-1">
                 <div className="text-center">
                   <p className="text-base font-bold">{stats.meals}</p>
                   <p className="text-xs text-muted-foreground">Meals</p>
