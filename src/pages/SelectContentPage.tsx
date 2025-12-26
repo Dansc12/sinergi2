@@ -307,20 +307,20 @@ const SelectContentPage = () => {
 
       {/* Fixed Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2">
           <Button
-            variant="outline"
-            className="flex-1 h-14 text-lg"
-            onClick={handleSkip}
-          >
-            Skip
-          </Button>
-          <Button
-            className="flex-1 h-14 text-lg glow-primary"
+            className="w-full h-16 text-lg glow-primary"
             onClick={handleNext}
             disabled={!selectedItem}
           >
             Next
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-12 text-lg"
+            onClick={handleSkip}
+          >
+            Skip
           </Button>
         </div>
       </div>

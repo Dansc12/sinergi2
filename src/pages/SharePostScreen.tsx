@@ -387,31 +387,33 @@ const SharePostScreen = () => {
           )}
         </AnimatePresence>
 
-        {/* Content Details Dropdown */}
-        <div className="mb-6">
-          <motion.button
-            onClick={() => setShowDetails(!showDetails)}
-            className="w-full p-4 rounded-xl bg-card border border-border flex items-center justify-between"
-            whileTap={{ scale: 0.98 }}
-          >
-            <span className="font-medium">View {getContentTypeLabel()} Details</span>
-            {showDetails ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </motion.button>
-          <AnimatePresence>
-            {showDetails && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="p-4 border border-t-0 border-border rounded-b-xl bg-card/50">
-                  {renderContentDetails()}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Content Details Dropdown - Only show if there's actual content data */}
+        {state?.contentData && Object.keys(state.contentData).length > 0 && (
+          <div className="mb-6">
+            <motion.button
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full p-4 rounded-xl bg-card border border-border flex items-center justify-between"
+              whileTap={{ scale: 0.98 }}
+            >
+              <span className="font-medium">View {getContentTypeLabel()} Details</span>
+              {showDetails ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </motion.button>
+            <AnimatePresence>
+              {showDetails && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 border border-t-0 border-border rounded-b-xl bg-card/50">
+                    {renderContentDetails()}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </motion.div>
 
       {/* Fixed Bottom Action Bar */}
