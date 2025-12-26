@@ -1,14 +1,13 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, Dumbbell, Compass, Bookmark } from "lucide-react";
+import { ArrowLeft, Search, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSavedWorkouts, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
-import { format } from "date-fns";
+import WorkoutRoutineCard from "@/components/workout/WorkoutRoutineCard";
 
 const FILTER_CHIPS = ["Beginner", "Full Body", "Upper", "Lower", "Push", "Pull", "Legs"];
 
@@ -57,15 +56,6 @@ const DiscoverWorkoutsPage = () => {
     }
     return results;
   }, [communityWorkouts, searchQuery]);
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handleBack = () => {
     navigate(returnState?.returnTo || "/create/workout", {
@@ -178,53 +168,16 @@ const DiscoverWorkoutsPage = () => {
               </div>
             ) : (
               filteredRoutines.map((routine) => (
-                <div
+                <WorkoutRoutineCard
                   key={routine.id}
-                  className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarImage src={routine.creator.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                        {getInitials(routine.creator.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground truncate">{routine.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {routine.creator.name}
-                        {routine.creator.username && (
-                          <span className="text-muted-foreground/60"> @{routine.creator.username}</span>
-                        )}
-                      </p>
-                      {routine.description && (
-                        <p className="text-sm text-muted-foreground/80 mt-1 line-clamp-2">{routine.description}</p>
-                      )}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Dumbbell size={12} />
-                          {routine.exerciseCount} exercises
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      onClick={() => handleUseRoutine(routine)}
-                      className="flex-1"
-                    >
-                      Use
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="shrink-0"
-                    >
-                      <Bookmark size={16} />
-                    </Button>
-                  </div>
-                </div>
+                  title={routine.title}
+                  exercises={routine.exercises}
+                  creator={routine.creator}
+                  createdAt={routine.created_at}
+                  onCopy={() => handleUseRoutine(routine)}
+                  copyButtonText="Copy"
+                  isRoutine
+                />
               ))
             )}
           </TabsContent>
@@ -241,54 +194,16 @@ const DiscoverWorkoutsPage = () => {
               </div>
             ) : (
               filteredWorkouts.map((workout) => (
-                <div
+                <WorkoutRoutineCard
                   key={workout.id}
-                  className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarImage src={workout.creator.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                        {getInitials(workout.creator.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground truncate">{workout.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {workout.creator.name}
-                        {workout.creator.username && (
-                          <span className="text-muted-foreground/60"> @{workout.creator.username}</span>
-                        )}
-                      </p>
-                      {workout.description && (
-                        <p className="text-sm text-muted-foreground/80 mt-1 line-clamp-2">{workout.description}</p>
-                      )}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Dumbbell size={12} />
-                          {workout.exerciseCount} exercises
-                        </span>
-                        <span>{format(new Date(workout.created_at), "MMM d")}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      onClick={() => handleUseWorkout(workout)}
-                      className="flex-1"
-                    >
-                      Copy to Today
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="shrink-0"
-                    >
-                      <Bookmark size={16} />
-                    </Button>
-                  </div>
-                </div>
+                  title={workout.title}
+                  exercises={workout.exercises}
+                  creator={workout.creator}
+                  createdAt={workout.created_at}
+                  onCopy={() => handleUseWorkout(workout)}
+                  copyButtonText="Copy"
+                  isRoutine={false}
+                />
               ))
             )}
           </TabsContent>
