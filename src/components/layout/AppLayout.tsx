@@ -16,6 +16,8 @@ const HIDDEN_NAV_ROUTES = [
   "/create/routine",
   "/share",
   "/select-content",
+  "/workout/my-saved",
+  "/workout/discover",
   "/profile",
   "/user",
 ];
