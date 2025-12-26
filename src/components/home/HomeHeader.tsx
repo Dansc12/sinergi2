@@ -15,10 +15,7 @@ export const HomeHeader = ({ userName, streakCount, avatarUrl, onProfileClick }:
       {/* Top Bar */}
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Left: Notification Bell */}
-          <NotificationsPanel />
-
-          {/* Right: Avatar & Streak Badge */}
+          {/* Left: Avatar & Streak Badge */}
           <div className="flex items-center gap-3">
             <button onClick={onProfileClick}>
               <Avatar className="h-10 w-10">
@@ -34,6 +31,9 @@ export const HomeHeader = ({ userName, streakCount, avatarUrl, onProfileClick }:
               <span>{streakCount}</span>
             </div>
           </div>
+
+          {/* Right: Notification Bell */}
+          <NotificationsPanel />
         </div>
       </div>
     </header>
