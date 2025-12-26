@@ -190,21 +190,24 @@ const SelectContentPage = () => {
     });
   };
 
-  const filters: { value: ContentType; label: string }[] = [
-    { value: "all", label: "All" },
+  const typeFilters: { value: ContentType; label: string }[] = [
     { value: "workout", label: "Workouts" },
     { value: "meal", label: "Meals" },
     { value: "recipe", label: "Recipes" },
     { value: "routine", label: "Routines" },
   ];
 
+  const selectedTypeLabel = filter === "all" 
+    ? null 
+    : typeFilters.find(f => f.value === filter)?.label;
+
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background flex flex-col">
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
-        className="p-4"
+        className="p-4 flex-1 pb-28"
       >
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
@@ -214,17 +217,28 @@ const SelectContentPage = () => {
           <h1 className="text-2xl font-bold">Select Content</h1>
         </div>
 
-        {/* Filter Dropdown */}
-        <div className="mb-4">
+        {/* Filter Options */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={filter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter("all")}
+          >
+            All
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                {filters.find(f => f.value === filter)?.label || "All"}
+              <Button 
+                variant={filter !== "all" ? "default" : "outline"} 
+                size="sm" 
+                className="gap-2"
+              >
+                {selectedTypeLabel || "Select Type"}
                 <ChevronDown size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="bg-popover">
-              {filters.map((f) => (
+              {typeFilters.map((f) => (
                 <DropdownMenuItem
                   key={f.value}
                   onClick={() => setFilter(f.value)}
