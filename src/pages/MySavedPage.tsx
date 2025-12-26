@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, Dumbbell, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Search, Dumbbell, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSavedWorkouts, SavedRoutine, PastWorkout } from "@/hooks/useSavedWorkouts";
-import { format } from "date-fns";
+import WorkoutRoutineCard from "@/components/workout/WorkoutRoutineCard";
 
 const MySavedPage = () => {
   const navigate = useNavigate();
@@ -128,34 +128,16 @@ const MySavedPage = () => {
               </div>
             ) : (
               filteredRoutines.map((routine) => (
-                <div
+                <WorkoutRoutineCard
                   key={routine.id}
-                  className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground truncate">{routine.routine_name}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">Creator: You</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Dumbbell size={12} />
-                          {routine.exerciseCount} exercises
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} />
-                          {routine.day_of_week}
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleUseRoutine(routine)}
-                      className="shrink-0"
-                    >
-                      Use
-                    </Button>
-                  </div>
-                </div>
+                  title={routine.routine_name}
+                  exercises={routine.routine_data?.exercises || []}
+                  creator={{ name: "You" }}
+                  createdAt={routine.created_at}
+                  onCopy={() => handleUseRoutine(routine)}
+                  copyButtonText="Copy"
+                  isRoutine
+                />
               ))
             )}
           </TabsContent>
@@ -172,33 +154,16 @@ const MySavedPage = () => {
               </div>
             ) : (
               filteredWorkouts.map((workout) => (
-                <div
+                <WorkoutRoutineCard
                   key={workout.id}
-                  className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground truncate">{workout.title}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {format(new Date(workout.log_date), "MMM d, yyyy")}
-                      </p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Dumbbell size={12} />
-                          {workout.exerciseCount} exercises
-                        </span>
-                        <span>{workout.totalSets} sets</span>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleCopyWorkout(workout)}
-                      className="shrink-0"
-                    >
-                      Copy to Today
-                    </Button>
-                  </div>
-                </div>
+                  title={workout.title}
+                  exercises={workout.exercises}
+                  creator={{ name: "You" }}
+                  createdAt={workout.log_date}
+                  onCopy={() => handleCopyWorkout(workout)}
+                  copyButtonText="Copy"
+                  isRoutine={false}
+                />
               ))
             )}
           </TabsContent>
