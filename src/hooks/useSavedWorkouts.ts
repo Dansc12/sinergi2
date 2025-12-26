@@ -214,45 +214,49 @@ export const useSavedWorkouts = () => {
         ])
       );
 
-      // Map workout posts to community workouts (include all users, even current user)
-      const communityWkts: CommunityWorkout[] = (workoutPosts || []).map((p) => {
-        const contentData = p.content_data as Record<string, unknown>;
-        const exercises = (contentData?.exercises as WorkoutExercise[]) || [];
-        
-        // Generate time-of-day based title if no title provided
-        let title = (contentData?.title as string) || (contentData?.name as string);
-        if (!title) {
-          const createdDate = new Date(p.created_at);
-          const hour = createdDate.getHours();
-          if (hour < 12) {
-            title = "Morning Workout";
-          } else if (hour < 17) {
-            title = "Afternoon Workout";
-          } else {
-            title = "Evening Workout";
+      // Map workout posts to community workouts (exclude current user's posts)
+      const communityWkts: CommunityWorkout[] = (workoutPosts || [])
+        .filter((p) => p.user_id !== user?.id)
+        .map((p) => {
+          const contentData = p.content_data as Record<string, unknown>;
+          const exercises = (contentData?.exercises as WorkoutExercise[]) || [];
+          
+          // Generate time-of-day based title if no title provided
+          let title = (contentData?.title as string) || (contentData?.name as string);
+          if (!title) {
+            const createdDate = new Date(p.created_at);
+            const hour = createdDate.getHours();
+            if (hour < 12) {
+              title = "Morning Workout";
+            } else if (hour < 17) {
+              title = "Afternoon Workout";
+            } else {
+              title = "Evening Workout";
+            }
           }
-        }
-        
-        return {
-          id: p.id,
-          title,
-          description: p.description,
-          exercises,
-          creator: profileMap.get(p.user_id) || {
-            id: p.user_id,
-            name: "Anonymous",
-            username: null,
-            avatar_url: null,
-          },
-          created_at: p.created_at,
-          exerciseCount: exercises.length,
-        };
-      });
+          
+          return {
+            id: p.id,
+            title,
+            description: p.description,
+            exercises,
+            creator: profileMap.get(p.user_id) || {
+              id: p.user_id,
+              name: "Anonymous",
+              username: null,
+              avatar_url: null,
+            },
+            created_at: p.created_at,
+            exerciseCount: exercises.length,
+          };
+        });
 
       setCommunityWorkouts(communityWkts);
 
-      // Map routine posts to community routines (include all users, even current user)
-      const communityRtns: CommunityRoutine[] = (routinePosts || []).map((p) => {
+      // Map routine posts to community routines (exclude current user's posts)
+      const communityRtns: CommunityRoutine[] = (routinePosts || [])
+        .filter((p) => p.user_id !== user?.id)
+        .map((p) => {
         const contentData = p.content_data as Record<string, unknown>;
         const exercises = (contentData?.exercises as RoutineExercise[]) || [];
         return {
@@ -275,7 +279,7 @@ export const useSavedWorkouts = () => {
     } catch (err) {
       console.error("Error fetching community content:", err);
     }
-  }, []);
+  }, [user]);
 
   const fetchAll = useCallback(async () => {
     setIsLoading(true);
