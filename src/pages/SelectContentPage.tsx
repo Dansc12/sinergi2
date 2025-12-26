@@ -1,7 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Dumbbell, Utensils, ChefHat, Calendar, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Dumbbell, Utensils, ChefHat, Calendar, Loader2, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -208,19 +214,27 @@ const SelectContentPage = () => {
           <h1 className="text-2xl font-bold">Select Content</h1>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide mb-4">
-          {filters.map((f) => (
-            <Button
-              key={f.value}
-              variant={filter === f.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(f.value)}
-              className="shrink-0"
-            >
-              {f.label}
-            </Button>
-          ))}
+        {/* Filter Dropdown */}
+        <div className="mb-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                {filters.find(f => f.value === filter)?.label || "All"}
+                <ChevronDown size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-popover">
+              {filters.map((f) => (
+                <DropdownMenuItem
+                  key={f.value}
+                  onClick={() => setFilter(f.value)}
+                  className={filter === f.value ? "bg-accent" : ""}
+                >
+                  {f.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Content List */}
