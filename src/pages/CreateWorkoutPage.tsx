@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check, Images, Bookmark, Compass, Loader2 } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,6 +76,10 @@ const CreateWorkoutPage = () => {
   const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
   const [routineInstanceId, setRoutineInstanceId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+
+  // Get the currently selected exercise
+  const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
   
   // State for pending autofill confirmation
   const [pendingAutofill, setPendingAutofill] = useState<{
@@ -184,8 +188,9 @@ const CreateWorkoutPage = () => {
         }))
       : [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false, setType: "normal" as SetType }];
 
+    const newExerciseId = Date.now().toString();
     const newExercise: Exercise = {
-      id: Date.now().toString(),
+      id: newExerciseId,
       name: exercise.name,
       category: exercise.category,
       muscleGroup: exercise.muscleGroup,
@@ -195,6 +200,7 @@ const CreateWorkoutPage = () => {
       isCardio: exercise.isCardio || false,
     };
     setExercises([...exercises, newExercise]);
+    setSelectedExerciseId(newExerciseId); // Auto-select the new exercise
     
     if (historicalSets.length > 0) {
       toast({ title: "Previous workout loaded", description: `Loaded ${historicalSets.length} sets from your last session.` });
@@ -202,16 +208,14 @@ const CreateWorkoutPage = () => {
   };
 
   const removeExercise = (exerciseId: string) => {
-    setExercises(exercises.filter((e) => e.id !== exerciseId));
+    const newExercises = exercises.filter((e) => e.id !== exerciseId);
+    setExercises(newExercises);
+    // If we removed the selected exercise, select another one
+    if (selectedExerciseId === exerciseId) {
+      setSelectedExerciseId(newExercises.length > 0 ? newExercises[0].id : null);
+    }
   };
 
-  const toggleExerciseExpand = (exerciseId: string) => {
-    setExercises(
-      exercises.map((e) =>
-        e.id === exerciseId ? { ...e, isExpanded: !e.isExpanded } : e
-      )
-    );
-  };
 
   const updateExerciseNotes = (exerciseId: string, notes: string) => {
     setExercises(
@@ -573,241 +577,210 @@ const CreateWorkoutPage = () => {
           </Button>
         </div>
 
-        {/* Exercises List */}
-        <div className="space-y-4">
-          <AnimatePresence>
-            {exercises.map((exercise) => (
-              <motion.div
-                key={exercise.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                className="rounded-2xl bg-card border border-border overflow-hidden"
-              >
-                {/* Exercise Header */}
-                <div className="p-4 flex items-center justify-between">
-                  <button
-                    onClick={() => toggleExerciseExpand(exercise.id)}
-                    className="flex items-center gap-3 flex-1 text-left"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <Dumbbell size={18} className="text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">{exercise.name}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {exercise.category} • {exercise.muscleGroup}
-                      </p>
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleExerciseExpand(exercise.id)}
-                    >
-                      {exercise.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeExercise(exercise.id)}
-                    >
-                      <Trash2 size={18} className="text-destructive" />
-                    </Button>
-                  </div>
+        {/* Selected Exercise Details */}
+        {selectedExercise && (
+          <motion.div
+            key={selectedExercise.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            {/* Exercise Title & Actions */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Dumbbell size={18} className="text-primary" />
                 </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-foreground">{selectedExercise.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedExercise.category} • {selectedExercise.muscleGroup}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeExercise(selectedExercise.id)}
+              >
+                <Trash2 size={18} className="text-destructive" />
+              </Button>
+            </div>
 
-                {/* Exercise Content */}
-                <AnimatePresence>
-                  {exercise.isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      {/* Notes */}
-                      <div className="px-4 pb-3">
-                        <Textarea
-                          placeholder="Add notes..."
-                          value={exercise.notes}
-                          onChange={(e) => updateExerciseNotes(exercise.id, e.target.value)}
-                          className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
-                          rows={2}
-                        />
-                      </div>
+            {/* Notes */}
+            <div className="mb-4">
+              <Textarea
+                placeholder="Add notes..."
+                value={selectedExercise.notes}
+                onChange={(e) => updateExerciseNotes(selectedExercise.id, e.target.value)}
+                className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
+                rows={2}
+              />
+            </div>
 
-                      {/* Sets Header */}
-                      <div className="px-4 pb-2">
-                        <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
-                          <div className="col-span-2 text-center">SET</div>
-                          <div className="col-span-4 text-center">{exercise.isCardio ? "DISTANCE" : "WEIGHT"}</div>
-                          <div className="col-span-4 text-center">{exercise.isCardio ? "TIME" : "REPS"}</div>
-                          <div className="col-span-2"></div>
-                        </div>
-                      </div>
+            {/* Sets Header */}
+            <div className="mb-2">
+              <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
+                <div className="col-span-2 text-center">SET</div>
+                <div className="col-span-4 text-center">{selectedExercise.isCardio ? "DISTANCE" : "WEIGHT"}</div>
+                <div className="col-span-4 text-center">{selectedExercise.isCardio ? "TIME" : "REPS"}</div>
+                <div className="col-span-2"></div>
+              </div>
+            </div>
 
-                      {/* Sets List */}
-                      <div className="px-4 pb-3 space-y-2">
-                        {exercise.sets.map((set, index) => {
-                          const normalSetNumber = getNormalSetNumber(exercise.sets, index);
-                          let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-                          let isLongPress = false;
+            {/* Sets List */}
+            <div className="space-y-2 mb-4">
+              {selectedExercise.sets.map((set, index) => {
+                const normalSetNumber = getNormalSetNumber(selectedExercise.sets, index);
+                let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+                let isLongPress = false;
 
-                          const handlePointerDown = () => {
-                            isLongPress = false;
-                            longPressTimer = setTimeout(() => {
-                              isLongPress = true;
-                            }, 500);
-                          };
+                const handlePointerDown = () => {
+                  isLongPress = false;
+                  longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                  }, 500);
+                };
 
-                          const handlePointerUp = (e: React.PointerEvent) => {
-                            if (longPressTimer) {
-                              clearTimeout(longPressTimer);
-                              longPressTimer = null;
-                            }
-                            if (!isLongPress) {
-                              e.preventDefault();
-                              toggleSetComplete(exercise.id, set.id);
-                            }
-                          };
+                const handlePointerUp = (e: React.PointerEvent) => {
+                  if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                  }
+                  if (!isLongPress) {
+                    e.preventDefault();
+                    toggleSetComplete(selectedExercise.id, set.id);
+                  }
+                };
 
-                          const handlePointerLeave = () => {
-                            if (longPressTimer) {
-                              clearTimeout(longPressTimer);
-                              longPressTimer = null;
-                            }
-                          };
+                const handlePointerLeave = () => {
+                  if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                  }
+                };
 
-                          return (
-                            <motion.div
-                              key={set.id}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className={`grid grid-cols-12 gap-2 items-center p-2 rounded-lg transition-colors ${
-                                set.completed ? "bg-primary/20" : "bg-muted/30"
-                              }`}
-                            >
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button
-                                    onPointerDown={handlePointerDown}
-                                    onPointerUp={handlePointerUp}
-                                    onPointerLeave={handlePointerLeave}
-                                    onContextMenu={(e) => e.preventDefault()}
-                                    className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors relative select-none ${
-                                      set.completed
-                                        ? "bg-primary text-primary-foreground"
-                                        : set.setType === "warmup"
-                                        ? "bg-yellow-500/20 text-yellow-600"
-                                        : set.setType === "failure"
-                                        ? "bg-red-500/20 text-red-600"
-                                        : set.setType === "drop"
-                                        ? "bg-blue-500/20 text-blue-600"
-                                        : "bg-muted text-muted-foreground"
-                                    }`}
-                                  >
-                                    <span className={set.completed ? "opacity-0" : "opacity-100"}>
-                                      {getSetLabel(set, normalSetNumber)}
-                                    </span>
-                                    <AnimatePresence>
-                                      {set.completed && (
-                                        <motion.div
-                                          initial={{ scale: 0, opacity: 0 }}
-                                          animate={{ scale: 1, opacity: 1 }}
-                                          exit={{ scale: 0, opacity: 0 }}
-                                          className="absolute inset-0 flex items-center justify-center"
-                                        >
-                                          <Check size={16} className="text-primary-foreground" />
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-40">
-                                  <DropdownMenuItem 
-                                    onClick={() => updateSetType(exercise.id, set.id, "normal")}
-                                    className={set.setType === "normal" || !set.setType ? "bg-muted" : ""}
-                                  >
-                                    Normal Set
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => updateSetType(exercise.id, set.id, "warmup")}
-                                    className={set.setType === "warmup" ? "bg-yellow-500/20" : ""}
-                                  >
-                                    <span className="w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-600 flex items-center justify-center text-xs font-semibold mr-2">W</span>
-                                    Warmup Set
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => updateSetType(exercise.id, set.id, "failure")}
-                                    className={set.setType === "failure" ? "bg-red-500/20" : ""}
-                                  >
-                                    <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-600 flex items-center justify-center text-xs font-semibold mr-2">F</span>
-                                    Failure Set
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => updateSetType(exercise.id, set.id, "drop")}
-                                    className={set.setType === "drop" ? "bg-blue-500/20" : ""}
-                                  >
-                                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-600 flex items-center justify-center text-xs font-semibold mr-2">D</span>
-                                    Drop Set
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <div className="col-span-4 flex justify-center">
-                                <Input
-                                  placeholder={exercise.isCardio ? "miles" : "lbs"}
-                                  value={exercise.isCardio ? set.distance : set.weight}
-                                  onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "distance" : "weight", e.target.value)}
-                                  className="text-center h-9 bg-background border-border"
-                                  type={exercise.isCardio ? "text" : "number"}
-                                />
-                              </div>
-                              <div className="col-span-4 flex justify-center relative">
-                                <Input
-                                  placeholder={exercise.isCardio ? "mm:ss" : (set.repRangeHint || "reps")}
-                                  value={exercise.isCardio ? set.time : set.reps}
-                                  onChange={(e) => updateSet(exercise.id, set.id, exercise.isCardio ? "time" : "reps", e.target.value)}
-                                  className={`text-center h-9 bg-background border-border ${set.repRangeHint && !set.reps ? "placeholder:text-primary/60" : ""}`}
-                                  type={exercise.isCardio ? "text" : "number"}
-                                />
-                              </div>
-                              <div className="col-span-2 flex justify-center">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => removeSet(exercise.id, set.id)}
-                                  disabled={exercise.sets.length === 1}
-                                >
-                                  <Trash2 size={14} className={exercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
-                                </Button>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Add Set Button */}
-                      <div className="px-4 pb-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-primary hover:text-primary hover:bg-primary/10"
-                          onClick={() => addSet(exercise.id)}
+                return (
+                  <motion.div
+                    key={set.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className={`grid grid-cols-12 gap-2 items-center p-2 rounded-lg transition-colors ${
+                      set.completed ? "bg-primary/20" : "bg-muted/30"
+                    }`}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onPointerDown={handlePointerDown}
+                          onPointerUp={handlePointerUp}
+                          onPointerLeave={handlePointerLeave}
+                          onContextMenu={(e) => e.preventDefault()}
+                          className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors relative select-none ${
+                            set.completed
+                              ? "bg-primary text-primary-foreground"
+                              : set.setType === "warmup"
+                              ? "bg-yellow-500/20 text-yellow-600"
+                              : set.setType === "failure"
+                              ? "bg-red-500/20 text-red-600"
+                              : set.setType === "drop"
+                              ? "bg-blue-500/20 text-blue-600"
+                              : "bg-muted text-muted-foreground"
+                          }`}
                         >
-                          <Plus size={16} className="mr-1" />
-                          Add Set
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                          <span className={set.completed ? "opacity-0" : "opacity-100"}>
+                            {getSetLabel(set, normalSetNumber)}
+                          </span>
+                          <AnimatePresence>
+                            {set.completed && (
+                              <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                className="absolute inset-0 flex items-center justify-center"
+                              >
+                                <Check size={16} className="text-primary-foreground" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-40">
+                        <DropdownMenuItem 
+                          onClick={() => updateSetType(selectedExercise.id, set.id, "normal")}
+                          className={set.setType === "normal" || !set.setType ? "bg-muted" : ""}
+                        >
+                          Normal Set
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => updateSetType(selectedExercise.id, set.id, "warmup")}
+                          className={set.setType === "warmup" ? "bg-yellow-500/20" : ""}
+                        >
+                          <span className="w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-600 flex items-center justify-center text-xs font-semibold mr-2">W</span>
+                          Warmup Set
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => updateSetType(selectedExercise.id, set.id, "failure")}
+                          className={set.setType === "failure" ? "bg-red-500/20" : ""}
+                        >
+                          <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-600 flex items-center justify-center text-xs font-semibold mr-2">F</span>
+                          Failure Set
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => updateSetType(selectedExercise.id, set.id, "drop")}
+                          className={set.setType === "drop" ? "bg-blue-500/20" : ""}
+                        >
+                          <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-600 flex items-center justify-center text-xs font-semibold mr-2">D</span>
+                          Drop Set
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <div className="col-span-4 flex justify-center">
+                      <Input
+                        placeholder={selectedExercise.isCardio ? "miles" : "lbs"}
+                        value={selectedExercise.isCardio ? set.distance : set.weight}
+                        onChange={(e) => updateSet(selectedExercise.id, set.id, selectedExercise.isCardio ? "distance" : "weight", e.target.value)}
+                        className="text-center h-9 bg-background border-border"
+                        type={selectedExercise.isCardio ? "text" : "number"}
+                      />
+                    </div>
+                    <div className="col-span-4 flex justify-center relative">
+                      <Input
+                        placeholder={selectedExercise.isCardio ? "mm:ss" : (set.repRangeHint || "reps")}
+                        value={selectedExercise.isCardio ? set.time : set.reps}
+                        onChange={(e) => updateSet(selectedExercise.id, set.id, selectedExercise.isCardio ? "time" : "reps", e.target.value)}
+                        className={`text-center h-9 bg-background border-border ${set.repRangeHint && !set.reps ? "placeholder:text-primary/60" : ""}`}
+                        type={selectedExercise.isCardio ? "text" : "number"}
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => removeSet(selectedExercise.id, set.id)}
+                        disabled={selectedExercise.sets.length === 1}
+                      >
+                        <Trash2 size={14} className={selectedExercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
+                      </Button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Add Set Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => addSet(selectedExercise.id)}
+            >
+              <Plus size={16} className="mr-1" />
+              Add Set
+            </Button>
+          </motion.div>
+        )}
 
         {/* Empty State */}
         {exercises.length === 0 && (
@@ -819,6 +792,38 @@ const CreateWorkoutPage = () => {
         )}
       </motion.div>
 
+      {/* Exercise Cards Row - Fixed at Bottom */}
+      {exercises.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3 pb-6">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+            {exercises.map((exercise) => {
+              const isSelected = selectedExerciseId === exercise.id;
+              const completedSets = exercise.sets.filter(s => s.completed).length;
+              const totalSets = exercise.sets.length;
+              
+              return (
+                <motion.button
+                  key={exercise.id}
+                  onClick={() => setSelectedExerciseId(exercise.id)}
+                  whileTap={{ scale: 0.95 }}
+                  className={`flex-shrink-0 px-4 py-3 rounded-xl transition-all ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "bg-card border border-border text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <div className="flex flex-col items-start gap-1 min-w-[100px]">
+                    <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
+                    <span className={`text-xs ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      {completedSets}/{totalSets} sets
+                    </span>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Hidden file input for gallery */}
       <input
