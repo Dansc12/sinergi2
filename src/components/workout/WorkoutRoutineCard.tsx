@@ -71,76 +71,99 @@ const WorkoutRoutineCard = ({
 
   return (
     <div
-      className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors"
+      className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+      onClick={() => setIsExpanded(!isExpanded)}
     >
-      {/* Main Row */}
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <Avatar className="h-10 w-10 shrink-0">
-          <AvatarImage src={creator.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/20 text-primary text-sm">
-            {getInitials(creator.name)}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Content */}
-        <div 
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {/* Title and Date Row */}
-          <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-foreground truncate flex-1">{title}</h4>
-            <span className="text-xs text-muted-foreground shrink-0">
-              {formatDate(createdAt)}
-            </span>
-          </div>
-
-          {/* Exercise Preview */}
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-            {exerciseNames.join(", ")}
-            {hasMore && ` +${exercises.length - 5} more`}
-          </p>
-
-          {/* Expand Indicator */}
-          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground/70">
-            {isExpanded ? (
-              <>
-                <ChevronUp size={14} />
-                <span>Hide details</span>
-              </>
-            ) : (
-              <>
-                <ChevronDown size={14} />
-                <span>View details</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Copy Button */}
-        <Button
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCopy();
-          }}
-          className="shrink-0"
-        >
-          {copyButtonText}
-        </Button>
-      </div>
-
-      {/* Expanded Details */}
-      <AnimatePresence>
-        {isExpanded && (
+      <AnimatePresence mode="wait">
+        {!isExpanded ? (
+          /* Collapsed View */
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            key="collapsed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-start gap-3"
           >
+            {/* Avatar */}
+            <Avatar className="h-10 w-10 shrink-0">
+              <AvatarImage src={creator.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                {getInitials(creator.name)}
+              </AvatarFallback>
+            </Avatar>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              {/* Title */}
+              <h4 className="font-semibold text-foreground truncate">{title}</h4>
+              
+              {/* Date */}
+              <span className="text-xs text-muted-foreground">
+                {formatDate(createdAt)}
+              </span>
+
+              {/* Exercise Preview */}
+              <p className="text-xs text-muted-foreground/80 mt-1.5 line-clamp-2">
+                {exerciseNames.join(", ")}
+                {hasMore && `...`}
+              </p>
+            </div>
+
+            {/* Copy Button */}
+            <Button
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy();
+              }}
+              className="shrink-0"
+            >
+              {copyButtonText}
+            </Button>
+          </motion.div>
+        ) : (
+          /* Expanded View */
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Header Row */}
+            <div className="flex items-start gap-3">
+              {/* Avatar */}
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage src={creator.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                  {getInitials(creator.name)}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* Spacer */}
+              <div className="flex-1" />
+
+              {/* Copy Button */}
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy();
+                }}
+                className="shrink-0"
+              >
+                {copyButtonText}
+              </Button>
+            </div>
+
+            {/* Title and Date under avatar */}
+            <div className="mt-3">
+              <h4 className="font-semibold text-foreground">{title}</h4>
+              <span className="text-xs text-muted-foreground">
+                {formatDate(createdAt)}
+              </span>
+            </div>
+
+            {/* Exercise Details */}
             <div className="mt-4 pt-4 border-t border-border/50 space-y-3">
               {exercises.map((exercise, idx) => (
                 <div key={exercise.id || idx} className="space-y-1">
@@ -155,13 +178,10 @@ const WorkoutRoutineCard = ({
                         className="text-xs bg-muted/50 px-2 py-1 rounded"
                       >
                         {isRoutine ? (
-                          // Routine format: rep range
                           `Set ${setIdx + 1}: ${set.minReps || "0"}-${set.maxReps || "0"} reps`
                         ) : exercise.isCardio ? (
-                          // Cardio format: distance/time
                           `${set.distance || "0"} mi / ${set.time || "0:00"}`
                         ) : (
-                          // Strength format: weight x reps
                           `${set.weight || "0"} lbs × ${set.reps || "0"}`
                         )}
                       </span>
