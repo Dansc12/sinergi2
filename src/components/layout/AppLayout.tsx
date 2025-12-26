@@ -15,6 +15,7 @@ const HIDDEN_NAV_ROUTES = [
   "/create/recipe",
   "/create/routine",
   "/share",
+  "/select-content",
   "/profile",
   "/user",
 ];
