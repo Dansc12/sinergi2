@@ -198,6 +198,16 @@
   to { opacity: 1; }
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Custom scrollbar for non-hidden areas */
 ::-webkit-scrollbar {
   width: 6px;

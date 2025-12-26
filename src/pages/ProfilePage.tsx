@@ -209,7 +209,7 @@ const ProfilePage = () => {
       <div className="px-4 py-6 animate-fade-in">
         {/* Profile Header - Horizontal Layout */}
         <div className="mb-6">
-          {/* Top Row: Avatar + Name/Username */}
+          {/* Top Row: Avatar + Name/Username/Stats */}
           <div className="flex items-start gap-4 mb-4">
             <Avatar className="w-24 h-24 flex-shrink-0">
               <AvatarImage src={avatarUrl || undefined} />
@@ -218,26 +218,42 @@ const ProfilePage = () => {
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex flex-col justify-center min-h-[6rem]">
+            <div className="flex flex-col justify-start flex-1">
               <h2 className="text-xl font-bold">{displayName}</h2>
               {profile?.username && (
-                <p className="text-muted-foreground text-sm">@{profile.username}</p>
+                <p className="text-muted-foreground text-sm mb-2">@{profile.username}</p>
               )}
+              
+              {/* Stats - Instagram style */}
+              <div className="flex gap-4">
+                <div className="text-center">
+                  <p className="text-base font-bold">{stats.meals}</p>
+                  <p className="text-xs text-muted-foreground">Meals</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-base font-bold">{stats.days}</p>
+                  <p className="text-xs text-muted-foreground">Days</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-base font-bold">{stats.workouts}</p>
+                  <p className="text-xs text-muted-foreground">Workouts</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Streak Badge + Hobbies Row */}
-          <div className="flex items-stretch gap-3 mb-4">
-            <div className="w-24 flex items-center justify-center gap-1 bg-streak text-primary-foreground px-3 py-1.5 rounded-full text-sm font-bold shadow-md flex-shrink-0">
-              <Flame size={16} />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-24 flex items-center justify-center gap-1 bg-streak text-primary-foreground px-3 py-1 rounded-full text-sm font-bold shadow-md flex-shrink-0">
+              <Flame size={14} />
               <span>{streakCount}</span>
             </div>
             
             {interests.length > 0 && (
-              <div className="relative flex-1 min-w-0 overflow-hidden">
+              <div className="relative flex-1 min-w-0 overflow-hidden h-6">
                 <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
                 <div className="absolute inset-y-0 right-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-1 h-full">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-1 h-full">
                   {interests.map((interest) => (
                     <span
                       key={interest}
@@ -253,22 +269,6 @@ const ProfilePage = () => {
 
           {/* Bio */}
           <p className="text-muted-foreground text-sm mb-4">{userBio}</p>
-
-          {/* Stats */}
-          <div className="flex gap-4 w-full justify-center">
-            <div className="bg-card border border-border rounded-xl px-5 py-3 text-center flex-1">
-              <p className="text-xl font-bold">{stats.meals}</p>
-              <p className="text-xs text-muted-foreground">Meals</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl px-5 py-3 text-center flex-1">
-              <p className="text-xl font-bold">{stats.days}</p>
-              <p className="text-xs text-muted-foreground">Days</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl px-5 py-3 text-center flex-1">
-              <p className="text-xl font-bold">{stats.workouts}</p>
-              <p className="text-xs text-muted-foreground">Workouts</p>
-            </div>
-          </div>
         </div>
 
         {/* Content Type Selector */}
