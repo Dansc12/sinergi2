@@ -211,14 +211,14 @@ const ProfilePage = () => {
         <div className="mb-6">
           {/* Top Row: Avatar + Name/Username */}
           <div className="flex items-start gap-4 mb-4">
-            <Avatar className="w-20 h-20 border-4 border-primary/30 flex-shrink-0">
+            <Avatar className="w-24 h-24 flex-shrink-0">
               <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="text-xl bg-muted">
-                <Camera size={28} className="text-muted-foreground" />
+              <AvatarFallback className="text-2xl bg-muted">
+                <Camera size={32} className="text-muted-foreground" />
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex flex-col justify-center min-h-[5rem]">
+            <div className="flex flex-col justify-center min-h-[6rem]">
               <h2 className="text-xl font-bold">{displayName}</h2>
               {profile?.username && (
                 <p className="text-muted-foreground text-sm">@{profile.username}</p>
@@ -227,22 +227,26 @@ const ProfilePage = () => {
           </div>
 
           {/* Streak Badge + Hobbies Row */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center gap-1 bg-streak text-primary-foreground px-3 py-1.5 rounded-full text-sm font-bold shadow-md flex-shrink-0">
+          <div className="flex items-stretch gap-3 mb-4">
+            <div className="w-24 flex items-center justify-center gap-1 bg-streak text-primary-foreground px-3 py-1.5 rounded-full text-sm font-bold shadow-md flex-shrink-0">
               <Flame size={16} />
               <span>{streakCount}</span>
             </div>
             
             {interests.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {interests.map((interest) => (
-                  <span
-                    key={interest}
-                    className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs font-medium"
-                  >
-                    {interest}
-                  </span>
-                ))}
+              <div className="relative flex-1 min-w-0 overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide px-1 h-full">
+                  {interests.map((interest) => (
+                    <span
+                      key={interest}
+                      className="px-2 py-0.5 bg-primary/20 text-primary rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
