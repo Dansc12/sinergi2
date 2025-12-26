@@ -10,10 +10,8 @@ import ExerciseSearchInput from "@/components/ExerciseSearchInput";
 import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
-import MySavedModal from "@/components/workout/MySavedModal";
-import DiscoverModal from "@/components/workout/DiscoverModal";
 import AutofillConfirmDialog from "@/components/workout/AutofillConfirmDialog";
-import { useSavedWorkouts, SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
+import { SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
 import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
 interface Set {
@@ -45,6 +43,12 @@ interface RestoredState {
   routineName?: string;
   exercises?: Exercise[];
   routineInstanceId?: string;
+  // From MySavedPage
+  selectedRoutine?: SavedRoutine;
+  selectedPastWorkout?: PastWorkout;
+  // From DiscoverWorkoutsPage
+  selectedCommunityRoutine?: CommunityRoutine;
+  selectedCommunityWorkout?: CommunityWorkout;
 }
 
 const CreateWorkoutPage = () => {
@@ -62,29 +66,87 @@ const CreateWorkoutPage = () => {
   const [routineInstanceId, setRoutineInstanceId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // New state for My Saved and Discover modals
-  const [isMySavedOpen, setIsMySavedOpen] = useState(false);
-  const [isDiscoverOpen, setIsDiscoverOpen] = useState(false);
+  // State for pending autofill confirmation
   const [pendingAutofill, setPendingAutofill] = useState<{
     type: "routine" | "workout" | "communityRoutine" | "communityWorkout";
     data: SavedRoutine | PastWorkout | CommunityRoutine | CommunityWorkout;
     name: string;
   } | null>(null);
 
-  const { savedRoutines, pastWorkouts, communityRoutines, communityWorkouts, isLoading: isSavedLoading } = useSavedWorkouts();
-
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     setPhotos([...photos, ...urls]);
     toast({ title: "Photos added!", description: `${urls.length} photo(s) added.` });
   });
 
-  // Restore state if coming back from share screen or prefilled from routine
+  // Restore state if coming back from share screen, prefilled from routine, or returning from My Saved/Discover pages
   useEffect(() => {
     if (restoredState?.restored) {
       if (restoredState.contentData?.title) setTitle(restoredState.contentData.title);
       if (restoredState.contentData?.exercises) setExercises(restoredState.contentData.exercises);
       if (restoredState.images) setPhotos(restoredState.images);
       if (restoredState.routineInstanceId) setRoutineInstanceId(restoredState.routineInstanceId);
+      
+      // Handle selections from MySavedPage
+      if (restoredState.selectedRoutine) {
+        const currentExercises = restoredState.contentData?.exercises || [];
+        if (currentExercises.length > 0) {
+          setPendingAutofill({ 
+            type: "routine", 
+            data: restoredState.selectedRoutine, 
+            name: restoredState.selectedRoutine.routine_name 
+          });
+        } else {
+          const newExercises = convertRoutineToExercises(restoredState.selectedRoutine.routine_data.exercises);
+          setExercises(newExercises);
+          setTitle(restoredState.selectedRoutine.routine_name);
+          toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+        }
+      } else if (restoredState.selectedPastWorkout) {
+        const currentExercises = restoredState.contentData?.exercises || [];
+        if (currentExercises.length > 0) {
+          setPendingAutofill({ 
+            type: "workout", 
+            data: restoredState.selectedPastWorkout, 
+            name: restoredState.selectedPastWorkout.title 
+          });
+        } else {
+          const newExercises = convertWorkoutToExercises(restoredState.selectedPastWorkout.exercises);
+          setExercises(newExercises);
+          setTitle(restoredState.selectedPastWorkout.title);
+          toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+        }
+      }
+      // Handle selections from DiscoverWorkoutsPage  
+      else if (restoredState.selectedCommunityRoutine) {
+        const currentExercises = restoredState.contentData?.exercises || [];
+        if (currentExercises.length > 0) {
+          setPendingAutofill({ 
+            type: "communityRoutine", 
+            data: restoredState.selectedCommunityRoutine, 
+            name: restoredState.selectedCommunityRoutine.title 
+          });
+        } else {
+          const newExercises = convertRoutineToExercises(restoredState.selectedCommunityRoutine.exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
+          setExercises(newExercises);
+          setTitle(restoredState.selectedCommunityRoutine.title);
+          toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+        }
+      } else if (restoredState.selectedCommunityWorkout) {
+        const currentExercises = restoredState.contentData?.exercises || [];
+        if (currentExercises.length > 0) {
+          setPendingAutofill({ 
+            type: "communityWorkout", 
+            data: restoredState.selectedCommunityWorkout, 
+            name: restoredState.selectedCommunityWorkout.title 
+          });
+        } else {
+          const newExercises = convertWorkoutToExercises(restoredState.selectedCommunityWorkout.exercises);
+          setExercises(newExercises);
+          setTitle(restoredState.selectedCommunityWorkout.title);
+          toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+        }
+      }
+      
       window.history.replaceState({}, document.title);
     } else if (restoredState?.prefilled) {
       if (restoredState.routineName) setTitle(restoredState.routineName);
@@ -309,46 +371,29 @@ const CreateWorkoutPage = () => {
     toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
   };
 
-  // Handlers for My Saved modal
-  const handleUseRoutine = (routine: SavedRoutine) => {
-    const newExercises = convertRoutineToExercises(routine.routine_data.exercises);
-    if (exercises.length > 0) {
-      setPendingAutofill({ type: "routine", data: routine, name: routine.routine_name });
-    } else {
-      handleAutofill(newExercises, routine.routine_name, true);
-      setIsMySavedOpen(false);
-    }
+  // Navigation handlers for My Saved and Discover pages
+  const handleNavigateToMySaved = () => {
+    navigate("/workout/my-saved", {
+      state: {
+        returnTo: "/create/workout",
+        currentExercises: exercises,
+        title,
+        photos,
+        routineInstanceId,
+      },
+    });
   };
 
-  const handleCopyWorkout = (workout: PastWorkout) => {
-    const newExercises = convertWorkoutToExercises(workout.exercises);
-    if (exercises.length > 0) {
-      setPendingAutofill({ type: "workout", data: workout, name: workout.title });
-    } else {
-      handleAutofill(newExercises, workout.title, true);
-      setIsMySavedOpen(false);
-    }
-  };
-
-  // Handlers for Discover modal
-  const handleUseCommunityRoutine = (routine: CommunityRoutine) => {
-    const newExercises = convertRoutineToExercises(routine.exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
-    if (exercises.length > 0) {
-      setPendingAutofill({ type: "communityRoutine", data: routine, name: routine.title });
-    } else {
-      handleAutofill(newExercises, routine.title, true);
-      setIsDiscoverOpen(false);
-    }
-  };
-
-  const handleUseCommunityWorkout = (workout: CommunityWorkout) => {
-    const newExercises = convertWorkoutToExercises(workout.exercises);
-    if (exercises.length > 0) {
-      setPendingAutofill({ type: "communityWorkout", data: workout, name: workout.title });
-    } else {
-      handleAutofill(newExercises, workout.title, true);
-      setIsDiscoverOpen(false);
-    }
+  const handleNavigateToDiscover = () => {
+    navigate("/workout/discover", {
+      state: {
+        returnTo: "/create/workout",
+        currentExercises: exercises,
+        title,
+        photos,
+        routineInstanceId,
+      },
+    });
   };
 
   // Handle confirmation dialog actions
@@ -367,8 +412,6 @@ const CreateWorkoutPage = () => {
     }
     
     handleAutofill(newExercises, pendingAutofill.name, true);
-    setIsMySavedOpen(false);
-    setIsDiscoverOpen(false);
     setPendingAutofill(null);
   };
 
@@ -387,8 +430,6 @@ const CreateWorkoutPage = () => {
     }
     
     handleAutofill(newExercises, "", false);
-    setIsMySavedOpen(false);
-    setIsDiscoverOpen(false);
     setPendingAutofill(null);
   };
 
@@ -441,7 +482,7 @@ const CreateWorkoutPage = () => {
           <Button
             variant="outline"
             className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
-            onClick={() => setIsMySavedOpen(true)}
+            onClick={handleNavigateToMySaved}
           >
             <Bookmark size={18} className="text-primary" />
             <span>My Saved</span>
@@ -449,7 +490,7 @@ const CreateWorkoutPage = () => {
           <Button
             variant="outline"
             className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
-            onClick={() => setIsDiscoverOpen(true)}
+            onClick={handleNavigateToDiscover}
           >
             <Compass size={18} className="text-primary" />
             <span>Discover</span>
@@ -668,27 +709,6 @@ const CreateWorkoutPage = () => {
         onDeletePhoto={removePhoto}
       />
 
-      {/* My Saved Modal */}
-      <MySavedModal
-        open={isMySavedOpen}
-        onOpenChange={setIsMySavedOpen}
-        savedRoutines={savedRoutines}
-        pastWorkouts={pastWorkouts}
-        isLoading={isSavedLoading}
-        onUseRoutine={handleUseRoutine}
-        onCopyWorkout={handleCopyWorkout}
-      />
-
-      {/* Discover Modal */}
-      <DiscoverModal
-        open={isDiscoverOpen}
-        onOpenChange={setIsDiscoverOpen}
-        communityRoutines={communityRoutines}
-        communityWorkouts={communityWorkouts}
-        isLoading={isSavedLoading}
-        onUseRoutine={handleUseCommunityRoutine}
-        onUseWorkout={handleUseCommunityWorkout}
-      />
 
       {/* Autofill Confirmation Dialog */}
       <AutofillConfirmDialog

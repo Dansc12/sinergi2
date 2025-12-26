@@ -21,6 +21,8 @@ import CreateRecipePage from "./pages/CreateRecipePage";
 import CreateRoutinePage from "./pages/CreateRoutinePage";
 import SharePostScreen from "./pages/SharePostScreen";
 import SelectContentPage from "./pages/SelectContentPage";
+import MySavedPage from "./pages/MySavedPage";
+import DiscoverWorkoutsPage from "./pages/DiscoverWorkoutsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
 import FeedbackPage from "./pages/FeedbackPage";
@@ -107,6 +109,8 @@ const AppRoutes = () => {
               <Route path="/create/routine" element={<CreateRoutinePage />} />
               <Route path="/share" element={<SharePostScreen />} />
               <Route path="/select-content" element={<SelectContentPage />} />
+              <Route path="/workout/my-saved" element={<MySavedPage />} />
+              <Route path="/workout/discover" element={<DiscoverWorkoutsPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="*" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
