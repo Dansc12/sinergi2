@@ -231,7 +231,7 @@ const SelectContentPage = () => {
               <Button 
                 variant={filter !== "all" ? "default" : "outline"} 
                 size="sm" 
-                className="gap-2"
+                className="gap-2 flex-1 justify-between"
               >
                 {selectedTypeLabel || "Select Type"}
                 <ChevronDown size={16} />
