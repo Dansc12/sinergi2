@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check, Images, Bookmark, Compass, Loader2 } from "lucide-react";
@@ -14,6 +14,15 @@ import AutofillConfirmDialog from "@/components/workout/AutofillConfirmDialog";
 import { SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
 import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
+import { useExerciseHistory } from "@/hooks/useExerciseHistory";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+type SetType = "normal" | "warmup" | "failure" | "drop";
+
 interface Set {
   id: string;
   weight: string;
@@ -22,6 +31,7 @@ interface Set {
   time: string;
   completed: boolean;
   repRangeHint?: string; // Hint from routine for rep range
+  setType?: SetType;
 }
 
 interface Exercise {
@@ -56,6 +66,7 @@ const CreateWorkoutPage = () => {
   const location = useLocation();
   const restoredState = location.state as RestoredState | null;
   const { createPost } = usePosts();
+  const { getLastExerciseData } = useExerciseHistory();
   
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -156,18 +167,38 @@ const CreateWorkoutPage = () => {
     }
   }, []);
 
-  const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string; isCardio?: boolean }) => {
+  const addExercise = async (exercise: { id: string; name: string; category: string; muscleGroup: string; isCardio?: boolean }) => {
+    // Fetch historical data for this exercise
+    const historicalSets = await getLastExerciseData(exercise.name);
+    
+    // Build sets based on history or default to one empty set
+    const sets: Set[] = historicalSets.length > 0
+      ? historicalSets.map((histSet, idx) => ({
+          id: (Date.now() + idx).toString(),
+          weight: histSet.weight || "",
+          reps: histSet.reps || "",
+          distance: histSet.distance || "",
+          time: histSet.time || "",
+          completed: false,
+          setType: "normal" as SetType,
+        }))
+      : [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false, setType: "normal" as SetType }];
+
     const newExercise: Exercise = {
       id: Date.now().toString(),
       name: exercise.name,
       category: exercise.category,
       muscleGroup: exercise.muscleGroup,
       notes: "",
-      sets: [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false }],
+      sets,
       isExpanded: true,
       isCardio: exercise.isCardio || false,
     };
     setExercises([...exercises, newExercise]);
+    
+    if (historicalSets.length > 0) {
+      toast({ title: "Previous workout loaded", description: `Loaded ${historicalSets.length} sets from your last session.` });
+    }
   };
 
   const removeExercise = (exerciseId: string) => {
@@ -194,19 +225,51 @@ const CreateWorkoutPage = () => {
     setExercises(
       exercises.map((e) => {
         if (e.id === exerciseId) {
+          // Get the last set to copy values from
+          const lastSet = e.sets[e.sets.length - 1];
           const newSet: Set = {
             id: Date.now().toString(),
-            weight: "",
-            reps: "",
-            distance: "",
-            time: "",
+            weight: lastSet?.weight || "",
+            reps: lastSet?.reps || "",
+            distance: lastSet?.distance || "",
+            time: lastSet?.time || "",
             completed: false,
+            setType: "normal" as SetType,
           };
           return { ...e, sets: [...e.sets, newSet] };
         }
         return e;
       })
     );
+  };
+
+  const updateSetType = (exerciseId: string, setId: string, newType: SetType) => {
+    setExercises(
+      exercises.map((e) => {
+        if (e.id === exerciseId) {
+          return {
+            ...e,
+            sets: e.sets.map((s) =>
+              s.id === setId ? { ...s, setType: newType } : s
+            ),
+          };
+        }
+        return e;
+      })
+    );
+  };
+
+  const getSetLabel = (set: Set, index: number): string => {
+    switch (set.setType) {
+      case "warmup":
+        return "W";
+      case "failure":
+        return "F";
+      case "drop":
+        return "D";
+      default:
+        return String(index + 1);
+    }
   };
 
   const removeSet = (exerciseId: string, setId: string) => {
@@ -340,9 +403,10 @@ const CreateWorkoutPage = () => {
             distance: "",
             time: "",
             completed: false,
+            setType: "normal" as SetType,
             repRangeHint: s.minReps && s.maxReps ? `${s.minReps}-${s.maxReps}` : undefined,
           }))
-        : [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false }],
+        : [{ id: "1", weight: "", reps: "", distance: "", time: "", completed: false, setType: "normal" as SetType }],
     }));
   };
 
@@ -356,6 +420,7 @@ const CreateWorkoutPage = () => {
         ...s,
         id: (Date.now() + sIdx).toString(),
         completed: false,
+        setType: (s as unknown as Set).setType || ("normal" as SetType),
       })),
     }));
   };
@@ -583,28 +648,69 @@ const CreateWorkoutPage = () => {
                               set.completed ? "bg-primary/20" : "bg-muted/30"
                             }`}
                           >
-                            <button
-                              onClick={() => toggleSetComplete(exercise.id, set.id)}
-                              className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors relative ${
-                                set.completed
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              <span className={set.completed ? "opacity-0" : "opacity-100"}>{index + 1}</span>
-                              <AnimatePresence>
-                                {set.completed && (
-                                  <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    className="absolute inset-0 flex items-center justify-center"
-                                  >
-                                    <Check size={16} className="text-primary-foreground" />
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  onClick={() => toggleSetComplete(exercise.id, set.id)}
+                                  className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors relative ${
+                                    set.completed
+                                      ? "bg-primary text-primary-foreground"
+                                      : set.setType === "warmup"
+                                      ? "bg-yellow-500/20 text-yellow-600"
+                                      : set.setType === "failure"
+                                      ? "bg-red-500/20 text-red-600"
+                                      : set.setType === "drop"
+                                      ? "bg-blue-500/20 text-blue-600"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  <span className={set.completed ? "opacity-0" : "opacity-100"}>
+                                    {getSetLabel(set, index)}
+                                  </span>
+                                  <AnimatePresence>
+                                    {set.completed && (
+                                      <motion.div
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        className="absolute inset-0 flex items-center justify-center"
+                                      >
+                                        <Check size={16} className="text-primary-foreground" />
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-40">
+                                <DropdownMenuItem 
+                                  onClick={() => updateSetType(exercise.id, set.id, "normal")}
+                                  className={set.setType === "normal" || !set.setType ? "bg-muted" : ""}
+                                >
+                                  Normal Set
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => updateSetType(exercise.id, set.id, "warmup")}
+                                  className={set.setType === "warmup" ? "bg-yellow-500/20" : ""}
+                                >
+                                  <span className="w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-600 flex items-center justify-center text-xs font-semibold mr-2">W</span>
+                                  Warmup Set
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => updateSetType(exercise.id, set.id, "failure")}
+                                  className={set.setType === "failure" ? "bg-red-500/20" : ""}
+                                >
+                                  <span className="w-5 h-5 rounded-full bg-red-500/20 text-red-600 flex items-center justify-center text-xs font-semibold mr-2">F</span>
+                                  Failure Set
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => updateSetType(exercise.id, set.id, "drop")}
+                                  className={set.setType === "drop" ? "bg-blue-500/20" : ""}
+                                >
+                                  <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-600 flex items-center justify-center text-xs font-semibold mr-2">D</span>
+                                  Drop Set
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             <div className="col-span-4">
                               <Input
                                 placeholder={exercise.isCardio ? "miles" : "lbs"}
