@@ -400,28 +400,6 @@ const CreateRecipePage = () => {
         </div>
       </motion.div>
 
-      {/* Fixed Bottom Camera Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="flex-[4] h-14 gap-2 border-border"
-            onClick={() => setIsChoiceDialogOpen(true)}
-          >
-            <Camera size={20} />
-            Add More Photos
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 h-14 gap-1 border-border"
-            onClick={() => setIsPhotoGalleryOpen(true)}
-            disabled={additionalImages.length === 0}
-          >
-            <Images size={20} />
-            {additionalImages.length > 0 && <span className="text-sm">{additionalImages.length}</span>}
-          </Button>
-        </div>
-      </div>
 
       {/* Hidden file input for gallery */}
       <input

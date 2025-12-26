@@ -627,30 +627,6 @@ const CreateWorkoutPage = () => {
         )}
       </motion.div>
 
-      {/* Bottom Camera Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-[4] gap-2 rounded-xl border-border bg-card hover:bg-muted"
-            onClick={() => setIsChoiceDialogOpen(true)}
-          >
-            <Camera size={20} />
-            Take a Photo
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-1 gap-1 rounded-xl border-border bg-card hover:bg-muted"
-            onClick={() => setIsPhotoGalleryOpen(true)}
-            disabled={photos.length === 0}
-          >
-            <Images size={20} />
-            {photos.length > 0 && <span className="text-sm">{photos.length}</span>}
-          </Button>
-        </div>
-      </div>
 
       {/* Hidden file input for gallery */}
       <input
