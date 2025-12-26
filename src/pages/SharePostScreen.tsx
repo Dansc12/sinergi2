@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Image, X, Globe, Users, Lock, Camera, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Image, X, Globe, Users, Camera, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -27,13 +27,7 @@ interface LocationState {
   routineInstanceId?: string;
 }
 
-const allVisibilityOptions = [
-  { value: "public" as Visibility, label: "Public", icon: Globe, description: "Share with everyone" },
-  { value: "friends" as Visibility, label: "Friends Only", icon: Users, description: "Share with friends" },
-  { value: "private" as Visibility, label: "Private", icon: Lock, description: "Save for yourself" },
-];
-
-const postVisibilityOptions = [
+const visibilityOptions = [
   { value: "public" as Visibility, label: "Public", icon: Globe, description: "Share with everyone" },
   { value: "friends" as Visibility, label: "Friends Only", icon: Users, description: "Share with friends" },
 ];
@@ -45,14 +39,7 @@ const SharePostScreen = () => {
   const { createPost } = usePosts();
 
   const isPostType = state?.contentType === "post";
-  const isGroupType = state?.contentType === "group";
   const fromSelection = (state as LocationState & { fromSelection?: boolean })?.fromSelection;
-
-  // Posts from selection only allow Public and Friends Only visibility
-  // Groups also only allow Public and Friends Only visibility
-  const visibilityOptions = (isPostType && fromSelection) || isGroupType
-    ? postVisibilityOptions
-    : allVisibilityOptions;
 
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<Visibility>((isPostType && fromSelection) ? "public" : "friends");
