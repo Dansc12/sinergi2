@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChefHat, Trash2, Camera, Images } from "lucide-react";
+import { ArrowLeft, ChefHat, Trash2, Camera, Images, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
+import { usePosts } from "@/hooks/usePosts";
 
 interface Ingredient {
   id: string;
@@ -42,6 +43,7 @@ const CreateRecipePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const restoredState = location.state as RestoredState | null;
+  const { createPost } = usePosts();
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -59,6 +61,7 @@ const CreateRecipePage = () => {
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
   const [isCoverPhotoMode, setIsCoverPhotoMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     if (isCoverPhotoMode && urls.length > 0) {
@@ -143,25 +146,31 @@ const CreateRecipePage = () => {
     { calories: 0, protein: 0, carbs: 0, fats: 0 }
   );
 
-  const handleFinish = () => {
-    if (!coverPhoto) {
-      toast({ title: "Please add a cover photo", variant: "destructive" });
-      return;
-    }
+  const handleFinish = async () => {
     if (!title.trim()) {
       toast({ title: "Please enter a recipe title", variant: "destructive" });
       return;
     }
-    // Navigate to share screen with recipe data - cover photo is first image
-    const allImages = [coverPhoto, ...additionalImages];
-    navigate("/share", {
-      state: {
-        contentType: "recipe",
-        contentData: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition, coverPhoto },
+    
+    const allImages = coverPhoto ? [coverPhoto, ...additionalImages] : additionalImages;
+    
+    setIsSubmitting(true);
+    try {
+      await createPost({
+        content_type: "recipe",
+        content_data: { title, description, prepTime, cookTime, servings, ingredients, instructions, totalNutrition, coverPhoto },
         images: allImages,
-        returnTo: "/create/recipe",
-      },
-    });
+        visibility: "private",
+      });
+
+      toast({ title: "Recipe saved!", description: "Your recipe has been saved." });
+      navigate("/");
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      toast({ title: "Error", description: "Failed to save recipe. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCapturePhoto = (imageUrl: string) => {
@@ -214,8 +223,10 @@ const CreateRecipePage = () => {
           <Button 
             variant="outline" 
             onClick={handleFinish}
+            disabled={isSubmitting}
             className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
           >
+            {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
         </div>

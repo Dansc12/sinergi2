@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check, Images, Bookmark, Compass } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Camera, ChevronDown, ChevronUp, X, Check, Images, Bookmark, Compass, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,8 @@ import MySavedModal from "@/components/workout/MySavedModal";
 import DiscoverModal from "@/components/workout/DiscoverModal";
 import AutofillConfirmDialog from "@/components/workout/AutofillConfirmDialog";
 import { useSavedWorkouts, SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
+import { usePosts } from "@/hooks/usePosts";
+import { supabase } from "@/integrations/supabase/client";
 interface Set {
   id: string;
   weight: string;
@@ -49,6 +51,7 @@ const CreateWorkoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const restoredState = location.state as RestoredState | null;
+  const { createPost } = usePosts();
   
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -57,6 +60,7 @@ const CreateWorkoutPage = () => {
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
   const [routineInstanceId, setRoutineInstanceId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // New state for My Saved and Discover modals
   const [isMySavedOpen, setIsMySavedOpen] = useState(false);
@@ -203,7 +207,7 @@ const CreateWorkoutPage = () => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (exercises.length === 0) {
       toast({ title: "Please add at least one exercise", variant: "destructive" });
       return;
@@ -226,16 +230,34 @@ const CreateWorkoutPage = () => {
       }
     }
     
-    // Navigate to share screen with workout data
-    navigate("/share", {
-      state: {
-        contentType: "workout",
-        contentData: { title, exercises },
+    setIsSubmitting(true);
+    try {
+      await createPost({
+        content_type: "workout",
+        content_data: { title, exercises },
         images: photos,
-        returnTo: "/create/workout",
-        routineInstanceId: routineInstanceId,
-      },
-    });
+        visibility: "private",
+      });
+
+      // If this workout was from a routine, mark the instance as completed
+      if (routineInstanceId) {
+        await supabase
+          .from("routine_instances")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", routineInstanceId);
+      }
+
+      toast({ title: "Workout logged!", description: "Your workout has been saved." });
+      navigate("/");
+    } catch (error) {
+      console.error("Error saving workout:", error);
+      toast({ title: "Error", description: "Failed to save workout. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Convert routine exercises to workout exercises
@@ -390,7 +412,8 @@ const CreateWorkoutPage = () => {
               <h1 className="text-2xl font-bold">Log Workout</h1>
             </div>
           </div>
-          <Button onClick={handleSubmit} className="rounded-full px-6">
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
+            {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
         </div>

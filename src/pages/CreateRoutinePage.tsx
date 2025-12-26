@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, RotateCcw, Trash2, Camera, Plus, ChevronDown, ChevronUp, Dumbbell, Images } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2, Camera, Plus, ChevronDown, ChevronUp, Dumbbell, Images, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePosts } from "@/hooks/usePosts";
 
 interface RoutineSet {
   id: string;
@@ -76,6 +77,7 @@ const CreateRoutinePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const restoredState = location.state as RestoredState | null;
+  const { createPost } = usePosts();
   
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -88,6 +90,7 @@ const CreateRoutinePage = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     setPhotos([...photos, ...urls]);
@@ -211,20 +214,29 @@ const CreateRoutinePage = () => {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValid()) {
       toast({ title: "Please complete all required fields", variant: "destructive" });
       return;
     }
-    // Navigate to share screen with routine data
-    navigate("/share", {
-      state: {
-        contentType: "routine",
-        contentData: { routineName: name, description, selectedDays, exercises, recurring },
+    
+    setIsSubmitting(true);
+    try {
+      await createPost({
+        content_type: "routine",
+        content_data: { routineName: name, description, selectedDays, exercises, recurring },
         images: photos,
-        returnTo: "/create/routine",
-      },
-    });
+        visibility: "private",
+      });
+
+      toast({ title: "Routine saved!", description: "Your routine has been saved." });
+      navigate("/");
+    } catch (error) {
+      console.error("Error saving routine:", error);
+      toast({ title: "Error", description: "Failed to save routine. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -249,9 +261,10 @@ const CreateRoutinePage = () => {
           </div>
           <Button 
             onClick={handleSubmit}
-            disabled={!isValid()}
+            disabled={!isValid() || isSubmitting}
             className="rounded-full px-6"
           >
+            {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
         </div>

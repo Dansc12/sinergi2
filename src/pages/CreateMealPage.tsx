@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Images } from "lucide-react";
+import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Images, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
@@ -12,6 +12,7 @@ import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRecentFoods } from "@/hooks/useRecentFoods";
+import { usePosts } from "@/hooks/usePosts";
 
 interface SelectedFood {
   id: string;
@@ -37,6 +38,7 @@ const CreateMealPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const restoredState = location.state as RestoredState | null;
+  const { createPost } = usePosts();
   
   const [mealType, setMealType] = useState("");
   const [searchValue, setSearchValue] = useState("");
@@ -52,6 +54,7 @@ const CreateMealPage = () => {
   const [customFoodInitialName, setCustomFoodInitialName] = useState("");
   const [pendingFoodInitialQuantity, setPendingFoodInitialQuantity] = useState<number | undefined>();
   const [pendingFoodInitialUnit, setPendingFoodInitialUnit] = useState<string | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { recentFoods, isLoading: isLoadingRecentFoods } = useRecentFoods(10);
 
@@ -154,7 +157,7 @@ const CreateMealPage = () => {
   const totalCarbs = selectedFoods.reduce((sum, f) => sum + f.carbs, 0);
   const totalFats = selectedFoods.reduce((sum, f) => sum + f.fats, 0);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!mealType) {
       toast({ title: "Please select a meal type", variant: "destructive" });
       return;
@@ -163,14 +166,24 @@ const CreateMealPage = () => {
       toast({ title: "Please add at least one food", variant: "destructive" });
       return;
     }
-    navigate("/share", {
-      state: {
-        contentType: "meal",
-        contentData: { mealType, foods: selectedFoods, totalCalories, totalProtein, totalCarbs, totalFats },
+    
+    setIsSubmitting(true);
+    try {
+      await createPost({
+        content_type: "meal",
+        content_data: { mealType, foods: selectedFoods, totalCalories, totalProtein, totalCarbs, totalFats },
         images: photos,
-        returnTo: "/create/meal",
-      },
-    });
+        visibility: "private",
+      });
+
+      toast({ title: "Meal logged!", description: "Your meal has been saved." });
+      navigate("/");
+    } catch (error) {
+      console.error("Error saving meal:", error);
+      toast({ title: "Error", description: "Failed to save meal. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -193,7 +206,8 @@ const CreateMealPage = () => {
               <h1 className="text-2xl font-bold">Log Meal</h1>
             </div>
           </div>
-          <Button onClick={handleSubmit} className="rounded-full px-6">
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
+            {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
         </div>
