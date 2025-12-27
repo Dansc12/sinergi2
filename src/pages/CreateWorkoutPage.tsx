@@ -518,6 +518,8 @@ const CreateWorkoutPage = () => {
       if (name) setTitle(name);
     } else {
       setExercises([...exercises, ...newExercises]);
+      // Set title from routine/workout if no title exists yet
+      if (name && !title) setTitle(name);
     }
     toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
   };
@@ -580,7 +582,8 @@ const CreateWorkoutPage = () => {
       newExercises = convertWorkoutToExercises((pendingAutofill.data as CommunityWorkout).exercises);
     }
     
-    handleAutofill(newExercises, "", false);
+    // Pass the name so it can be used if no title exists
+    handleAutofill(newExercises, pendingAutofill.name, false);
     setPendingAutofill(null);
   };
 
