@@ -635,15 +635,15 @@ const CreateWorkoutPage = () => {
         className="p-4"
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
+        <div className="flex items-center mb-6 relative">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="z-10">
             <ArrowLeft size={24} />
           </Button>
-          <div className="flex flex-col items-center">
+          <div className="absolute left-0 right-0 flex flex-col items-center pointer-events-none">
             <span className="text-xs text-muted-foreground">Time</span>
             <span className="text-2xl font-bold font-mono">{formatTime(elapsedSeconds)}</span>
           </div>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6 ml-auto z-10">
             {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
@@ -1222,20 +1222,22 @@ const CreateWorkoutPage = () => {
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     drag={isMovingExercise ? "y" : false}
                     dragConstraints={{ top: 0, bottom: 0 }}
-                    dragElastic={0.1}
+                    dragElastic={0.3}
                     whileDrag={{ scale: 1.02, zIndex: 10 }}
-                    onDrag={(e, info) => {
+                    onDragEnd={(e, info) => {
                       if (!isMovingExercise) return;
-                      const itemHeight = 52; // Approximate height of each item
-                      const dragOffset = Math.round(info.offset.y / itemHeight);
-                      const newIndex = Math.max(0, Math.min(exercises.length - 1, (pendingReorderIndex ?? currentIdx) + dragOffset));
-                      if (newIndex !== pendingReorderIndex) {
-                        setPendingReorderIndex(newIndex);
-                        if (navigator.vibrate) navigator.vibrate(10);
+                      const threshold = 30;
+                      const currentPosition = pendingReorderIndex ?? currentIdx;
+                      
+                      if (info.offset.y < -threshold && currentPosition > 0) {
+                        // Swipe up - move up by one
+                        setPendingReorderIndex(currentPosition - 1);
+                        if (navigator.vibrate) navigator.vibrate(15);
+                      } else if (info.offset.y > threshold && currentPosition < exercises.length - 1) {
+                        // Swipe down - move down by one
+                        setPendingReorderIndex(currentPosition + 1);
+                        if (navigator.vibrate) navigator.vibrate(15);
                       }
-                    }}
-                    onDragEnd={() => {
-                      // Position is already set via onDrag
                     }}
                     className={`p-3 rounded-lg border transition-colors ${
                       isMovingExercise
