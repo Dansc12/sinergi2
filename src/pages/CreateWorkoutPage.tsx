@@ -631,75 +631,73 @@ const CreateWorkoutPage = () => {
           </Button>
         </div>
 
-        {/* Workout Title */}
-        <div className="mb-4">
-          <Input
-            placeholder="Workout name"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-semibold bg-transparent border-0 rounded-none px-0 focus-visible:ring-0"
-          />
-        </div>
-
-        {/* Tags Section */}
-        <div className="mb-6">
-          <div className="flex gap-2 mb-2">
-            <Input
-              placeholder="Add tag..."
-              value={newTag}
-              onChange={(e) => {
-                // Only allow lowercase letters, no spaces
-                const value = e.target.value.toLowerCase().replace(/[^a-z]/g, '');
-                setNewTag(value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddTag();
-                }
-              }}
-              className="flex-1 h-9 bg-muted/50 border-0 text-sm"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleAddTag}
-              disabled={!newTag.trim()}
-              className="h-9"
-            >
-              <Plus size={16} />
-            </Button>
-          </div>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="gap-1 pr-1"
-                >
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 hover:bg-muted rounded-full p-0.5"
-                  >
-                    <X size={12} />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Collapsible Add Exercise Section */}
+        {/* Workout Title with Collapsible Toggle */}
         <Collapsible open={isExerciseSectionOpen} onOpenChange={setIsExerciseSectionOpen} className="mb-6">
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto hover:bg-transparent">
-              <span className="text-sm font-medium text-muted-foreground">Add Exercises</span>
-              {isExerciseSectionOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3 space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Input
+              placeholder="Workout name"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="flex-1 text-lg font-semibold bg-transparent border-0 rounded-none px-0 focus-visible:ring-0"
+            />
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                {isExerciseSectionOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+
+          <CollapsibleContent className="space-y-6">
+            {/* Tags Section */}
+            <div>
+              <div className="flex gap-2 mb-2">
+                <Input
+                  placeholder="Add tag..."
+                  value={newTag}
+                  onChange={(e) => {
+                    // Only allow lowercase letters, no spaces
+                    const value = e.target.value.toLowerCase().replace(/[^a-z]/g, '');
+                    setNewTag(value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  className="flex-1 h-9 bg-muted/50 border-0 text-sm"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddTag}
+                  disabled={!newTag.trim()}
+                  className="h-9"
+                >
+                  <Plus size={16} />
+                </Button>
+              </div>
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-1 hover:bg-muted rounded-full p-0.5"
+                      >
+                        <X size={12} />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Exercise Search */}
             <ExerciseSearchInput
               onSelect={addExercise}
@@ -994,20 +992,34 @@ const CreateWorkoutPage = () => {
                           <Trash2 size={14} className="mr-2" />
                           Delete Exercise
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            if (exercises.length > 1) {
-                              setSupersetSourceExerciseId(exercise.id);
-                              setSelectedSupersetExercises([]);
-                              setShowSupersetModal(true);
-                            }
-                          }}
-                          disabled={exercises.length <= 1}
-                          className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
-                        >
-                          <Plus size={14} className="mr-2" />
-                          Add to Superset
-                        </DropdownMenuItem>
+                        {exercise.supersetGroupId ? (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setExercises(exercises.map(e => 
+                                e.id === exercise.id ? { ...e, supersetGroupId: undefined } : e
+                              ));
+                              toast({ title: "Removed from superset" });
+                            }}
+                          >
+                            <X size={14} className="mr-2" />
+                            Remove from Superset
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              if (exercises.length > 1) {
+                                setSupersetSourceExerciseId(exercise.id);
+                                setSelectedSupersetExercises([]);
+                                setShowSupersetModal(true);
+                              }
+                            }}
+                            disabled={exercises.length <= 1}
+                            className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
+                          >
+                            <Plus size={14} className="mr-2" />
+                            Add to Superset
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </motion.div>
