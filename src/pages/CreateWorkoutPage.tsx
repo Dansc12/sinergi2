@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +99,9 @@ const CreateWorkoutPage = () => {
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [supersetSourceExerciseId, setSupersetSourceExerciseId] = useState<string | null>(null);
   const [selectedSupersetExercises, setSelectedSupersetExercises] = useState<string[]>([]);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [reorderingExerciseId, setReorderingExerciseId] = useState<string | null>(null);
+  const [pendingReorderIndex, setPendingReorderIndex] = useState<number | null>(null);
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -944,38 +947,9 @@ const CreateWorkoutPage = () => {
                 
                 
                 return (
-                  <motion.div
+                  <div
                     key={exercise.id}
-                    layout
-                    drag="x"
-                    dragDirectionLock
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.1}
-                    whileDrag={{ scale: 1.05, zIndex: 20 }}
-                    onDragStart={() => {
-                      // Haptic feedback if available
-                      if (navigator.vibrate) {
-                        navigator.vibrate(30);
-                      }
-                    }}
-                    onDragEnd={(e, info) => {
-                      const threshold = 60;
-                      if (Math.abs(info.offset.x) > threshold) {
-                        const direction = info.offset.x > 0 ? -1 : 1;
-                        const newIndex = Math.max(0, Math.min(exercises.length - 1, index + direction));
-                        if (newIndex !== index) {
-                          const newExercises = [...exercises];
-                          const [removed] = newExercises.splice(index, 1);
-                          newExercises.splice(newIndex, 0, removed);
-                          setExercises(newExercises);
-                          if (navigator.vibrate) {
-                            navigator.vibrate(20);
-                          }
-                        }
-                      }
-                    }}
-                    style={{ touchAction: "pan-y" }}
-                    className={`flex-shrink-0 rounded-xl transition-colors relative overflow-hidden cursor-grab active:cursor-grabbing ${
+                    className={`flex-shrink-0 rounded-xl transition-colors relative overflow-hidden ${
                       isSelected
                         ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
                         : "bg-card border border-border text-foreground hover:border-primary/50"
@@ -1002,7 +976,19 @@ const CreateWorkoutPage = () => {
                           <MoreVertical size={14} className={isSelected ? "text-primary-foreground" : "text-muted-foreground"} />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-48 bg-popover">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setReorderingExerciseId(exercise.id);
+                            setPendingReorderIndex(index);
+                            setShowReorderModal(true);
+                          }}
+                          disabled={exercises.length <= 1}
+                          className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
+                        >
+                          <ArrowUpDown size={14} className="mr-2" />
+                          Reorder Exercise
+                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => removeExercise(exercise.id)}
                           className="text-destructive focus:text-destructive"
@@ -1055,7 +1041,7 @@ const CreateWorkoutPage = () => {
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -1199,6 +1185,94 @@ const CreateWorkoutPage = () => {
               disabled={selectedSupersetExercises.length === 0}
             >
               Done
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reorder Exercise Modal */}
+      <AlertDialog open={showReorderModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowReorderModal(false);
+          setReorderingExerciseId(null);
+          setPendingReorderIndex(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reorder Exercise</AlertDialogTitle>
+            <AlertDialogDescription>
+              Move "{exercises.find(e => e.id === reorderingExerciseId)?.name}" to a new position
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
+            {exercises.map((exercise, idx) => {
+              const isMovingExercise = exercise.id === reorderingExerciseId;
+              const isSelectedPosition = pendingReorderIndex === idx;
+              
+              return (
+                <button
+                  key={exercise.id}
+                  onClick={() => {
+                    if (!isMovingExercise) {
+                      setPendingReorderIndex(idx);
+                    }
+                  }}
+                  disabled={isMovingExercise}
+                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    isMovingExercise
+                      ? "border-primary/50 bg-primary/5 opacity-60"
+                      : isSelectedPosition
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-5">{idx + 1}.</span>
+                      <span className="font-medium">{exercise.name}</span>
+                    </div>
+                    {isMovingExercise && (
+                      <span className="text-xs text-muted-foreground">Moving</span>
+                    )}
+                    {isSelectedPosition && !isMovingExercise && (
+                      <Check size={16} className="text-primary" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowReorderModal(false);
+              setReorderingExerciseId(null);
+              setPendingReorderIndex(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (reorderingExerciseId && pendingReorderIndex !== null) {
+                  const currentIndex = exercises.findIndex(e => e.id === reorderingExerciseId);
+                  if (currentIndex !== -1 && currentIndex !== pendingReorderIndex) {
+                    const newExercises = [...exercises];
+                    const [removed] = newExercises.splice(currentIndex, 1);
+                    newExercises.splice(pendingReorderIndex, 0, removed);
+                    setExercises(newExercises);
+                    toast({ 
+                      title: "Exercise reordered", 
+                      description: `Moved to position ${pendingReorderIndex + 1}` 
+                    });
+                  }
+                }
+                setShowReorderModal(false);
+                setReorderingExerciseId(null);
+                setPendingReorderIndex(null);
+              }}
+              disabled={pendingReorderIndex === null || pendingReorderIndex === exercises.findIndex(e => e.id === reorderingExerciseId)}
+            >
+              Finish
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
