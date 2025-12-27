@@ -182,14 +182,14 @@ const SharePostScreen = () => {
                   <p className="text-xs text-primary mt-0.5">{food.servings} × {food.servingSize}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {food.calories} cal • P: {food.protein.toFixed(0)}g • C: {food.carbs.toFixed(0)}g • F: {food.fats.toFixed(0)}g
+                  {food.calories ?? 0} cal • P: {(food.protein ?? 0).toFixed(0)}g • C: {(food.carbs ?? 0).toFixed(0)}g • F: {(food.fats ?? 0).toFixed(0)}g
                 </p>
               </div>
             ))}
             <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
               <p className="text-xs text-muted-foreground">Total</p>
               <p className="font-semibold">
-                {data.totalCalories as number} cal • P: {(data.totalProtein as number)?.toFixed(0)}g • C: {(data.totalCarbs as number)?.toFixed(0)}g • F: {(data.totalFats as number)?.toFixed(0)}g
+                {(data.totalCalories as number) ?? 0} cal • P: {((data.totalProtein as number) ?? 0).toFixed(0)}g • C: {((data.totalCarbs as number) ?? 0).toFixed(0)}g • F: {((data.totalFats as number) ?? 0).toFixed(0)}g
               </p>
             </div>
           </div>
