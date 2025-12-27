@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, Timer } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +55,7 @@ interface Exercise {
   sets: Set[];
   isExpanded: boolean;
   isCardio: boolean;
+  supersetGroupId?: string; // Optional: groups exercises into supersets
 }
 
 interface RestoredState {
@@ -95,6 +96,9 @@ const CreateWorkoutPage = () => {
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showSupersetModal, setShowSupersetModal] = useState(false);
+  const [supersetSourceExerciseId, setSupersetSourceExerciseId] = useState<string | null>(null);
+  const [selectedSupersetExercises, setSelectedSupersetExercises] = useState<string[]>([]);
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -589,16 +593,12 @@ const CreateWorkoutPage = () => {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleBack}>
-              <ArrowLeft size={24} />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Timer size={20} className="text-primary-foreground" />
-              </div>
-              <span className="text-2xl font-bold font-mono">{formatTime(elapsedSeconds)}</span>
-            </div>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
+            <ArrowLeft size={24} />
+          </Button>
+          <div className="flex flex-col items-center">
+            <span className="text-xs text-muted-foreground">Time</span>
+            <span className="text-2xl font-bold font-mono">{formatTime(elapsedSeconds)}</span>
           </div>
           <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
             {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
@@ -609,7 +609,7 @@ const CreateWorkoutPage = () => {
         {/* Workout Title */}
         <div className="mb-4">
           <Input
-            placeholder="Workout name (optional)"
+            placeholder="Workout name"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="text-lg font-semibold bg-transparent border-0 rounded-none px-0 focus-visible:ring-0"
@@ -698,6 +698,9 @@ const CreateWorkoutPage = () => {
             </div>
           </CollapsibleContent>
         </Collapsible>
+        
+        {/* Divider after Add Exercises section */}
+        <div className="border-b border-border mb-6" />
 
         {/* Selected Exercise Details */}
         {selectedExercise && (
@@ -922,25 +925,60 @@ const CreateWorkoutPage = () => {
               const isSelected = selectedExerciseId === exercise.id;
               const completedSets = exercise.sets.filter(s => s.completed).length;
               const totalSets = exercise.sets.length;
+              const supersetColor = exercise.supersetGroupId ? getSupersetColor(exercise.supersetGroupId) : null;
               
               return (
-                <motion.button
+                <motion.div
                   key={exercise.id}
-                  onClick={() => setSelectedExerciseId(exercise.id)}
                   whileTap={{ scale: 0.95 }}
-                  className={`flex-shrink-0 px-4 py-3 rounded-xl transition-all ${
+                  className={`flex-shrink-0 rounded-xl transition-all relative ${
                     isSelected
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
                       : "bg-card border border-border text-foreground hover:border-primary/50"
-                  }`}
+                  } ${supersetColor ? `ring-2 ${supersetColor}` : ""}`}
                 >
-                  <div className="flex flex-col items-start gap-1 min-w-[100px]">
-                    <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
-                    <span className={`text-xs ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                      {completedSets}/{totalSets} sets
-                    </span>
-                  </div>
-                </motion.button>
+                  <button
+                    onClick={() => setSelectedExerciseId(exercise.id)}
+                    className="px-4 py-3 pr-10 text-left"
+                  >
+                    <div className="flex flex-col items-start gap-1 min-w-[100px]">
+                      <span className={`text-xs ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {completedSets}/{totalSets} sets
+                      </span>
+                      <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
+                    </div>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="absolute top-2 right-2 p-1 rounded-md hover:bg-muted/50">
+                        <MoreVertical size={14} className={isSelected ? "text-primary-foreground" : "text-muted-foreground"} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem 
+                        onClick={() => removeExercise(exercise.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 size={14} className="mr-2" />
+                        Delete Exercise
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => {
+                          if (exercises.length > 1) {
+                            setSupersetSourceExerciseId(exercise.id);
+                            setSelectedSupersetExercises([]);
+                            setShowSupersetModal(true);
+                          }
+                        }}
+                        disabled={exercises.length <= 1}
+                        className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
+                      >
+                        <Plus size={14} className="mr-2" />
+                        Add to Superset
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </motion.div>
               );
             })}
           </div>
@@ -1016,8 +1054,93 @@ const CreateWorkoutPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Superset Selection Modal */}
+      <AlertDialog open={showSupersetModal} onOpenChange={setShowSupersetModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add to Superset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select which exercises to superset with {exercises.find(e => e.id === supersetSourceExerciseId)?.name}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
+            {exercises
+              .filter(e => e.id !== supersetSourceExerciseId)
+              .map((exercise) => (
+                <button
+                  key={exercise.id}
+                  onClick={() => {
+                    setSelectedSupersetExercises(prev => 
+                      prev.includes(exercise.id) 
+                        ? prev.filter(id => id !== exercise.id)
+                        : [...prev, exercise.id]
+                    );
+                  }}
+                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    selectedSupersetExercises.includes(exercise.id)
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{exercise.name}</span>
+                    {selectedSupersetExercises.includes(exercise.id) && (
+                      <Check size={16} className="text-primary" />
+                    )}
+                  </div>
+                </button>
+              ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSupersetModal(false);
+              setSupersetSourceExerciseId(null);
+              setSelectedSupersetExercises([]);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (supersetSourceExerciseId && selectedSupersetExercises.length > 0) {
+                  const groupId = Date.now().toString();
+                  setExercises(exercises.map(e => {
+                    if (e.id === supersetSourceExerciseId || selectedSupersetExercises.includes(e.id)) {
+                      return { ...e, supersetGroupId: groupId };
+                    }
+                    return e;
+                  }));
+                  toast({ 
+                    title: "Superset created!", 
+                    description: `${selectedSupersetExercises.length + 1} exercises grouped together.` 
+                  });
+                }
+                setShowSupersetModal(false);
+                setSupersetSourceExerciseId(null);
+                setSelectedSupersetExercises([]);
+              }}
+              disabled={selectedSupersetExercises.length === 0}
+            >
+              Done
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
+};
+
+// Helper function to get consistent colors for superset groups
+const getSupersetColor = (groupId: string): string => {
+  const colors = [
+    "ring-purple-500",
+    "ring-blue-500", 
+    "ring-green-500",
+    "ring-orange-500",
+    "ring-pink-500",
+  ];
+  const hash = groupId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
 };
 
 export default CreateWorkoutPage;
