@@ -387,9 +387,10 @@ const CreateWorkoutPage = () => {
   };
 
   const handleAddTag = () => {
-    const trimmed = newTag.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags([...tags, trimmed]);
+    // Only allow lowercase, no spaces - single word
+    const processed = newTag.trim().toLowerCase().replace(/\s+/g, '');
+    if (processed && !tags.includes(processed)) {
+      setTags([...tags, processed]);
       setNewTag("");
     }
   };
@@ -625,7 +626,11 @@ const CreateWorkoutPage = () => {
             <Input
               placeholder="Add tag..."
               value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
+              onChange={(e) => {
+                // Only allow lowercase letters, no spaces
+                const value = e.target.value.toLowerCase().replace(/[^a-z]/g, '');
+                setNewTag(value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -833,7 +838,7 @@ const CreateWorkoutPage = () => {
                           </AnimatePresence>
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-40">
+                      <DropdownMenuContent align="start" className="w-44">
                         <DropdownMenuItem 
                           onClick={() => updateSetType(selectedExercise.id, set.id, "normal")}
                           className={set.setType === "normal" || !set.setType ? "bg-muted" : ""}
@@ -861,6 +866,14 @@ const CreateWorkoutPage = () => {
                           <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-600 flex items-center justify-center text-xs font-semibold mr-2">D</span>
                           Drop Set
                         </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => removeSet(selectedExercise.id, set.id)}
+                          disabled={selectedExercise.sets.length === 1}
+                          className={`text-destructive focus:text-destructive ${selectedExercise.sets.length === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete Set
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <div className="col-span-4 flex justify-center">
@@ -868,7 +881,7 @@ const CreateWorkoutPage = () => {
                         placeholder={selectedExercise.isCardio ? "miles" : "lbs"}
                         value={selectedExercise.isCardio ? set.distance : set.weight}
                         onChange={(e) => updateSet(selectedExercise.id, set.id, selectedExercise.isCardio ? "distance" : "weight", e.target.value)}
-                        className="text-center h-9 bg-background border-border"
+                        className="text-center h-9 bg-background border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         type={selectedExercise.isCardio ? "text" : "number"}
                       />
                     </div>
@@ -877,7 +890,7 @@ const CreateWorkoutPage = () => {
                         placeholder={selectedExercise.isCardio ? "mm:ss" : (set.repRangeHint || "reps")}
                         value={selectedExercise.isCardio ? set.time : set.reps}
                         onChange={(e) => updateSet(selectedExercise.id, set.id, selectedExercise.isCardio ? "time" : "reps", e.target.value)}
-                        className={`text-center h-9 bg-background border-border ${set.repRangeHint && !set.reps ? "placeholder:text-primary/60" : ""}`}
+                        className={`text-center h-9 bg-background border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${set.repRangeHint && !set.reps ? "placeholder:text-primary/60" : ""}`}
                         type={selectedExercise.isCardio ? "text" : "number"}
                       />
                     </div>
@@ -886,10 +899,9 @@ const CreateWorkoutPage = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => removeSet(selectedExercise.id, set.id)}
-                        disabled={selectedExercise.sets.length === 1}
+                        onClick={() => toggleSetComplete(selectedExercise.id, set.id)}
                       >
-                        <Trash2 size={14} className={selectedExercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
+                        <Check size={14} className={set.completed ? "text-primary" : "text-muted-foreground"} />
                       </Button>
                     </div>
                   </motion.div>
@@ -923,67 +935,95 @@ const CreateWorkoutPage = () => {
       {/* Exercise Cards Row - Fixed at Bottom */}
       {exercises.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3 pb-6">
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-            {exercises.map((exercise) => {
-              const isSelected = selectedExerciseId === exercise.id;
-              const completedSets = exercise.sets.filter(s => s.completed).length;
-              const totalSets = exercise.sets.length;
-              const supersetColor = exercise.supersetGroupId ? getSupersetColor(exercise.supersetGroupId) : null;
-              
-              return (
-                <motion.div
-                  key={exercise.id}
-                  whileTap={{ scale: 0.95 }}
-                  className={`flex-shrink-0 rounded-xl transition-all relative ${
-                    isSelected
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                      : "bg-card border border-border text-foreground hover:border-primary/50"
-                  } ${supersetColor ? `ring-2 ${supersetColor}` : ""}`}
-                >
-                  <button
-                    onClick={() => setSelectedExerciseId(exercise.id)}
-                    className="px-4 py-3 pr-10 text-left"
+          <div className="relative">
+            {/* Fade effect on left */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
+            {/* Fade effect on right */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
+            
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide px-2">
+              {exercises.map((exercise, index) => {
+                const isSelected = selectedExerciseId === exercise.id;
+                const completedSets = exercise.sets.filter(s => s.completed).length;
+                const totalSets = exercise.sets.length;
+                const supersetBarColor = exercise.supersetGroupId ? getSupersetBarColor(exercise.supersetGroupId) : null;
+                
+                return (
+                  <motion.div
+                    key={exercise.id}
+                    layout
+                    whileTap={{ scale: 0.95 }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.1}
+                    onDragEnd={(e, info) => {
+                      const threshold = 50;
+                      if (Math.abs(info.offset.x) > threshold) {
+                        const direction = info.offset.x > 0 ? -1 : 1;
+                        const newIndex = Math.max(0, Math.min(exercises.length - 1, index + direction));
+                        if (newIndex !== index) {
+                          const newExercises = [...exercises];
+                          const [removed] = newExercises.splice(index, 1);
+                          newExercises.splice(newIndex, 0, removed);
+                          setExercises(newExercises);
+                        }
+                      }
+                    }}
+                    className={`flex-shrink-0 rounded-xl transition-all relative cursor-grab active:cursor-grabbing overflow-hidden ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                        : "bg-card border border-border text-foreground hover:border-primary/50"
+                    }`}
                   >
-                    <div className="flex flex-col items-start gap-1 min-w-[100px]">
-                      <span className={`text-xs ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {completedSets}/{totalSets} sets
-                      </span>
-                      <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
-                    </div>
-                  </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="absolute top-2 right-2 p-1 rounded-md hover:bg-muted/50">
-                        <MoreVertical size={14} className={isSelected ? "text-primary-foreground" : "text-muted-foreground"} />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem 
-                        onClick={() => removeExercise(exercise.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 size={14} className="mr-2" />
-                        Delete Exercise
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => {
-                          if (exercises.length > 1) {
-                            setSupersetSourceExerciseId(exercise.id);
-                            setSelectedSupersetExercises([]);
-                            setShowSupersetModal(true);
-                          }
-                        }}
-                        disabled={exercises.length <= 1}
-                        className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
-                      >
-                        <Plus size={14} className="mr-2" />
-                        Add to Superset
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </motion.div>
-              );
-            })}
+                    {/* Superset colored bar on left */}
+                    {supersetBarColor && (
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${supersetBarColor}`} />
+                    )}
+                    <button
+                      onClick={() => setSelectedExerciseId(exercise.id)}
+                      className={`px-4 py-3 pr-10 text-left ${supersetBarColor ? 'pl-4' : ''}`}
+                    >
+                      <div className="flex flex-col items-start gap-1 min-w-[100px]">
+                        <span className={`text-xs ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {completedSets}/{totalSets} sets
+                        </span>
+                        <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
+                      </div>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="absolute top-2 right-2 p-1 rounded-md hover:bg-muted/50">
+                          <MoreVertical size={14} className={isSelected ? "text-primary-foreground" : "text-muted-foreground"} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem 
+                          onClick={() => removeExercise(exercise.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete Exercise
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            if (exercises.length > 1) {
+                              setSupersetSourceExerciseId(exercise.id);
+                              setSelectedSupersetExercises([]);
+                              setShowSupersetModal(true);
+                            }
+                          }}
+                          disabled={exercises.length <= 1}
+                          className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
+                        >
+                          <Plus size={14} className="mr-2" />
+                          Add to Superset
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -1133,14 +1173,14 @@ const CreateWorkoutPage = () => {
   );
 };
 
-// Helper function to get consistent colors for superset groups
-const getSupersetColor = (groupId: string): string => {
+// Helper function to get consistent bar colors for superset groups
+const getSupersetBarColor = (groupId: string): string => {
   const colors = [
-    "ring-purple-500",
-    "ring-blue-500", 
-    "ring-green-500",
-    "ring-orange-500",
-    "ring-pink-500",
+    "bg-purple-500",
+    "bg-blue-500", 
+    "bg-green-500",
+    "bg-orange-500",
+    "bg-pink-500",
   ];
   const hash = groupId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
