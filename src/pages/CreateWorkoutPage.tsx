@@ -1127,30 +1127,36 @@ const CreateWorkoutPage = () => {
           <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
             {exercises
               .filter(e => e.id !== supersetSourceExerciseId)
-              .map((exercise) => (
-                <button
-                  key={exercise.id}
-                  onClick={() => {
-                    setSelectedSupersetExercises(prev => 
-                      prev.includes(exercise.id) 
-                        ? prev.filter(id => id !== exercise.id)
-                        : [...prev, exercise.id]
-                    );
-                  }}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                    selectedSupersetExercises.includes(exercise.id)
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{exercise.name}</span>
-                    {selectedSupersetExercises.includes(exercise.id) && (
-                      <Check size={16} className="text-primary" />
+              .map((exercise) => {
+                const supersetColor = exercise.supersetGroupId ? getSupersetBarColor(exercise.supersetGroupId) : null;
+                return (
+                  <button
+                    key={exercise.id}
+                    onClick={() => {
+                      setSelectedSupersetExercises(prev => 
+                        prev.includes(exercise.id) 
+                          ? prev.filter(id => id !== exercise.id)
+                          : [...prev, exercise.id]
+                      );
+                    }}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors relative overflow-hidden ${
+                      selectedSupersetExercises.includes(exercise.id)
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {supersetColor && (
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${supersetColor}`} />
                     )}
-                  </div>
-                </button>
-              ))}
+                    <div className={`flex items-center justify-between ${supersetColor ? "pl-3" : ""}`}>
+                      <span className="font-medium">{exercise.name}</span>
+                      {selectedSupersetExercises.includes(exercise.id) && (
+                        <Check size={16} className="text-primary" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
@@ -1251,13 +1257,16 @@ const CreateWorkoutPage = () => {
                         if (navigator.vibrate) navigator.vibrate(15);
                       }
                     }}
-                    className={`p-3 rounded-lg border transition-colors ${
+                    className={`p-3 rounded-lg border transition-colors relative overflow-hidden ${
                       isMovingExercise
                         ? "border-primary bg-primary/10 shadow-lg cursor-grab active:cursor-grabbing"
                         : "border-border bg-card"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    {exercise.supersetGroupId && (
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${getSupersetBarColor(exercise.supersetGroupId)}`} />
+                    )}
+                    <div className={`flex items-center justify-between ${exercise.supersetGroupId ? "pl-3" : ""}`}>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-muted-foreground w-5">{idx + 1}.</span>
                         <span className={`font-medium ${isMovingExercise ? "text-primary" : ""}`}>
