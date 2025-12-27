@@ -141,13 +141,31 @@ export const useSavedWorkouts = () => {
       if (error) throw error;
 
       const workouts: PastWorkout[] = (data || []).map((w) => {
-        const exercises = (w.exercises as unknown as WorkoutExercise[]) || [];
+        const rawData = w.exercises as unknown;
+        
+        // Handle both old format (array of exercises) and new format (object with title and exercises)
+        let exercises: WorkoutExercise[] = [];
+        let savedTitle = "";
+        
+        if (Array.isArray(rawData)) {
+          // Old format: exercises is directly an array
+          exercises = rawData as WorkoutExercise[];
+        } else if (rawData && typeof rawData === "object" && "exercises" in rawData) {
+          // New format: exercises is wrapped with title
+          const wrappedData = rawData as { title?: string; exercises: WorkoutExercise[] };
+          exercises = wrappedData.exercises || [];
+          savedTitle = wrappedData.title || "";
+        }
+        
         const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
         
-        // Extract title from first exercise or use date
-        const title = exercises.length > 0 
-          ? `${exercises[0].name}${exercises.length > 1 ? ` + ${exercises.length - 1} more` : ''}`
-          : `Workout on ${new Date(w.log_date).toLocaleDateString()}`;
+        // Use saved title if available, otherwise generate from exercises
+        let title = savedTitle;
+        if (!title) {
+          title = exercises.length > 0 
+            ? `${exercises[0].name}${exercises.length > 1 ? ` + ${exercises.length - 1} more` : ''}`
+            : `Workout on ${new Date(w.log_date).toLocaleDateString()}`;
+        }
 
         return {
           id: w.id,

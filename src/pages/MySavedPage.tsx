@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSavedWorkouts, SavedRoutine, PastWorkout } from "@/hooks/useSavedWorkouts";
+import { useUserData } from "@/hooks/useUserData";
 import WorkoutRoutineCard from "@/components/workout/WorkoutRoutineCard";
 
 const MySavedPage = () => {
@@ -14,8 +15,15 @@ const MySavedPage = () => {
   const returnState = location.state as { returnTo?: string; currentExercises?: any[]; title?: string; photos?: string[]; routineInstanceId?: string } | null;
   
   const { savedRoutines, pastWorkouts, isLoading } = useSavedWorkouts();
+  const { profile } = useUserData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("routines");
+
+  // Build creator object from current user's profile
+  const currentUserCreator = {
+    name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "You",
+    avatar_url: profile?.avatar_url,
+  };
 
   const filteredRoutines = useMemo(() => {
     if (!searchQuery.trim()) return savedRoutines;
@@ -132,7 +140,7 @@ const MySavedPage = () => {
                   key={routine.id}
                   title={routine.routine_name}
                   exercises={routine.routine_data?.exercises || []}
-                  creator={{ name: "You" }}
+                  creator={currentUserCreator}
                   createdAt={routine.created_at}
                   onCopy={() => handleUseRoutine(routine)}
                   copyButtonText="Copy"
@@ -158,7 +166,7 @@ const MySavedPage = () => {
                   key={workout.id}
                   title={workout.title}
                   exercises={workout.exercises}
-                  creator={{ name: "You" }}
+                  creator={currentUserCreator}
                   createdAt={workout.log_date}
                   onCopy={() => handleCopyWorkout(workout)}
                   copyButtonText="Copy"
