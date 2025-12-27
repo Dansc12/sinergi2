@@ -989,30 +989,20 @@ const CreateWorkoutPage = () => {
                           <ArrowUpDown size={14} className="mr-2" />
                           Reorder Exercise
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => removeExercise(exercise.id)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 size={14} className="mr-2" />
-                          Delete Exercise
-                        </DropdownMenuItem>
                         {exercise.supersetGroupId ? (
                           <DropdownMenuItem 
                             onClick={() => {
                               const groupId = exercise.supersetGroupId;
-                              // Count how many exercises are in this superset (excluding this one)
                               const remainingInSuperset = exercises.filter(
                                 e => e.supersetGroupId === groupId && e.id !== exercise.id
                               );
                               
                               if (remainingInSuperset.length <= 1) {
-                                // Only 1 or 0 remaining - dissolve the entire superset
                                 setExercises(exercises.map(e => 
                                   e.supersetGroupId === groupId ? { ...e, supersetGroupId: undefined } : e
                                 ));
                                 toast({ title: "Superset dissolved", description: "A superset requires at least 2 exercises." });
                               } else {
-                                // More than 1 remaining - just remove this exercise
                                 setExercises(exercises.map(e => 
                                   e.id === exercise.id ? { ...e, supersetGroupId: undefined } : e
                                 ));
@@ -1039,6 +1029,13 @@ const CreateWorkoutPage = () => {
                             Add to Superset
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem 
+                          onClick={() => removeExercise(exercise.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete Exercise
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -1202,46 +1199,65 @@ const CreateWorkoutPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Reorder Exercise</AlertDialogTitle>
             <AlertDialogDescription>
-              Move "{exercises.find(e => e.id === reorderingExerciseId)?.name}" to a new position
+              Drag the highlighted exercise up or down to reorder
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-            {exercises.map((exercise, idx) => {
-              const isMovingExercise = exercise.id === reorderingExerciseId;
-              const isSelectedPosition = pendingReorderIndex === idx;
+          <div className="py-4 space-y-1 max-h-72 overflow-y-auto">
+            {(() => {
+              // Create a working list based on pendingReorderIndex
+              const currentIdx = exercises.findIndex(e => e.id === reorderingExerciseId);
+              const reorderedList = [...exercises];
+              if (currentIdx !== -1 && pendingReorderIndex !== null && currentIdx !== pendingReorderIndex) {
+                const [removed] = reorderedList.splice(currentIdx, 1);
+                reorderedList.splice(pendingReorderIndex, 0, removed);
+              }
               
-              return (
-                <button
-                  key={exercise.id}
-                  onClick={() => {
-                    if (!isMovingExercise) {
-                      setPendingReorderIndex(idx);
-                    }
-                  }}
-                  disabled={isMovingExercise}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                    isMovingExercise
-                      ? "border-primary/50 bg-primary/5 opacity-60"
-                      : isSelectedPosition
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground w-5">{idx + 1}.</span>
-                      <span className="font-medium">{exercise.name}</span>
+              return reorderedList.map((exercise, idx) => {
+                const isMovingExercise = exercise.id === reorderingExerciseId;
+                
+                return (
+                  <motion.div
+                    key={exercise.id}
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    drag={isMovingExercise ? "y" : false}
+                    dragConstraints={{ top: 0, bottom: 0 }}
+                    dragElastic={0.1}
+                    whileDrag={{ scale: 1.02, zIndex: 10 }}
+                    onDrag={(e, info) => {
+                      if (!isMovingExercise) return;
+                      const itemHeight = 52; // Approximate height of each item
+                      const dragOffset = Math.round(info.offset.y / itemHeight);
+                      const newIndex = Math.max(0, Math.min(exercises.length - 1, (pendingReorderIndex ?? currentIdx) + dragOffset));
+                      if (newIndex !== pendingReorderIndex) {
+                        setPendingReorderIndex(newIndex);
+                        if (navigator.vibrate) navigator.vibrate(10);
+                      }
+                    }}
+                    onDragEnd={() => {
+                      // Position is already set via onDrag
+                    }}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      isMovingExercise
+                        ? "border-primary bg-primary/10 shadow-lg cursor-grab active:cursor-grabbing"
+                        : "border-border bg-card"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-5">{idx + 1}.</span>
+                        <span className={`font-medium ${isMovingExercise ? "text-primary" : ""}`}>
+                          {exercise.name}
+                        </span>
+                      </div>
+                      {isMovingExercise && (
+                        <ArrowUpDown size={16} className="text-primary" />
+                      )}
                     </div>
-                    {isMovingExercise && (
-                      <span className="text-xs text-muted-foreground">Moving</span>
-                    )}
-                    {isSelectedPosition && !isMovingExercise && (
-                      <Check size={16} className="text-primary" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                  </motion.div>
+                );
+              });
+            })()}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
@@ -1270,7 +1286,6 @@ const CreateWorkoutPage = () => {
                 setReorderingExerciseId(null);
                 setPendingReorderIndex(null);
               }}
-              disabled={pendingReorderIndex === null || pendingReorderIndex === exercises.findIndex(e => e.id === reorderingExerciseId)}
             >
               Finish
             </AlertDialogAction>
