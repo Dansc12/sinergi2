@@ -23,6 +23,8 @@ import SharePostScreen from "./pages/SharePostScreen";
 import SelectContentPage from "./pages/SelectContentPage";
 import MySavedPage from "./pages/MySavedPage";
 import DiscoverWorkoutsPage from "./pages/DiscoverWorkoutsPage";
+import MyRecipesPage from "./pages/MyRecipesPage";
+import DiscoverMealsPage from "./pages/DiscoverMealsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
 
@@ -111,6 +113,8 @@ const AppRoutes = () => {
               <Route path="/select-content" element={<SelectContentPage />} />
               <Route path="/workout/my-saved" element={<MySavedPage />} />
               <Route path="/workout/discover" element={<DiscoverWorkoutsPage />} />
+              <Route path="/meal/my-recipes" element={<MyRecipesPage />} />
+              <Route path="/meal/discover" element={<DiscoverMealsPage />} />
               
               <Route path="*" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />

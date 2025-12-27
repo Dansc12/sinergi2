@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Images, Loader2 } from "lucide-react";
+import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Images, Loader2, ChefHat, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
@@ -31,6 +31,19 @@ interface RestoredState {
   contentData?: { mealType?: string; foods?: SelectedFood[] };
   images?: string[];
   preselectedMealType?: string;
+  // From MyRecipesPage or DiscoverMealsPage
+  selectedRecipe?: {
+    ingredients: {
+      id: string;
+      name: string;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fats: number;
+      servings: number;
+      servingSize: string;
+    }[];
+  };
 }
 
 const CreateMealPage = () => {
@@ -192,6 +205,29 @@ const CreateMealPage = () => {
     }
   };
 
+  // Navigation handlers for My Recipes and Discover pages
+  const handleNavigateToMyRecipes = () => {
+    navigate("/meal/my-recipes", {
+      state: {
+        returnTo: "/create/meal",
+        currentFoods: selectedFoods,
+        mealType,
+        photos,
+      },
+    });
+  };
+
+  const handleNavigateToDiscover = () => {
+    navigate("/meal/discover", {
+      state: {
+        returnTo: "/create/meal",
+        currentFoods: selectedFoods,
+        mealType,
+        photos,
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background pb-40">
       <motion.div
@@ -231,6 +267,26 @@ const CreateMealPage = () => {
               <SelectItem value="snack">Snack</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* My Recipes & Discover Buttons */}
+        <div className="flex gap-3 mb-6">
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+            onClick={handleNavigateToMyRecipes}
+          >
+            <ChefHat size={18} className="text-primary" />
+            <span>My Recipes</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+            onClick={handleNavigateToDiscover}
+          >
+            <Compass size={18} className="text-primary" />
+            <span>Discover</span>
+          </Button>
         </div>
 
         {/* Food Search */}
