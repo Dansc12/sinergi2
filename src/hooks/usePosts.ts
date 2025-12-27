@@ -179,11 +179,16 @@ export const usePosts = () => {
     // If this is a workout, also save to workout_logs table
     if (postData.content_type === "workout") {
       const workoutData = postData.content_data;
+      // Include title in the exercises JSON for retrieval later
+      const exercisesWithMeta = {
+        title: workoutData.title as string || "",
+        exercises: workoutData.exercises,
+      };
       await supabase
         .from("workout_logs")
         .insert({
           user_id: user.id,
-          exercises: workoutData.exercises as Json,
+          exercises: exercisesWithMeta as unknown as Json,
           notes: (workoutData.notes as string) || null,
           photos: postData.images || [],
         });
