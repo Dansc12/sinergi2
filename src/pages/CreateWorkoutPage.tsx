@@ -358,6 +358,27 @@ const CreateWorkoutPage = () => {
   };
 
   const toggleSetComplete = (exerciseId: string, setId: string) => {
+    const exercise = exercises.find(e => e.id === exerciseId);
+    if (!exercise) return;
+    
+    const set = exercise.sets.find(s => s.id === setId);
+    if (!set) return;
+    
+    // If trying to mark as complete, validate that weight/reps (or distance/time for cardio) are filled
+    if (!set.completed) {
+      if (exercise.isCardio) {
+        if (!set.distance.trim() || !set.time.trim()) {
+          toast({ title: "Fill in distance and time", description: "Please enter values before marking complete.", variant: "destructive" });
+          return;
+        }
+      } else {
+        if (!set.weight.trim() || !set.reps.trim()) {
+          toast({ title: "Fill in weight and reps", description: "Please enter values before marking complete.", variant: "destructive" });
+          return;
+        }
+      }
+    }
+    
     setExercises(
       exercises.map((e) => {
         if (e.id === exerciseId) {
@@ -910,7 +931,7 @@ const CreateWorkoutPage = () => {
             {/* Fade effect on right */}
             <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
             
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide px-2">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar px-2">
               {exercises.map((exercise, index) => {
                 const isSelected = selectedExerciseId === exercise.id;
                 const completedSets = exercise.sets.filter(s => s.completed).length;
@@ -1142,14 +1163,14 @@ const CreateWorkoutPage = () => {
   );
 };
 
-// Helper function to get consistent bar colors for superset groups
+// Helper function to get consistent bar colors for superset groups (no purple to avoid blending with selected state)
 const getSupersetBarColor = (groupId: string): string => {
   const colors = [
-    "bg-purple-500",
-    "bg-blue-500", 
-    "bg-green-500",
-    "bg-orange-500",
-    "bg-pink-500",
+    "bg-cyan-500",
+    "bg-amber-500", 
+    "bg-emerald-500",
+    "bg-rose-500",
+    "bg-sky-500",
   ];
   const hash = groupId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
