@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2 } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 type SetType = "normal" | "warmup" | "failure" | "drop";
 
 interface Set {
@@ -77,9 +89,36 @@ const CreateWorkoutPage = () => {
   const [routineInstanceId, setRoutineInstanceId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+  const [isExerciseSectionOpen, setIsExerciseSectionOpen] = useState(true);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
+
+  // Timer effect
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Format elapsed time
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
   
   // State for pending autofill confirmation
   const [pendingAutofill, setPendingAutofill] = useState<{
@@ -331,7 +370,28 @@ const CreateWorkoutPage = () => {
   };
 
   const handleBack = () => {
+    if (exercises.length > 0) {
+      setShowBackConfirm(true);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const confirmBack = () => {
+    setShowBackConfirm(false);
     navigate("/");
+  };
+
+  const handleAddTag = () => {
+    const trimmed = newTag.trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags([...tags, trimmed]);
+      setNewTag("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
   };
   const handleCapturePhoto = (imageUrl: string) => {
     setPhotos([...photos, imageUrl]);
@@ -535,9 +595,9 @@ const CreateWorkoutPage = () => {
             </Button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Dumbbell size={20} className="text-primary-foreground" />
+                <Timer size={20} className="text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold">Log Workout</h1>
+              <span className="text-2xl font-bold font-mono">{formatTime(elapsedSeconds)}</span>
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
@@ -547,42 +607,97 @@ const CreateWorkoutPage = () => {
         </div>
 
         {/* Workout Title */}
-        <div className="mb-6">
+        <div className="mb-4">
           <Input
             placeholder="Workout name (optional)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-semibold bg-transparent border-0 border-b border-border rounded-none px-0 focus-visible:ring-0"
+            className="text-lg font-semibold bg-transparent border-0 rounded-none px-0 focus-visible:ring-0"
           />
         </div>
 
-        {/* Exercise Search */}
-        <div className="mb-4">
-          <ExerciseSearchInput
-            onSelect={addExercise}
-            placeholder="Add exercise..."
-          />
+        {/* Tags Section */}
+        <div className="mb-6">
+          <div className="flex gap-2 mb-2">
+            <Input
+              placeholder="Add tag..."
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddTag();
+                }
+              }}
+              className="flex-1 h-9 bg-muted/50 border-0 text-sm"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAddTag}
+              disabled={!newTag.trim()}
+              className="h-9"
+            >
+              <Plus size={16} />
+            </Button>
+          </div>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="gap-1 pr-1"
+                >
+                  {tag}
+                  <button
+                    onClick={() => handleRemoveTag(tag)}
+                    className="ml-1 hover:bg-muted rounded-full p-0.5"
+                  >
+                    <X size={12} />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* My Saved & Discover Buttons */}
-        <div className="flex gap-3 mb-6">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
-            onClick={handleNavigateToMySaved}
-          >
-            <Bookmark size={18} className="text-primary" />
-            <span>My Saved</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
-            onClick={handleNavigateToDiscover}
-          >
-            <Compass size={18} className="text-primary" />
-            <span>Discover</span>
-          </Button>
-        </div>
+        {/* Collapsible Add Exercise Section */}
+        <Collapsible open={isExerciseSectionOpen} onOpenChange={setIsExerciseSectionOpen} className="mb-6">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto hover:bg-transparent">
+              <span className="text-sm font-medium text-muted-foreground">Add Exercises</span>
+              {isExerciseSectionOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-4">
+            {/* Exercise Search */}
+            <ExerciseSearchInput
+              onSelect={addExercise}
+              placeholder="Add exercise..."
+            />
+
+            {/* My Saved & Discover Buttons */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+                onClick={handleNavigateToMySaved}
+              >
+                <Bookmark size={18} className="text-primary" />
+                <span>My Saved</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+                onClick={handleNavigateToDiscover}
+              >
+                <Compass size={18} className="text-primary" />
+                <span>Discover</span>
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Selected Exercise Details */}
         {selectedExercise && (
@@ -882,6 +997,24 @@ const CreateWorkoutPage = () => {
         onCancel={() => setPendingAutofill(null)}
         itemName={pendingAutofill?.name || ""}
       />
+
+      {/* Back Confirmation Dialog */}
+      <AlertDialog open={showBackConfirm} onOpenChange={setShowBackConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to go back? Your workout data will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBack} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
