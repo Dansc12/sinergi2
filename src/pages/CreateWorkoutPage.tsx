@@ -765,33 +765,6 @@ const CreateWorkoutPage = () => {
             <div className="space-y-2 mb-4">
               {selectedExercise.sets.map((set, index) => {
                 const normalSetNumber = getNormalSetNumber(selectedExercise.sets, index);
-                let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-                let isLongPress = false;
-
-                const handlePointerDown = () => {
-                  isLongPress = false;
-                  longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                  }, 500);
-                };
-
-                const handlePointerUp = (e: React.PointerEvent) => {
-                  if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                  }
-                  if (!isLongPress) {
-                    e.preventDefault();
-                    toggleSetComplete(selectedExercise.id, set.id);
-                  }
-                };
-
-                const handlePointerLeave = () => {
-                  if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                  }
-                };
 
                 return (
                   <motion.div
@@ -805,10 +778,6 @@ const CreateWorkoutPage = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          onPointerDown={handlePointerDown}
-                          onPointerUp={handlePointerUp}
-                          onPointerLeave={handlePointerLeave}
-                          onContextMenu={(e) => e.preventDefault()}
                           className={`col-span-2 w-8 h-8 mx-auto rounded-full flex items-center justify-center font-semibold text-sm transition-colors relative select-none ${
                             set.completed
                               ? "bg-primary text-primary-foreground"
