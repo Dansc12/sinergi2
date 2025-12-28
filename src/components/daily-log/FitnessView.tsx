@@ -466,15 +466,15 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
                       <div className="px-4 pb-4 space-y-3">
                         {/* Exercise List */}
                         <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                          {workout.exercises.slice(0, 5).map((exercise, index) => (
+                          {(Array.isArray(workout.exercises) ? workout.exercises : []).slice(0, 5).map((exercise, index) => (
                             <div key={index} className="flex justify-between text-sm">
                               <span className="text-foreground">{exercise.name}</span>
                               <span className="text-muted-foreground">
-                                {exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}
+                                {Array.isArray(exercise.sets) ? exercise.sets.length : 0} set{(Array.isArray(exercise.sets) ? exercise.sets.length : 0) !== 1 ? 's' : ''}
                               </span>
                             </div>
                           ))}
-                          {workout.exercises.length > 5 && (
+                          {Array.isArray(workout.exercises) && workout.exercises.length > 5 && (
                             <span className="text-xs text-primary">
                               +{workout.exercises.length - 5} more exercises
                             </span>
@@ -498,13 +498,13 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
                 {expandedWorkout !== workout.id && (
                   <div className="px-4 pb-4">
                     <div className="text-sm text-muted-foreground space-y-1">
-                      {workout.exercises.slice(0, 3).map((exercise, index) => (
+                      {(Array.isArray(workout.exercises) ? workout.exercises : []).slice(0, 3).map((exercise, index) => (
                         <div key={index} className="flex justify-between">
                           <span>{exercise.name}</span>
-                          <span>{exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}</span>
+                          <span>{Array.isArray(exercise.sets) ? exercise.sets.length : 0} set{(Array.isArray(exercise.sets) ? exercise.sets.length : 0) !== 1 ? 's' : ''}</span>
                         </div>
                       ))}
-                      {workout.exercises.length > 3 && (
+                      {Array.isArray(workout.exercises) && workout.exercises.length > 3 && (
                         <span className="text-xs text-primary">
                           +{workout.exercises.length - 3} more exercises
                         </span>
