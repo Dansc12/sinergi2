@@ -237,39 +237,32 @@ const CreateMealPage = () => {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleBack}>
-              <ArrowLeft size={24} />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success to-emerald-400 flex items-center justify-center">
-                <Utensils size={20} className="text-primary-foreground" />
-              </div>
-              <h1 className="text-2xl font-bold">Log Meal</h1>
-            </div>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
+            <ArrowLeft size={24} />
+          </Button>
+          
+          {/* Centered Meal Type Selector */}
+          <div className="flex-1 flex justify-center">
+            <Select value={mealType} onValueChange={setMealType}>
+              <SelectTrigger className="w-auto min-w-[160px] text-xl font-bold bg-transparent border-0 focus:ring-0 justify-center gap-2">
+                <SelectValue placeholder="Select Meal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="breakfast">Breakfast</SelectItem>
+                <SelectItem value="lunch">Lunch</SelectItem>
+                <SelectItem value="dinner">Dinner</SelectItem>
+                <SelectItem value="snack">Snack</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          
           <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
             {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
         </div>
 
-        {/* Meal Type Selector */}
-        <div className="mb-6">
-          <Select value={mealType} onValueChange={setMealType}>
-            <SelectTrigger className="text-lg font-semibold bg-transparent border-0 border-b border-border rounded-none px-0 focus:ring-0">
-              <SelectValue placeholder="Select meal type..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="breakfast">Breakfast</SelectItem>
-              <SelectItem value="lunch">Lunch</SelectItem>
-              <SelectItem value="dinner">Dinner</SelectItem>
-              <SelectItem value="snack">Snack</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* My Recipes & Discover Buttons */}
+        {/* My Saved & Discover Buttons */}
         <div className="flex gap-3 mb-6">
           <Button
             variant="outline"
@@ -277,7 +270,7 @@ const CreateMealPage = () => {
             onClick={handleNavigateToMyRecipes}
           >
             <ChefHat size={18} className="text-primary" />
-            <span>My Recipes</span>
+            <span>My Saved</span>
           </Button>
           <Button
             variant="outline"
