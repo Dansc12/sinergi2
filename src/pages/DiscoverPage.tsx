@@ -66,8 +66,8 @@ const transformPost = (post: FeedPost): PostData => ({
 });
 
 // Memoized post card to prevent unnecessary re-renders
-const MemoizedPostCard = memo(({ post }: { post: PostData }) => (
-  <PostCard post={post} />
+const MemoizedPostCard = memo(({ post, onTagClick }: { post: PostData; onTagClick: (tag: string) => void }) => (
+  <PostCard post={post} onTagClick={onTagClick} />
 ));
 MemoizedPostCard.displayName = "MemoizedPostCard";
 
@@ -87,6 +87,11 @@ const DiscoverPage = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Handle tag click to search by that tag
+  const handleTagClick = useCallback((tag: string) => {
+    setSearchInput(`#${tag}`);
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -152,7 +157,7 @@ const DiscoverPage = () => {
     return (
       <>
         {feedPosts.map((post) => (
-          <MemoizedPostCard key={post.id} post={post} />
+          <MemoizedPostCard key={post.id} post={post} onTagClick={handleTagClick} />
         ))}
         
         {/* Load more trigger - invisible element that triggers loading when scrolled into view */}

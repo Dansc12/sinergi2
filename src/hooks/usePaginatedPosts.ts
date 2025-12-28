@@ -144,6 +144,24 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     const query = filters.searchQuery.toLowerCase().trim();
     const contentData = post.content_data as Record<string, unknown> | null;
     
+    // Check if searching by username with @ prefix
+    if (query.startsWith('@')) {
+      const usernameQuery = query.slice(1); // Remove @ prefix
+      if (!usernameQuery) return true; // Just "@" shows all
+      return post.profile?.username?.toLowerCase().includes(usernameQuery);
+    }
+    
+    // Check if searching by tag with # prefix
+    if (query.startsWith('#')) {
+      const tagQuery = query.slice(1); // Remove # prefix
+      if (!tagQuery) return true; // Just "#" shows all
+      if (contentData) {
+        const tags = contentData.tags as string[] | undefined;
+        return tags?.some(tag => tag.toLowerCase().includes(tagQuery));
+      }
+      return false;
+    }
+    
     // Search by content type
     if (post.content_type.toLowerCase().includes(query)) return true;
     
