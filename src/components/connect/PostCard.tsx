@@ -79,6 +79,7 @@ const typeIcons = {
 interface PostCardProps {
   post: PostData;
   onPostClick?: (post: PostData) => void;
+  onTagClick?: (tag: string) => void;
 }
 
 // Unified content carousel that can display images and summary cards
@@ -567,7 +568,7 @@ const GroupSummaryCard = ({ contentData, coverPhoto }: { contentData: GroupConte
   );
 };
 
-export const PostCard = ({ post, onPostClick }: PostCardProps) => {
+export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
   const navigate = useNavigate();
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const [showComments, setShowComments] = useState(false);
@@ -806,12 +807,13 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
                 {tags && tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {tags.map((tag, idx) => (
-                      <span
+                      <button
                         key={idx}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                        onClick={() => onTagClick?.(tag)}
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors"
                       >
                         #{tag}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}
