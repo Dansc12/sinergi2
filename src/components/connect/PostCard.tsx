@@ -668,26 +668,16 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0 cursor-pointer" onClick={handleCardClick}>
-            <div className="flex items-center gap-2">
-              <p 
-                className="font-semibold text-sm hover:underline cursor-pointer"
-                onClick={handleUserClick}
-              >
-                {post.user.name}
-              </p>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${typeLabels[post.type].color}`}
-              >
-                {typeLabels[post.type].label}
-              </span>
-            </div>
+            <p 
+              className="font-semibold text-sm hover:underline cursor-pointer"
+              onClick={handleUserClick}
+            >
+              {post.user.name}
+            </p>
             <p className="text-xs text-muted-foreground">
               {post.user.handle} • {post.timeAgo}
             </p>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-            <MoreHorizontal size={18} />
-          </Button>
         </div>
 
         {/* Clickable content area - unified carousel with images + summary card */}
