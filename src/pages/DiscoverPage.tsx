@@ -185,7 +185,10 @@ const DiscoverPage = () => {
       {/* Search Bar */}
       <div className="sticky top-0 z-30 px-4 py-3">
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/70" />
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-primary/80"
+          />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
