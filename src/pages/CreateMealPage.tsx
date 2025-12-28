@@ -11,6 +11,16 @@ import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useRecentFoods } from "@/hooks/useRecentFoods";
 import { usePosts } from "@/hooks/usePosts";
 interface SelectedFood {
@@ -67,6 +77,7 @@ const CreateMealPage = () => {
   const [pendingFoodInitialQuantity, setPendingFoodInitialQuantity] = useState<number | undefined>();
   const [pendingFoodInitialUnit, setPendingFoodInitialUnit] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
 
   const { recentFoods, isLoading: isLoadingRecentFoods } = useRecentFoods(10);
 
@@ -89,6 +100,15 @@ const CreateMealPage = () => {
   }, []);
 
   const handleBack = () => {
+    if (selectedFoods.length > 0) {
+      setShowBackConfirm(true);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const confirmBack = () => {
+    setShowBackConfirm(false);
     navigate("/");
   };
 
@@ -602,6 +622,24 @@ const CreateMealPage = () => {
         onSuccess={handleCustomFoodCreated}
         initialName={customFoodInitialName}
       />
+
+      {/* Back Confirmation Dialog */}
+      <AlertDialog open={showBackConfirm} onOpenChange={setShowBackConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your added foods will be deleted if you go back. Are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBack} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
