@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MoreHorizontal, MessageCircle, Send } from "lucide-react";
+import { MoreHorizontal, MessageCircle, Send, Heart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +26,6 @@ const typeLabels: Record<string, { label: string; color: string }> = {
   group: { label: "Group", color: "bg-amber-500/20 text-amber-400" },
 };
 
-const reactionEmojis = ["🙌", "💯", "❤️", "💪", "🎉"];
-const LONG_PRESS_THRESHOLD = 300;
 const DOUBLE_TAP_DELAY = 300;
 
 interface MealFood {
@@ -106,10 +104,10 @@ const ContentCarousel = ({
     const threshold = 50;
     
     if (Math.abs(dragOffset) > threshold) {
-      if (dragOffset < 0) {
-        setCurrentIndex((prev) => (prev + 1) % items.length);
-      } else {
-        setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
+      if (dragOffset < 0 && currentIndex < items.length - 1) {
+        setCurrentIndex((prev) => prev + 1);
+      } else if (dragOffset > 0 && currentIndex > 0) {
+        setCurrentIndex((prev) => prev - 1);
       }
     }
     setDragOffset(0);
@@ -126,7 +124,7 @@ const ContentCarousel = ({
     }
   };
 
-  const renderItem = (item: CarouselItem, isPreview: boolean = false) => {
+  const renderItem = (item: CarouselItem) => {
     if (item.type === 'image') {
       return (
         <div className="w-full h-full bg-muted">
@@ -138,98 +136,56 @@ const ContentCarousel = ({
         </div>
       );
     } else {
-      // Summary card - force it to fill the exact same frame as images
       return (
-        <div className="w-full h-full">
-          <div
-            className={`w-full h-full ${isPreview ? "scale-[0.85] origin-center" : ""}`}
-          >
-            {item.content}
-          </div>
+        <div className="w-full h-full p-4">
+          {item.content}
         </div>
       );
     }
   };
 
-  // Fixed container class for consistent sizing - images get bg-muted, summary cards don't
-  const itemContainerClass = "relative aspect-square w-full max-w-[320px] rounded-xl overflow-hidden flex-shrink-0";
-  const previewContainerClass = "relative aspect-square w-[80px] rounded-lg overflow-hidden flex-shrink-0";
-
-  if (items.length === 1) {
-    const item = items[0];
-    return (
-      <div className="px-4 py-1 flex justify-center">
-        <div className={itemContainerClass} onClick={handleClick}>
-          {renderItem(item)}
-        </div>
-      </div>
-    );
-  }
-
-  const prevIndex = (currentIndex - 1 + items.length) % items.length;
-  const nextIndex = (currentIndex + 1) % items.length;
-
   return (
-    <div className="relative py-1 overflow-hidden">
+    <div className="relative w-full">
+      {/* Main carousel container - Instagram style 4:5 aspect ratio */}
       <div
-        className="flex items-center justify-center gap-2 touch-pan-y"
+        className="relative w-full aspect-[4/5] overflow-hidden bg-muted"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={handleClick}
       >
-        {/* Previous item preview */}
-        <motion.div 
-          className={previewContainerClass}
-          style={{ opacity: 0.6 }}
-          animate={{ 
-            x: isDragging ? dragOffset * 0.3 : 0,
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          {renderItem(items[prevIndex], true)}
-        </motion.div>
-
-        {/* Current item */}
         <motion.div
-          className={itemContainerClass}
-          onClick={handleClick}
+          className="flex h-full"
           animate={{ 
-            x: isDragging ? dragOffset : 0,
-            scale: isDragging ? 0.98 : 1,
+            x: `calc(-${currentIndex * 100}% + ${isDragging ? dragOffset : 0}px)`,
           }}
           transition={{ 
             type: "spring", 
-            stiffness: 400, 
+            stiffness: 300, 
             damping: 30,
-            mass: 0.8
           }}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              className="w-full h-full"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              {renderItem(items[currentIndex])}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Next item preview */}
-        <motion.div 
-          className={previewContainerClass}
-          style={{ opacity: 0.6 }}
-          animate={{ 
-            x: isDragging ? dragOffset * 0.3 : 0,
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          {renderItem(items[nextIndex], true)}
+          {items.map((item, idx) => (
+            <div key={idx} className="w-full h-full flex-shrink-0">
+              {renderItem(item)}
+            </div>
+          ))}
         </motion.div>
       </div>
+
+      {/* Pagination dots - only show if more than 1 item */}
+      {items.length > 1 && (
+        <div className="flex justify-center gap-1.5 py-3">
+          {items.map((_, idx) => (
+            <div
+              key={idx}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                idx === currentIndex ? "bg-primary" : "bg-muted-foreground/30"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -606,13 +562,10 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const isLongPressActiveRef = useRef(false);
   const cardRef = useRef<HTMLElement>(null);
+  const heartButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const { userReactionCounts, userReactions, addReaction: dbAddReaction } = usePostReactions(post.id);
+  const { isLiked, likeCount, toggleLike } = usePostReactions(post.id);
   
   const handleCardClick = () => {
     if (onPostClick) {
@@ -631,9 +584,9 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
 
   const { comments, commentCount, addComment } = usePostComments(post.id);
 
-  const showFloatingEmoji = useCallback(
-    (emoji: string, originX?: number, originY?: number) => {
-      const button = buttonRefs.current[emoji];
+  const showFloatingHeart = useCallback(
+    (originX?: number, originY?: number) => {
+      const button = heartButtonRef.current;
       const finalOriginX =
         originX ??
         (button
@@ -644,7 +597,7 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
 
       const newEmoji: FloatingEmoji = {
         id: Date.now() + Math.random(),
-        emoji,
+        emoji: "❤️",
         originX: finalOriginX,
         originY: finalOriginY,
       };
@@ -657,60 +610,24 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
     []
   );
 
-  const handleReaction = useCallback(
-    async (emoji: string) => {
-      showFloatingEmoji(emoji);
-      await dbAddReaction(emoji);
-    },
-    [showFloatingEmoji, dbAddReaction]
-  );
-
   const handleDoubleTap = useCallback(() => {
-    const cardRect = cardRef.current?.getBoundingClientRect();
-    const centerX = cardRect
-      ? cardRect.left + cardRect.width / 2
-      : window.innerWidth / 2;
-    const centerY = cardRect ? cardRect.top + cardRect.height / 2 : 300;
-    showFloatingEmoji("❤️", centerX, centerY);
-    dbAddReaction("❤️");
-  }, [showFloatingEmoji, dbAddReaction]);
-
-  const startContinuousReactions = useCallback(
-    (emoji: string) => {
-      handleReaction(emoji);
-      holdIntervalRef.current = setInterval(() => {
-        showFloatingEmoji(emoji);
-        dbAddReaction(emoji);
-      }, 150);
-    },
-    [handleReaction, showFloatingEmoji, dbAddReaction]
-  );
-
-  const handlePointerDown = useCallback(
-    (emoji: string) => {
-      isLongPressActiveRef.current = false;
-
-      longPressTimerRef.current = setTimeout(() => {
-        isLongPressActiveRef.current = true;
-        startContinuousReactions(emoji);
-      }, LONG_PRESS_THRESHOLD);
-    },
-    [startContinuousReactions]
-  );
-
-  const handlePointerUp = useCallback(() => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
+    if (!isLiked) {
+      const cardRect = cardRef.current?.getBoundingClientRect();
+      const centerX = cardRect
+        ? cardRect.left + cardRect.width / 2
+        : window.innerWidth / 2;
+      const centerY = cardRect ? cardRect.top + cardRect.height / 2 : 300;
+      showFloatingHeart(centerX, centerY);
+      toggleLike();
     }
+  }, [isLiked, showFloatingHeart, toggleLike]);
 
-    if (holdIntervalRef.current) {
-      clearInterval(holdIntervalRef.current);
-      holdIntervalRef.current = null;
+  const handleLikeClick = useCallback(() => {
+    if (!isLiked) {
+      showFloatingHeart();
     }
-
-    isLongPressActiveRef.current = false;
-  }, []);
+    toggleLike();
+  }, [isLiked, showFloatingHeart, toggleLike]);
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
@@ -816,7 +733,8 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
           })()}
         </div>
 
-      <div className="relative px-4 py-1.5">
+      {/* Like button and floating hearts */}
+      <div className="px-4 py-2">
         <AnimatePresence>
           {floatingEmojis.map((floating) => (
             <motion.span
@@ -837,36 +755,33 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
           ))}
         </AnimatePresence>
 
-        <div className="flex items-center justify-center gap-4">
-          {reactionEmojis.map((emoji) => (
-            <button
-              key={emoji}
-              ref={(el) => (buttonRefs.current[emoji] = el)}
-              onPointerDown={() => handlePointerDown(emoji)}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onClick={() => {
-                if (!isLongPressActiveRef.current) {
-                  dbAddReaction(emoji);
-                  showFloatingEmoji(emoji);
-                }
-              }}
-              className={`relative text-xl p-2 rounded-full transition-colors select-none touch-none ${
-                userReactions.has(emoji)
-                  ? "bg-primary/20"
-                  : "hover:bg-muted/50"
+        <div className="flex items-center gap-4">
+          <button
+            ref={heartButtonRef}
+            onClick={handleLikeClick}
+            className="flex items-center gap-1.5 transition-transform active:scale-90"
+          >
+            <Heart
+              size={24}
+              className={`transition-colors ${
+                isLiked ? "fill-red-500 text-red-500" : "text-foreground"
               }`}
-            >
-              {emoji}
-              {userReactionCounts[emoji] > 0 && (
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-lg border border-background">
-                  {userReactionCounts[emoji]}
-                </span>
-              )}
-            </button>
-          ))}
+            />
+          </button>
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className="transition-transform active:scale-90"
+          >
+            <MessageCircle size={24} className="text-foreground" />
+          </button>
         </div>
+
+        {/* Like count */}
+        {likeCount > 0 && (
+          <p className="text-sm font-semibold mt-2">
+            {likeCount} {likeCount === 1 ? "like" : "likes"}
+          </p>
+        )}
       </div>
 
       {/* Caption - always shown below carousel if there's content */}
@@ -880,15 +795,14 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
 
       {/* Comments section */}
       <div className="px-4 pb-4">
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="text-sm text-muted-foreground flex items-center gap-1"
-        >
-          <MessageCircle size={16} />
-          {commentCount > 0
-            ? `View all ${commentCount} comment${commentCount > 1 ? "s" : ""}`
-            : "Add a comment"}
-        </button>
+        {commentCount > 0 && !showComments && (
+          <button
+            onClick={() => setShowComments(true)}
+            className="text-sm text-muted-foreground"
+          >
+            View all {commentCount} comment{commentCount > 1 ? "s" : ""}
+          </button>
+        )}
 
         <AnimatePresence>
           {showComments && (
@@ -896,7 +810,7 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-3 space-y-3"
+              className="space-y-3"
             >
               {/* Comment list */}
               {comments.map((comment) => (

@@ -54,38 +54,51 @@ export const usePostReactions = (postId: string) => {
     };
   }, [postId, fetchReactions]);
 
-  const addReaction = async (emoji: string) => {
+  // Toggle like - add if not liked, remove if already liked
+  const toggleLike = async () => {
     if (!user) return;
 
-    const { error } = await supabase.from("post_reactions").insert({
-      post_id: postId,
-      user_id: user.id,
-      emoji,
-    });
+    const existingLike = reactions.find(
+      (r) => r.user_id === user.id && r.emoji === "❤️"
+    );
 
-    if (error) {
-      console.error("Error adding reaction:", error);
+    if (existingLike) {
+      // Remove like
+      const { error } = await supabase
+        .from("post_reactions")
+        .delete()
+        .eq("id", existingLike.id);
+
+      if (error) {
+        console.error("Error removing like:", error);
+      }
+    } else {
+      // Add like
+      const { error } = await supabase.from("post_reactions").insert({
+        post_id: postId,
+        user_id: user.id,
+        emoji: "❤️",
+      });
+
+      if (error) {
+        console.error("Error adding like:", error);
+      }
     }
   };
 
-  // Count only the current user's reactions per emoji (private counts)
-  const userReactionCounts = reactions
-    .filter((r) => r.user_id === user?.id)
-    .reduce((acc, r) => {
-      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-  // Check if user has reacted with each emoji
-  const userReactions = new Set(
-    reactions.filter((r) => r.user_id === user?.id).map((r) => r.emoji)
+  // Check if current user has liked
+  const isLiked = reactions.some(
+    (r) => r.user_id === user?.id && r.emoji === "❤️"
   );
+
+  // Total like count
+  const likeCount = reactions.filter((r) => r.emoji === "❤️").length;
 
   return {
     reactions,
-    userReactionCounts,
-    userReactions,
+    isLiked,
+    likeCount,
     isLoading,
-    addReaction,
+    toggleLike,
   };
 };
