@@ -178,7 +178,7 @@ const DiscoverPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Search Bar */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
+      <div className="sticky top-0 z-30 backdrop-blur-md bg-background/60 border-b border-border/50 px-4 py-3">
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
