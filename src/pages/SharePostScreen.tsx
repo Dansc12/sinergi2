@@ -355,19 +355,37 @@ const SharePostScreen = () => {
               </div>
             )}
 
-            {/* Exercise details */}
-            {Array.isArray(data.exercises) && (data.exercises as Array<{ name: string; sets: Array<{ weight?: number; reps?: number; distance?: string; time?: string }> }>).map((exercise, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-card border border-border">
-                <p className="font-medium text-sm">{exercise.name}</p>
-                <div className="mt-2 space-y-1">
-                  {exercise.sets.map((set, setIdx) => (
-                    <p key={setIdx} className="text-xs text-muted-foreground">
-                      Set {setIdx + 1}: {set.weight ? `${set.weight} lbs × ${set.reps} reps` : `${set.distance} × ${set.time}`}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ))}
+            {/* Exercise details - matching CreateWorkoutPage card format */}
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+              {Array.isArray(data.exercises) && (data.exercises as Array<{ name: string; category?: string; muscleGroup?: string; supersetGroupId?: string; sets: Array<{ weight?: number; reps?: number; distance?: string; time?: string; completed?: boolean }> }>).map((exercise, idx) => {
+                const completedSets = exercise.sets.filter(s => s.completed).length;
+                const totalSets = exercise.sets.length;
+                const supersetColors = ["bg-cyan-500", "bg-amber-500", "bg-emerald-500", "bg-rose-500", "bg-sky-500"];
+                const supersetColor = exercise.supersetGroupId 
+                  ? supersetColors[exercise.supersetGroupId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % supersetColors.length]
+                  : null;
+                
+                return (
+                  <div 
+                    key={idx} 
+                    className="flex-shrink-0 rounded-xl bg-card border border-border text-foreground relative overflow-hidden min-w-[120px]"
+                  >
+                    {/* Superset colored bar on top */}
+                    {supersetColor && (
+                      <div className={`absolute left-0 right-0 top-0 h-1 ${supersetColor}`} />
+                    )}
+                    <div className={`px-4 py-3 ${supersetColor ? 'pt-4' : ''}`}>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="text-xs text-muted-foreground">
+                          {completedSets}/{totalSets} sets
+                        </span>
+                        <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       case "meal":

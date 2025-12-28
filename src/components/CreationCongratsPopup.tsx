@@ -32,18 +32,22 @@ const CreationCongratsPopup = ({
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
-    setVisible(isVisible);
-
     if (isVisible) {
-      // Reset refs when becoming visible
-      hasStartedRef.current = false;
+      // Reset and start fresh
+      setVisible(true);
       setProgress(100);
+      hasStartedRef.current = false;
       
-      // Use a small delay to ensure smooth start
-      const startTimer = () => {
+      // Cancel any existing animation
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      
+      // Use requestAnimationFrame to get initial timestamp and start smoothly
+      const initFrame = requestAnimationFrame((initialTime) => {
         if (hasStartedRef.current) return;
         hasStartedRef.current = true;
-        startTimeRef.current = performance.now();
+        startTimeRef.current = initialTime;
 
         const updateProgress = (currentTime: number) => {
           const elapsed = currentTime - startTimeRef.current;
@@ -59,17 +63,16 @@ const CreationCongratsPopup = ({
         };
 
         animationFrameRef.current = requestAnimationFrame(updateProgress);
-      };
-
-      // Start after a brief delay to let the component mount smoothly
-      const timeoutId = setTimeout(startTimer, 50);
+      });
 
       return () => {
-        clearTimeout(timeoutId);
+        cancelAnimationFrame(initFrame);
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
+    } else {
+      setVisible(false);
     }
   }, [isVisible, onDismiss]);
 
