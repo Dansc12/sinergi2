@@ -668,14 +668,17 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0 cursor-pointer" onClick={handleCardClick}>
-            <p 
-              className="font-semibold text-sm hover:underline cursor-pointer"
-              onClick={handleUserClick}
-            >
-              {post.user.name}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p 
+                className="font-semibold text-sm hover:underline cursor-pointer"
+                onClick={handleUserClick}
+              >
+                {post.user.name}
+              </p>
+              <span className="text-sm text-muted-foreground">{post.user.handle}</span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {post.user.handle} • {post.timeAgo}
+              {post.timeAgo}
             </p>
           </div>
         </div>
@@ -827,13 +830,10 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
                 >
                   <Heart
                     size={24}
-                    className={`transition-colors ${
-                      isLiked ? "fill-red-500 text-red-500" : "text-foreground"
+                    className={`transition-all duration-150 ease-out ${
+                      isLiked ? "fill-primary text-primary" : "text-foreground"
                     }`}
                   />
-                  {likeCount > 0 && (
-                    <span className="text-sm font-medium">{likeCount}</span>
-                  )}
                 </button>
               </div>
             </div>
