@@ -1,11 +1,11 @@
 import { useRef, useEffect, useCallback, memo, useState } from "react";
-import { Compass, Filter, Dumbbell, Utensils, BookOpen, FileText, CalendarClock, Users } from "lucide-react";
+import { Compass, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { usePaginatedPosts, FeedPost, PostFilters } from "@/hooks/usePaginatedPosts";
 import { formatDistanceToNow } from "date-fns";
 import { PostCard } from "@/components/connect/PostCard";
-import { cn } from "@/lib/utils";
 
 const EmptyFeedState = () => {
   const navigate = useNavigate();
@@ -71,41 +71,22 @@ const MemoizedPostCard = memo(({ post }: { post: PostData }) => (
 ));
 MemoizedPostCard.displayName = "MemoizedPostCard";
 
-const POST_TYPES = [
-  { value: "workout", label: "Workout", icon: Dumbbell },
-  { value: "meal", label: "Meal", icon: Utensils },
-  { value: "recipe", label: "Recipe", icon: BookOpen },
-  { value: "post", label: "Post", icon: FileText },
-  { value: "routine", label: "Routine", icon: CalendarClock },
-  { value: "group", label: "Group", icon: Users },
-];
-
 const DiscoverPage = () => {
-  const [filters, setFilters] = useState<PostFilters>({ types: [], visibility: "all" });
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<PostFilters>({ types: [], visibility: "all", searchQuery: "" });
+  const [searchInput, setSearchInput] = useState("");
   
   const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePaginatedPosts(filters);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(isLoadingMore);
 
-  const toggleType = (type: string) => {
-    setFilters(prev => ({
-      ...prev,
-      types: prev.types.includes(type)
-        ? prev.types.filter(t => t !== type)
-        : [...prev.types, type]
-    }));
-  };
-
-  const toggleVisibility = () => {
-    setFilters(prev => ({
-      ...prev,
-      visibility: prev.visibility === "all" ? "friends" : "all"
-    }));
-  };
-
-  const activeFilterCount = filters.types.length + (filters.visibility === "friends" ? 1 : 0);
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, searchQuery: searchInput }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -152,6 +133,19 @@ const DiscoverPage = () => {
     }
     
     if (feedPosts.length === 0) {
+      if (searchInput.trim()) {
+        return (
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Search size={32} className="text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No results found</h3>
+            <p className="text-muted-foreground text-sm max-w-[280px]">
+              Try searching for a different workout, meal, user, or tag.
+            </p>
+          </div>
+        );
+      }
       return <EmptyFeedState />;
     }
 
@@ -174,7 +168,7 @@ const DiscoverPage = () => {
         {/* End of feed message */}
         {!hasMore && posts.length > 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">You're all caught up! 🎉</p>
+            <p className="text-sm">You're all caught up!</p>
           </div>
         )}
       </>
@@ -183,72 +177,25 @@ const DiscoverPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Filter Bar */}
+      {/* Search Bar */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-              showFilters || activeFilterCount > 0
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            )}
-          >
-            <Filter size={16} />
-            <span>Filters</span>
-            {activeFilterCount > 0 && (
-              <span className="bg-primary-foreground text-primary text-xs px-1.5 py-0.5 rounded-full">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* Visibility Toggle */}
-          <div className="flex items-center gap-2">
-            <span className={cn("text-sm", filters.visibility === "all" ? "text-foreground font-medium" : "text-muted-foreground")}>
-              Everyone
-            </span>
+        <div className="relative">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by type, user, name, or tag..."
+            className="pl-10 pr-10 h-10"
+          />
+          {searchInput && (
             <button
-              onClick={toggleVisibility}
-              className={cn(
-                "relative w-12 h-6 rounded-full transition-colors",
-                filters.visibility === "friends" ? "bg-primary" : "bg-muted"
-              )}
+              onClick={() => setSearchInput("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <div
-                className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
-                  filters.visibility === "friends" ? "translate-x-7" : "translate-x-1"
-                )}
-              />
+              <X size={18} />
             </button>
-            <span className={cn("text-sm", filters.visibility === "friends" ? "text-foreground font-medium" : "text-muted-foreground")}>
-              Friends
-            </span>
-          </div>
+          )}
         </div>
-
-        {/* Type Filters */}
-        {showFilters && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
-            {POST_TYPES.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => toggleType(value)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-                  filters.types.includes(value)
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}
-              >
-                <Icon size={14} />
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="animate-fade-in pb-24">

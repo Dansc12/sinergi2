@@ -186,7 +186,7 @@ const ContentCarousel = ({
 
       {/* Pagination dots - only show if more than 1 item */}
       {items.length > 1 && (
-        <div className="flex justify-center gap-1.5 py-3">
+        <div className="flex justify-center gap-1.5 pt-2 pb-1">
           {items.map((_, idx) => (
             <div
               key={idx}

@@ -27,6 +27,7 @@ interface Cursor {
 export interface PostFilters {
   types: string[];
   visibility: "all" | "friends";
+  searchQuery?: string;
 }
 
 const PAGE_SIZE = 15;
@@ -136,6 +137,39 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     }
   }, [user, authLoading, filters?.types, filters?.visibility]);
 
+  // Filter posts locally based on search query
+  const filteredPosts = posts.filter(post => {
+    if (!filters?.searchQuery || !filters.searchQuery.trim()) return true;
+    
+    const query = filters.searchQuery.toLowerCase().trim();
+    const contentData = post.content_data as Record<string, unknown> | null;
+    
+    // Search by content type
+    if (post.content_type.toLowerCase().includes(query)) return true;
+    
+    // Search by user name or username
+    if (post.profile?.first_name?.toLowerCase().includes(query)) return true;
+    if (post.profile?.username?.toLowerCase().includes(query)) return true;
+    
+    // Search by description
+    if (post.description?.toLowerCase().includes(query)) return true;
+    
+    // Search by content name/title
+    if (contentData) {
+      const title = (contentData.title as string) || 
+                    (contentData.name as string) || 
+                    (contentData.routineName as string) ||
+                    (contentData.mealType as string);
+      if (title?.toLowerCase().includes(query)) return true;
+      
+      // Search by tags
+      const tags = contentData.tags as string[] | undefined;
+      if (tags?.some(tag => tag.toLowerCase().includes(query))) return true;
+    }
+    
+    return false;
+  });
+
   // Initial fetch - re-fetch when filters change
   useEffect(() => {
     cursorRef.current = null;
@@ -214,7 +248,7 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
   }, [fetchPosts]);
 
   return {
-    posts,
+    posts: filteredPosts,
     isLoading,
     isLoadingMore,
     hasMore,
