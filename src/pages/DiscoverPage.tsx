@@ -124,8 +124,10 @@ const DiscoverPage = () => {
     };
   }, [hasMore, loadMore]);
 
-  // Transform posts for display
-  const feedPosts = posts.map(transformPost);
+  // Transform posts for display and filter to only show posts with images
+  const feedPosts = posts
+    .map(transformPost)
+    .filter(post => post.images && post.images.length > 0);
 
   const renderFeed = () => {
     if (isLoading) {
