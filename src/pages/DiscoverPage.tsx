@@ -185,7 +185,7 @@ const DiscoverPage = () => {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by type, user, name, or tag..."
-            className="pl-10 pr-10 h-10 bg-background/50"
+            className="pl-10 pr-10 h-10 bg-background/80 backdrop-blur-sm"
           />
           {searchInput && (
             <button
