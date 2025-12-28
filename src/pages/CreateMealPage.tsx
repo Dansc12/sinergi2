@@ -237,14 +237,16 @@ const CreateMealPage = () => {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
-            <ArrowLeft size={24} />
-          </Button>
+          <div className="w-20">
+            <Button variant="ghost" size="icon" onClick={handleBack}>
+              <ArrowLeft size={24} />
+            </Button>
+          </div>
           
           {/* Centered Meal Type Selector */}
           <div className="flex-1 flex justify-center">
             <Select value={mealType} onValueChange={setMealType}>
-              <SelectTrigger className="w-auto min-w-[160px] text-xl font-bold bg-transparent border-0 focus:ring-0 justify-center gap-2">
+              <SelectTrigger className="w-auto min-w-[160px] text-xl font-bold bg-transparent border-0 ring-0 focus:ring-0 focus:ring-offset-0 outline-none justify-center gap-2">
                 <SelectValue placeholder="Select Meal" />
               </SelectTrigger>
               <SelectContent>
@@ -256,10 +258,12 @@ const CreateMealPage = () => {
             </Select>
           </div>
           
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
-            {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-            Finish
-          </Button>
+          <div className="w-20 flex justify-end">
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6">
+              {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+              Finish
+            </Button>
+          </div>
         </div>
 
         {/* My Saved & Discover Buttons */}
