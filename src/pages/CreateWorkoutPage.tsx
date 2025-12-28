@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown, PartyPopper } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -998,19 +998,18 @@ const CreateWorkoutPage = () => {
                     <AnimatePresence>
                       {justCompleted && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
+                          initial={{ opacity: 0, scale: 0.5 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
+                          exit={{ opacity: 0, scale: 0.5 }}
+                          transition={{ duration: 0.3 }}
                           className="absolute inset-0 bg-emerald-500/90 flex items-center justify-center z-20 rounded-xl"
                         >
                           <motion.div
                             initial={{ scale: 0 }}
-                            animate={{ scale: [0, 1.2, 1] }}
-                            transition={{ duration: 0.4, times: [0, 0.6, 1] }}
-                            className="flex flex-col items-center text-white"
+                            animate={{ scale: [0, 1.3, 1] }}
+                            transition={{ duration: 0.4, times: [0, 0.5, 1] }}
                           >
-                            <PartyPopper size={24} className="mb-1" />
-                            <span className="text-xs font-semibold">Complete!</span>
+                            <Check size={32} className="text-white" strokeWidth={3} />
                           </motion.div>
                         </motion.div>
                       )}
