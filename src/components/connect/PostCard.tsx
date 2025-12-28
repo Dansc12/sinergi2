@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MoreHorizontal, MessageCircle, Send, Heart } from "lucide-react";
+import { MoreHorizontal, MessageCircle, Send, Heart, Dumbbell, Utensils, ChefHat, ClipboardList, FileText, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +63,18 @@ export interface PostData {
   contentData?: unknown;
   hasDescription?: boolean;
   createdAt?: string;
+  tags?: string[];
 }
+
+// Map content types to their icons
+const typeIcons = {
+  workout: Dumbbell,
+  meal: Utensils,
+  recipe: ChefHat,
+  routine: ClipboardList,
+  post: FileText,
+  group: Users,
+} as const;
 
 interface PostCardProps {
   post: PostData;
@@ -733,55 +744,109 @@ export const PostCard = ({ post, onPostClick }: PostCardProps) => {
           })()}
         </div>
 
-      {/* Like button and floating hearts */}
+      {/* Floating hearts animation */}
+      <AnimatePresence>
+        {floatingEmojis.map((floating) => (
+          <motion.span
+            key={floating.id}
+            initial={{ opacity: 1, y: 0, scale: 1 }}
+            animate={{ opacity: 0, y: -60, scale: 1.3 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="fixed text-2xl pointer-events-none z-50"
+            style={{
+              left: floating.originX,
+              top: floating.originY,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            {floating.emoji}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+
+      {/* Title, tags, and action buttons row */}
       <div className="px-4 py-2">
-        <AnimatePresence>
-          {floatingEmojis.map((floating) => (
-            <motion.span
-              key={floating.id}
-              initial={{ opacity: 1, y: 0, scale: 1 }}
-              animate={{ opacity: 0, y: -60, scale: 1.3 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="fixed text-2xl pointer-events-none z-50"
-              style={{
-                left: floating.originX,
-                top: floating.originY,
-                transform: "translate(-50%, -50%)",
-              }}
-            >
-              {floating.emoji}
-            </motion.span>
-          ))}
-        </AnimatePresence>
+        {(() => {
+          // Get content title based on type
+          const getContentTitle = (): string | null => {
+            if (!post.contentData) return null;
+            const data = post.contentData as Record<string, unknown>;
+            
+            switch (post.type) {
+              case "workout":
+                return (data.title as string) || (data.name as string) || null;
+              case "meal":
+                return (data.mealType as string) || null;
+              case "recipe":
+                return (data.title as string) || null;
+              case "routine":
+                return (data.routineName as string) || (data.name as string) || null;
+              case "group":
+                return (data.name as string) || null;
+              default:
+                return null;
+            }
+          };
 
-        <div className="flex items-center gap-4">
-          <button
-            ref={heartButtonRef}
-            onClick={handleLikeClick}
-            className="flex items-center gap-1.5 transition-transform active:scale-90"
-          >
-            <Heart
-              size={24}
-              className={`transition-colors ${
-                isLiked ? "fill-red-500 text-red-500" : "text-foreground"
-              }`}
-            />
-          </button>
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className="transition-transform active:scale-90"
-          >
-            <MessageCircle size={24} className="text-foreground" />
-          </button>
-        </div>
+          const contentTitle = getContentTitle();
+          const TypeIcon = typeIcons[post.type];
+          const tags = post.tags || (post.contentData as Record<string, unknown>)?.tags as string[] | undefined;
 
-        {/* Like count */}
-        {likeCount > 0 && (
-          <p className="text-sm font-semibold mt-2">
-            {likeCount} {likeCount === 1 ? "like" : "likes"}
-          </p>
-        )}
+          return (
+            <div className="flex items-start justify-between gap-3">
+              {/* Left side: Title with icon and tags */}
+              <div className="flex-1 min-w-0">
+                {contentTitle && (
+                  <div className="flex items-center gap-2">
+                    {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
+                    <span className="font-semibold text-base truncate">{contentTitle}</span>
+                  </div>
+                )}
+                {tags && tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: Comment and Like buttons */}
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => setShowComments(!showComments)}
+                  className="flex items-center gap-1 transition-transform active:scale-90"
+                >
+                  <MessageCircle size={24} className="text-foreground" />
+                  {commentCount > 0 && (
+                    <span className="text-sm font-medium">{commentCount}</span>
+                  )}
+                </button>
+                <button
+                  ref={heartButtonRef}
+                  onClick={handleLikeClick}
+                  className="flex items-center gap-1 transition-transform active:scale-90"
+                >
+                  <Heart
+                    size={24}
+                    className={`transition-colors ${
+                      isLiked ? "fill-red-500 text-red-500" : "text-foreground"
+                    }`}
+                  />
+                  {likeCount > 0 && (
+                    <span className="text-sm font-medium">{likeCount}</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Caption - always shown below carousel if there's content */}
