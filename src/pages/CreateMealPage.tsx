@@ -589,11 +589,14 @@ const CreateMealPage = () => {
                       />
                     </div>
                     
-                    {/* Frosted glass overlay with subtle left vignette only */}
+                    {/* Frosted glass overlay: left vignette + subtle right lift */}
                     <div 
                       className="absolute inset-0 backdrop-blur-[2px]"
                       style={{
-                        background: `linear-gradient(90deg, 
+                        background: `radial-gradient(70% 120% at 92% 45%, 
+                          rgba(255, 255, 255, 0.05) 0%, 
+                          rgba(255, 255, 255, 0) 60%),
+                          linear-gradient(90deg, 
                           rgba(0, 0, 0, 0.08) 0%, 
                           rgba(0, 0, 0, 0) 15%, 
                           rgba(0, 0, 0, 0) 100%)`,
