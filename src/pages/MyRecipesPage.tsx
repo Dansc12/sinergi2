@@ -169,6 +169,8 @@ const MyRecipesPage = () => {
                   totalCarbs={meal.totalCarbs}
                   totalFats={meal.totalFats}
                   coverPhotoUrl={meal.coverPhoto}
+                  tags={meal.tags}
+                  description={meal.description || undefined}
                 />
               ))
             )}
@@ -200,6 +202,8 @@ const MyRecipesPage = () => {
                   totalCarbs={recipe.totalNutrition.carbs}
                   totalFats={recipe.totalNutrition.fats}
                   coverPhotoUrl={recipe.coverPhoto}
+                  tags={recipe.tags}
+                  description={recipe.description || undefined}
                 />
               ))
             )}

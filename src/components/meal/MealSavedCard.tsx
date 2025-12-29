@@ -47,6 +47,8 @@ interface MealSavedCardProps {
   totalCarbs?: number;
   totalFats?: number;
   coverPhotoUrl?: string | null;
+  tags?: string[];
+  description?: string;
 }
 
 // Nutrition Summary Card with animated liquid blob background
@@ -237,6 +239,8 @@ const MealSavedCard = ({
   totalCarbs,
   totalFats,
   coverPhotoUrl,
+  tags = [],
+  description,
 }: MealSavedCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -346,25 +350,9 @@ const MealSavedCard = ({
               <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
             </div>
 
-            {/* Header Row with Profile Photo */}
-            <div className="flex items-start gap-3 -mt-10 relative z-10">
-              {/* Profile Avatar */}
-              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-card">
-                <AvatarImage src={creator.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                  {getInitials(creator.name)}
-                </AvatarFallback>
-              </Avatar>
-
-              {/* Title and Date */}
-              <div className="flex-1 min-w-0 pt-1">
-                <h4 className="font-semibold text-foreground">{title}</h4>
-                <span className="text-xs text-muted-foreground">
-                  {formatDate(createdAt)}
-                </span>
-              </div>
-
-              {/* Copy Button */}
+            {/* Title Row with Copy Button */}
+            <div className="flex items-start justify-between gap-3">
+              <h4 className="font-semibold text-foreground text-lg">{title}</h4>
               <Button
                 size="sm"
                 onClick={(e) => {
@@ -376,6 +364,47 @@ const MealSavedCard = ({
                 {copyButtonText}
               </Button>
             </div>
+
+            {/* Profile Photo with Tags and Date */}
+            <div className="flex items-start gap-3 mt-3">
+              {/* Profile Avatar - 40px (h-10) */}
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage src={creator.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                  {getInitials(creator.name)}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* Tags and Date - combined height matches avatar (40px) */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between h-10">
+                {/* Tags */}
+                {tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {tags.map((tag, idx) => (
+                      <span 
+                        key={idx} 
+                        className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div />
+                )}
+                {/* Date */}
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(createdAt)}
+                </span>
+              </div>
+            </div>
+
+            {/* Description */}
+            {description && (
+              <p className="text-sm text-muted-foreground mt-3">
+                {description}
+              </p>
+            )}
 
             {/* Nutrition Summary Card - matching Create Saved Meal style */}
             <NutritionSummaryCard

@@ -75,6 +75,7 @@ export interface SavedRecipe {
   coverPhoto: string | null;
   images: string[];
   created_at: string;
+  tags: string[];
 }
 
 export interface SavedMeal {
@@ -89,6 +90,8 @@ export interface SavedMeal {
   coverPhoto: string | null;
   images: string[];
   created_at: string;
+  tags: string[];
+  description: string | null;
 }
 
 export interface CommunityRecipe {
@@ -160,6 +163,7 @@ export const useSavedMeals = () => {
           coverPhoto: contentData?.coverPhoto || null,
           images: post.images || [],
           created_at: post.created_at,
+          tags: (contentData as unknown as { tags?: string[] })?.tags || [],
         };
       });
 
@@ -210,6 +214,8 @@ export const useSavedMeals = () => {
           coverPhoto: contentData?.coverPhoto || (post.images && post.images[0]) || null,
           images: post.images || [],
           created_at: post.created_at,
+          tags: contentData?.tags || [],
+          description: contentData?.description || null,
         };
       });
 
