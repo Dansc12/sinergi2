@@ -343,10 +343,25 @@ const CreateMealPage = () => {
                       carbs: food.carbs,
                       fats: food.fats,
                     }, food.servings, food.servingSize)}
-                    className="w-full text-left p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
+                    className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Macro gradient bar at top */}
+                    {(() => {
+                      const total = food.protein + food.carbs + food.fats;
+                      if (total === 0) return null;
+                      const pPct = (food.protein / total) * 100;
+                      const cPct = (food.carbs / total) * 100;
+                      return (
+                        <div 
+                          className="absolute left-0 right-0 top-0 h-1"
+                          style={{
+                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct}%, #5B8CFF ${pPct}%, #5B8CFF ${pPct + cPct}%, #B46BFF ${pPct + cPct}%, #B46BFF 100%)`,
+                          }}
+                        />
+                      );
+                    })()}
+                    <div className="flex items-center justify-between p-4 pt-5">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
@@ -359,20 +374,6 @@ const CreateMealPage = () => {
                             <span style={{ color: '#5B8CFF' }}>C: {food.carbs.toFixed(0)}g</span>
                             <span style={{ color: '#B46BFF' }}>F: {food.fats.toFixed(0)}g</span>
                           </div>
-                          {(() => {
-                            const total = food.protein + food.carbs + food.fats;
-                            if (total === 0) return null;
-                            const pPct = (food.protein / total) * 100;
-                            const cPct = (food.carbs / total) * 100;
-                            const fPct = (food.fats / total) * 100;
-                            return (
-                              <div className="flex h-2 w-16 rounded-full overflow-hidden bg-muted/30">
-                                <div style={{ width: `${pPct}%`, backgroundColor: '#3DD6C6' }} />
-                                <div style={{ width: `${cPct}%`, backgroundColor: '#5B8CFF' }} />
-                                <div style={{ width: `${fPct}%`, backgroundColor: '#B46BFF' }} />
-                              </div>
-                            );
-                          })()}
                         </div>
                       </div>
                       <ChevronRight size={20} className="text-muted-foreground" />
@@ -426,10 +427,25 @@ const CreateMealPage = () => {
                       carbs: food.carbs,
                       fats: food.fats,
                     }, food.servings, food.servingSize)}
-                    className="w-full text-left p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
+                    className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Macro gradient bar at top */}
+                    {(() => {
+                      const total = food.protein + food.carbs + food.fats;
+                      if (total === 0) return null;
+                      const pPct = (food.protein / total) * 100;
+                      const cPct = (food.carbs / total) * 100;
+                      return (
+                        <div 
+                          className="absolute left-0 right-0 top-0 h-1"
+                          style={{
+                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct}%, #5B8CFF ${pPct}%, #5B8CFF ${pPct + cPct}%, #B46BFF ${pPct + cPct}%, #B46BFF 100%)`,
+                          }}
+                        />
+                      );
+                    })()}
+                    <div className="flex items-center justify-between p-3 pt-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
@@ -447,20 +463,6 @@ const CreateMealPage = () => {
                             <span style={{ color: '#5B8CFF' }}>C: {food.carbs.toFixed(0)}g</span>
                             <span style={{ color: '#B46BFF' }}>F: {food.fats.toFixed(0)}g</span>
                           </div>
-                          {(() => {
-                            const total = food.protein + food.carbs + food.fats;
-                            if (total === 0) return null;
-                            const pPct = (food.protein / total) * 100;
-                            const cPct = (food.carbs / total) * 100;
-                            const fPct = (food.fats / total) * 100;
-                            return (
-                              <div className="flex h-2 w-16 rounded-full overflow-hidden bg-muted/30">
-                                <div style={{ width: `${pPct}%`, backgroundColor: '#3DD6C6' }} />
-                                <div style={{ width: `${cPct}%`, backgroundColor: '#5B8CFF' }} />
-                                <div style={{ width: `${fPct}%`, backgroundColor: '#B46BFF' }} />
-                              </div>
-                            );
-                          })()}
                         </div>
                       </div>
                       <ChevronRight size={18} className="text-muted-foreground" />
@@ -713,60 +715,61 @@ const CreateMealPage = () => {
               })()}
 
               <div className="space-y-3">
-                {selectedFoods.map((food) => (
-                  <motion.div
-                    key={food.id}
-                    layout
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    className="p-4 rounded-xl bg-card border border-border"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          {food.servings && food.servingSize && (
-                            <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
-                          )}
-                          <span className="font-medium text-foreground">{food.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-xs text-muted-foreground">{food.calories} cal</span>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span style={{ color: '#3DD6C6' }}>P: {typeof food.protein === 'number' ? food.protein.toFixed(0) : food.protein}g</span>
-                            <span style={{ color: '#5B8CFF' }}>C: {typeof food.carbs === 'number' ? food.carbs.toFixed(0) : food.carbs}g</span>
-                            <span style={{ color: '#B46BFF' }}>F: {typeof food.fats === 'number' ? food.fats.toFixed(0) : food.fats}g</span>
+                {selectedFoods.map((food) => {
+                  const p = typeof food.protein === 'number' ? food.protein : 0;
+                  const c = typeof food.carbs === 'number' ? food.carbs : 0;
+                  const f = typeof food.fats === 'number' ? food.fats : 0;
+                  const total = p + c + f;
+                  const pPct = total > 0 ? (p / total) * 100 : 0;
+                  const cPct = total > 0 ? (c / total) * 100 : 0;
+                  
+                  return (
+                    <motion.div
+                      key={food.id}
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      className="rounded-xl bg-card border border-border relative overflow-hidden"
+                    >
+                      {/* Macro gradient bar at top */}
+                      {total > 0 && (
+                        <div 
+                          className="absolute left-0 right-0 top-0 h-1"
+                          style={{
+                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct}%, #5B8CFF ${pPct}%, #5B8CFF ${pPct + cPct}%, #B46BFF ${pPct + cPct}%, #B46BFF 100%)`,
+                          }}
+                        />
+                      )}
+                      <div className="flex items-start justify-between p-4 pt-5">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {food.servings && food.servingSize && (
+                              <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
+                            )}
+                            <span className="font-medium text-foreground">{food.name}</span>
                           </div>
-                          {(() => {
-                            const p = typeof food.protein === 'number' ? food.protein : 0;
-                            const c = typeof food.carbs === 'number' ? food.carbs : 0;
-                            const f = typeof food.fats === 'number' ? food.fats : 0;
-                            const total = p + c + f;
-                            if (total === 0) return null;
-                            const pPct = (p / total) * 100;
-                            const cPct = (c / total) * 100;
-                            const fPct = (f / total) * 100;
-                            return (
-                              <div className="flex h-2 w-16 rounded-full overflow-hidden bg-muted/30">
-                                <div style={{ width: `${pPct}%`, backgroundColor: '#3DD6C6' }} />
-                                <div style={{ width: `${cPct}%`, backgroundColor: '#5B8CFF' }} />
-                                <div style={{ width: `${fPct}%`, backgroundColor: '#B46BFF' }} />
-                              </div>
-                            );
-                          })()}
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className="text-xs text-muted-foreground">{food.calories} cal</span>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span style={{ color: '#3DD6C6' }}>P: {p.toFixed(0)}g</span>
+                              <span style={{ color: '#5B8CFF' }}>C: {c.toFixed(0)}g</span>
+                              <span style={{ color: '#B46BFF' }}>F: {f.toFixed(0)}g</span>
+                            </div>
+                          </div>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => removeFood(food.id)}
+                        >
+                          <X size={16} className="text-destructive" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => removeFood(food.id)}
-                      >
-                        <X size={16} className="text-destructive" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           </motion.div>
