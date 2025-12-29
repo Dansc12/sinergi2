@@ -256,8 +256,8 @@ const MealSavedCard = ({
       className="rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors cursor-pointer relative overflow-hidden"
       onClick={() => setIsExpanded(!isExpanded)}
     >
-      {/* Macro gradient bar at top */}
-      {totalMacrosForBar > 0 && (
+      {/* Macro gradient bar at top - only show when collapsed */}
+      {!isExpanded && totalMacrosForBar > 0 && (
         <div 
           className="absolute left-0 right-0 top-0 h-1 z-10"
           style={{
@@ -266,7 +266,7 @@ const MealSavedCard = ({
         />
       )}
       
-      <div className="p-4 pt-5">
+      <div className={`p-4 ${!isExpanded ? 'pt-5' : ''}`}>
         <AnimatePresence mode="wait">
           {!isExpanded ? (
             /* Collapsed View - Show Cover Photo */
@@ -321,32 +321,15 @@ const MealSavedCard = ({
               </Button>
             </motion.div>
           ) : (
-          /* Expanded View - Show Cover Photo as background header */
+          /* Expanded View - Title at top, then cover photo */
           <motion.div
             key="expanded"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Cover Photo Background Header */}
-            <div className="relative -mx-4 -mt-4 h-32 overflow-hidden rounded-t-xl">
-              {coverPhotoUrl ? (
-                <img 
-                  src={coverPhotoUrl} 
-                  alt={title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
-                  <Utensils size={40} className="text-primary/50" />
-                </div>
-              )}
-              {/* Gradient overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-            </div>
-
-            {/* Title Row with Copy Button - positioned to overlap cover photo */}
-            <div className="flex items-start justify-between gap-3 -mt-6 relative z-10">
+            {/* Title Row with Copy Button - at the very top */}
+            <div className="flex items-start justify-between gap-3 mb-3">
               <h4 className="font-bold text-foreground text-xl">{title}</h4>
               <Button
                 size="sm"
@@ -360,8 +343,23 @@ const MealSavedCard = ({
               </Button>
             </div>
 
-            {/* Profile Photo with Tags and Date - minimal gap from title */}
-            <div className="flex items-start gap-3 mt-1.5">
+            {/* Cover Photo */}
+            <div className="relative -mx-4 h-32 overflow-hidden">
+              {coverPhotoUrl ? (
+                <img 
+                  src={coverPhotoUrl} 
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                  <Utensils size={40} className="text-primary/50" />
+                </div>
+              )}
+            </div>
+
+            {/* Profile Photo with Tags and Date */}
+            <div className="flex items-start gap-3 mt-3">
               {/* Profile Avatar - 40px (h-10) */}
               <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage src={creator.avatar_url || undefined} />
