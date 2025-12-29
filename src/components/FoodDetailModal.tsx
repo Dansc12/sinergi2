@@ -301,30 +301,35 @@ export const FoodDetailModal = ({
                     const normalizedCarbs = carbsRatioCalc / totalRatioCalc;
                     const normalizedFats = fatsRatioCalc / totalRatioCalc;
                     
-                    // Calculate blob sizes (30-70% based on ratio)
-                    const proteinSize = 30 + normalizedProtein * 40;
-                    const carbsSize = 30 + normalizedCarbs * 40;
-                    const fatsSize = 30 + normalizedFats * 40;
+                    // Calculate blob sizes (50-100% based on ratio - larger for more prominence)
+                    const proteinSize = 50 + normalizedProtein * 50;
+                    const carbsSize = 50 + normalizedCarbs * 50;
+                    const fatsSize = 50 + normalizedFats * 50;
                     
-                    // Calculate opacities (0.6 minimum, up to 1.0)
-                    const proteinOpacity = totalMacros > 0 ? 0.6 + (adjustedProtein / totalMacros) * 0.4 : 0.75;
-                    const carbsOpacity = totalMacros > 0 ? 0.6 + (adjustedCarbs / totalMacros) * 0.4 : 0.75;
-                    const fatsOpacity = totalMacros > 0 ? 0.6 + (adjustedFats / totalMacros) * 0.4 : 0.75;
+                    // Calculate opacities (0.8 minimum, up to 1.0 - brighter)
+                    const proteinOpacity = totalMacros > 0 ? 0.8 + (adjustedProtein / totalMacros) * 0.2 : 0.9;
+                    const carbsOpacity = totalMacros > 0 ? 0.8 + (adjustedCarbs / totalMacros) * 0.2 : 0.9;
+                    const fatsOpacity = totalMacros > 0 ? 0.8 + (adjustedFats / totalMacros) * 0.2 : 0.9;
                     
                     return (
-                      <div className="relative w-[140px] h-[140px] rounded-full overflow-hidden shadow-lg shadow-black/30">
+                      <div 
+                        className="relative w-[140px] h-[140px] rounded-full overflow-hidden"
+                        style={{
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                        }}
+                      >
                         {/* Liquid blob background */}
                         <div className="absolute inset-0 bg-card">
                           {/* Protein blob */}
                           <motion.div
-                            className="absolute rounded-full blur-2xl"
+                            className="absolute rounded-full blur-3xl"
                             style={{
                               width: `${proteinSize}%`,
                               height: `${proteinSize}%`,
-                              background: `radial-gradient(circle, ${proteinColor} 0%, transparent 70%)`,
+                              background: `radial-gradient(circle, ${proteinColor} 0%, transparent 60%)`,
                               opacity: proteinOpacity,
-                              left: '5%',
-                              top: '10%',
+                              left: '-10%',
+                              top: '-5%',
                             }}
                             animate={{
                               x: [0, 15, -10, 5, 0],
@@ -339,14 +344,14 @@ export const FoodDetailModal = ({
                           />
                           {/* Carbs blob */}
                           <motion.div
-                            className="absolute rounded-full blur-2xl"
+                            className="absolute rounded-full blur-3xl"
                             style={{
                               width: `${carbsSize}%`,
                               height: `${carbsSize}%`,
-                              background: `radial-gradient(circle, ${carbsColor} 0%, transparent 70%)`,
+                              background: `radial-gradient(circle, ${carbsColor} 0%, transparent 60%)`,
                               opacity: carbsOpacity,
-                              right: '10%',
-                              top: '5%',
+                              right: '-15%',
+                              top: '-10%',
                             }}
                             animate={{
                               x: [0, -20, 10, -5, 0],
@@ -362,14 +367,14 @@ export const FoodDetailModal = ({
                           />
                           {/* Fats blob */}
                           <motion.div
-                            className="absolute rounded-full blur-2xl"
+                            className="absolute rounded-full blur-3xl"
                             style={{
                               width: `${fatsSize}%`,
                               height: `${fatsSize}%`,
-                              background: `radial-gradient(circle, ${fatsColor} 0%, transparent 70%)`,
+                              background: `radial-gradient(circle, ${fatsColor} 0%, transparent 60%)`,
                               opacity: fatsOpacity,
-                              left: '30%',
-                              bottom: '-10%',
+                              left: '20%',
+                              bottom: '-20%',
                             }}
                             animate={{
                               x: [0, 10, -15, 8, 0],
@@ -385,22 +390,13 @@ export const FoodDetailModal = ({
                           />
                         </div>
                         
-                        {/* Frosted glass overlay with subtle vignette */}
+                        {/* Very subtle frosted overlay - minimal to keep blobs bright */}
                         <div 
-                          className="absolute inset-0 backdrop-blur-[2px]"
+                          className="absolute inset-0 backdrop-blur-[1px]"
                           style={{
                             background: `radial-gradient(circle, 
-                              rgba(0, 0, 0, 0) 40%, 
-                              rgba(0, 0, 0, 0.08) 100%)`,
-                            boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.12)',
-                          }}
-                        />
-                        
-                        {/* Border overlay */}
-                        <div 
-                          className="absolute inset-0 rounded-full pointer-events-none"
-                          style={{
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                              rgba(0, 0, 0, 0) 50%, 
+                              rgba(0, 0, 0, 0.03) 100%)`,
                           }}
                         />
                         
