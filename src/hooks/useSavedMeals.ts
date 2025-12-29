@@ -171,24 +171,34 @@ export const useSavedMeals = () => {
     if (!user?.id) return;
 
     try {
+      // Fetch saved_meal posts (food groups created via CreateSavedMealPage)
       const { data, error } = await supabase
         .from("posts")
         .select("id, content_data, images, created_at")
         .eq("user_id", user.id)
-        .eq("content_type", "meal")
+        .eq("content_type", "saved_meal")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
+      interface SavedMealContentData {
+        name?: string;
+        description?: string;
+        tags?: string[];
+        foods?: SelectedFood[];
+        totalCalories?: number;
+        totalProtein?: number;
+        totalCarbs?: number;
+        totalFats?: number;
+      }
+
       const meals: SavedMeal[] = (data || []).map((post) => {
-        const contentData = post.content_data as unknown as MealContentData;
-        const mealType = contentData?.mealType || "meal";
-        const capitalizedMealType = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+        const contentData = post.content_data as unknown as SavedMealContentData;
         
         return {
           id: post.id,
-          title: capitalizedMealType,
-          mealType: contentData?.mealType || "meal",
+          title: contentData?.name || "Untitled Meal",
+          mealType: "saved",
           foods: contentData?.foods || [],
           totalCalories: contentData?.totalCalories || 0,
           totalProtein: contentData?.totalProtein || 0,

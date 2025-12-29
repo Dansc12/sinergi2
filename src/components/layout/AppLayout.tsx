@@ -19,6 +19,8 @@ const HIDDEN_NAV_ROUTES = [
   "/select-content",
   "/workout/my-saved",
   "/workout/discover",
+  "/meal/my-recipes",
+  "/meal/discover",
   "/profile",
   "/user",
 ];
