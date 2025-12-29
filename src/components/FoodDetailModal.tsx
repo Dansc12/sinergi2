@@ -74,6 +74,22 @@ export const FoodDetailModal = ({
   initialQuantity,
   initialUnit,
 }: FoodDetailModalProps) => {
+  // Cache food for exit animation - only update when we get a new non-null food
+  const [cachedFood, setCachedFood] = useState<FoodItem | null>(food);
+  
+  useEffect(() => {
+    if (food) {
+      setCachedFood(food);
+    }
+  }, [food]);
+
+  // Clear cached food after exit animation completes
+  const handleExitComplete = () => {
+    if (!isOpen) {
+      setCachedFood(null);
+    }
+  };
+
   const [quantity, setQuantity] = useState(1);
   const [quantityInput, setQuantityInput] = useState("1");
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
@@ -92,8 +108,10 @@ export const FoodDetailModal = ({
   const dragStartQuantity = useRef<number>(0);
   const lastDragQuantity = useRef<number>(0);
   
-  const isCustomFood = food?.isCustom || false;
-  const baseUnit = food?.baseUnit || 'g';
+  // Use cached food for rendering (allows exit animation to play)
+  const displayFood = cachedFood;
+  const isCustomFood = displayFood?.isCustom || false;
+  const baseUnit = displayFood?.baseUnit || 'g';
   const isUSDA = !isCustomFood;
 
   // Determine default quantity based on unit
@@ -115,12 +133,12 @@ export const FoodDetailModal = ({
   };
 
   // Calculate nutrition based on quantity and unit
-  const multiplier = food ? calculateMultiplier(selectedUnit, quantity, baseUnit, isUSDA) : 1;
+  const multiplier = displayFood ? calculateMultiplier(selectedUnit, quantity, baseUnit, isUSDA) : 1;
 
-  const calculatedCalories = food ? Math.round(food.calories * multiplier) : 0;
-  const calculatedProtein = food ? food.protein * multiplier : 0;
-  const calculatedCarbs = food ? food.carbs * multiplier : 0;
-  const calculatedFats = food ? food.fats * multiplier : 0;
+  const calculatedCalories = displayFood ? Math.round(displayFood.calories * multiplier) : 0;
+  const calculatedProtein = displayFood ? displayFood.protein * multiplier : 0;
+  const calculatedCarbs = displayFood ? displayFood.carbs * multiplier : 0;
+  const calculatedFats = displayFood ? displayFood.fats * multiplier : 0;
 
   useEffect(() => {
     if (isOpen && food) {
@@ -186,7 +204,7 @@ export const FoodDetailModal = ({
     };
   }, [isEditingManual, manualCalories, manualProtein, manualCarbs, manualFats]);
 
-  if (!food) return null;
+  if (!displayFood) return null;
 
   // Use manual values if override is enabled
   const adjustedCalories = manualOverride ? (parseFloat(manualCalories) || 0) : calculatedCalories;
@@ -208,6 +226,7 @@ export const FoodDetailModal = ({
   const { isEstimate } = getGramsForUnit(selectedUnit);
 
   const handleConfirm = () => {
+    if (!food) return; // Safety check - use original food prop for confirm
     const modifiedFood: FoodItem = {
       ...food,
       calories: adjustedCalories,
@@ -297,7 +316,7 @@ export const FoodDetailModal = ({
 
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -327,7 +346,7 @@ export const FoodDetailModal = ({
                 <ArrowLeft size={24} />
               </Button>
               <div className="flex-1 text-center px-2">
-                <h2 className="text-lg font-semibold truncate">{food.description}</h2>
+                <h2 className="text-lg font-semibold truncate">{displayFood.description}</h2>
                 {isCustomFood && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
                     Custom Food
