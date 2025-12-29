@@ -556,47 +556,45 @@ export const FoodDetailModal = ({
                   <label className="text-sm text-muted-foreground mb-2 block">
                     Quantity
                   </label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 rounded-full flex-shrink-0"
+                  <div className="flex items-center h-10 rounded-md border border-input bg-background">
+                    <button
                       onClick={decrementQuantity}
                       disabled={quantity <= 0.1}
+                      className="flex items-center justify-center h-full px-3 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      <Minus size={18} />
-                    </Button>
-                    {isEditingQuantity ? (
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        value={quantityInput}
-                        onChange={(e) => handleQuantityInputChange(e.target.value)}
-                        onBlur={handleQuantityInputBlur}
-                        onKeyDown={handleQuantityInputKeyDown}
-                        autoFocus
-                        className="text-xl font-bold flex-1 text-center h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setIsEditingQuantity(true);
-                          setQuantityInput(String(quantity));
-                        }}
-                        className="text-xl font-bold flex-1 text-center hover:text-primary transition-colors"
-                      >
-                        {quantity}
-                      </button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 rounded-full flex-shrink-0"
+                      <Minus size={16} />
+                    </button>
+                    <div className="flex-1 h-full border-x border-input">
+                      {isEditingQuantity ? (
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          value={quantityInput}
+                          onChange={(e) => handleQuantityInputChange(e.target.value)}
+                          onBlur={handleQuantityInputBlur}
+                          onKeyDown={handleQuantityInputKeyDown}
+                          autoFocus
+                          className="w-full h-full text-base font-medium text-center bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setIsEditingQuantity(true);
+                            setQuantityInput(String(quantity));
+                          }}
+                          className="w-full h-full text-base font-medium text-center hover:text-primary transition-colors"
+                        >
+                          {quantity}
+                        </button>
+                      )}
+                    </div>
+                    <button
                       onClick={incrementQuantity}
+                      className="flex items-center justify-center h-full px-3 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Plus size={18} />
-                    </Button>
+                      <Plus size={16} />
+                    </button>
                   </div>
                 </div>
 
@@ -630,15 +628,6 @@ export const FoodDetailModal = ({
                   </div>
                 </div>
               )}
-
-              {/* Source Info */}
-              <div className="text-xs text-muted-foreground">
-                {isUSDA ? (
-                  <span>Source: USDA (per 100g)</span>
-                ) : (
-                  <span>Source: Custom (per 1{baseUnit})</span>
-                )}
-              </div>
             </div>
 
             {/* Add Button */}
