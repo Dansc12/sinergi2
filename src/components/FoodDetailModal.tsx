@@ -332,117 +332,113 @@ export const FoodDetailModal = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="flex items-start gap-6">
-                {/* Left Column: Circle + Compact Macros */}
-                <div className="flex flex-col items-center flex-shrink-0" ref={macroEditRef}>
-                  {/* Calorie Circle with Blob Background */}
-                  {(() => {
-                    // Macro colors matching the Total Nutrition style
-                    const proteinColor = '#3DD6C6';
-                    const carbsColor = '#5B8CFF';
-                    const fatsColor = '#B46BFF';
-                    
-                    // Calculate ratios with minimum presence for visual consistency
-                    const proteinRatioCalc = totalMacros > 0 ? Math.max((adjustedProtein / totalMacros), 0.08) : 0.33;
-                    const carbsRatioCalc = totalMacros > 0 ? Math.max((adjustedCarbs / totalMacros), 0.08) : 0.33;
-                    const fatsRatioCalc = totalMacros > 0 ? Math.max((adjustedFats / totalMacros), 0.08) : 0.33;
-                    
-                    // Normalize ratios
-                    const totalRatioCalc = proteinRatioCalc + carbsRatioCalc + fatsRatioCalc;
-                    const normalizedProtein = proteinRatioCalc / totalRatioCalc;
-                    const normalizedCarbs = carbsRatioCalc / totalRatioCalc;
-                    const normalizedFats = fatsRatioCalc / totalRatioCalc;
-                    
-                    // Calculate blob sizes (80-120% - large to fill circle)
-                    const proteinSize = 80 + normalizedProtein * 40;
-                    const carbsSize = 80 + normalizedCarbs * 40;
-                    const fatsSize = 80 + normalizedFats * 40;
-                    
-                    return (
-                      <div 
-                        className="relative w-[140px] h-[140px] rounded-full overflow-hidden"
+            <div className="flex-1 p-6 overflow-y-auto space-y-6">
+              {/* Nutrition Card - Rectangle with blob background */}
+              <div ref={macroEditRef}>
+                {(() => {
+                  const proteinColor = '#3DD6C6';
+                  const carbsColor = '#5B8CFF';
+                  const fatsColor = '#B46BFF';
+                  
+                  const proteinRatioCalc = totalMacros > 0 ? Math.max((adjustedProtein / totalMacros), 0.08) : 0.33;
+                  const carbsRatioCalc = totalMacros > 0 ? Math.max((adjustedCarbs / totalMacros), 0.08) : 0.33;
+                  const fatsRatioCalc = totalMacros > 0 ? Math.max((adjustedFats / totalMacros), 0.08) : 0.33;
+                  
+                  const totalRatioCalc = proteinRatioCalc + carbsRatioCalc + fatsRatioCalc;
+                  const normalizedProtein = proteinRatioCalc / totalRatioCalc;
+                  const normalizedCarbs = carbsRatioCalc / totalRatioCalc;
+                  const normalizedFats = fatsRatioCalc / totalRatioCalc;
+                  
+                  const proteinSize = 60 + normalizedProtein * 40;
+                  const carbsSize = 60 + normalizedCarbs * 40;
+                  const fatsSize = 60 + normalizedFats * 40;
+                  
+                  return (
+                    <div 
+                      className="relative w-full rounded-2xl overflow-hidden p-5"
+                      style={{
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      {/* Dark base */}
+                      <div className="absolute inset-0 bg-card" />
+                      
+                      {/* Protein blob */}
+                      <motion.div
+                        className="absolute rounded-full"
                         style={{
-                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                          width: `${proteinSize}%`,
+                          height: `${proteinSize * 1.5}%`,
+                          background: proteinColor,
+                          filter: 'blur(40px)',
+                          opacity: 0.4,
+                          left: '-15%',
+                          top: '-20%',
                         }}
-                      >
-                        {/* Dark base */}
-                        <div className="absolute inset-0 bg-card" />
-                        
-                        {/* Protein blob - bright and saturated */}
-                        <motion.div
-                          className="absolute rounded-full"
-                          style={{
-                            width: `${proteinSize}%`,
-                            height: `${proteinSize}%`,
-                            background: proteinColor,
-                            filter: 'blur(25px)',
-                            opacity: 0.5,
-                            left: '-20%',
-                            top: '-10%',
-                          }}
-                          animate={{
-                            x: [0, 15, -10, 5, 0],
-                            y: [0, -10, 15, -5, 0],
-                            scale: [1, 1.1, 0.95, 1.05, 1],
-                          }}
-                          transition={{
-                            duration: 8,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                          }}
-                        />
-                        {/* Carbs blob - bright and saturated */}
-                        <motion.div
-                          className="absolute rounded-full"
-                          style={{
-                            width: `${carbsSize}%`,
-                            height: `${carbsSize}%`,
-                            background: carbsColor,
-                            filter: 'blur(25px)',
-                            opacity: 0.5,
-                            right: '-25%',
-                            top: '-15%',
-                          }}
-                          animate={{
-                            x: [0, -20, 10, -5, 0],
-                            y: [0, 15, -10, 5, 0],
-                            scale: [1, 0.95, 1.1, 0.98, 1],
-                          }}
-                          transition={{
-                            duration: 9,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: 0.5,
-                          }}
-                        />
-                        {/* Fats blob - bright and saturated */}
-                        <motion.div
-                          className="absolute rounded-full"
-                          style={{
-                            width: `${fatsSize}%`,
-                            height: `${fatsSize}%`,
-                            background: fatsColor,
-                            filter: 'blur(25px)',
-                            opacity: 0.5,
-                            left: '10%',
-                            bottom: '-30%',
-                          }}
-                          animate={{
-                            x: [0, 10, -15, 8, 0],
-                            y: [0, -15, 10, -8, 0],
-                            scale: [1, 1.08, 0.92, 1.04, 1],
-                          }}
-                          transition={{
-                            duration: 7,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: 1,
-                          }}
-                        />
-                        
-                        {/* Calories content in center */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                        animate={{
+                          x: [0, 20, -15, 10, 0],
+                          y: [0, -15, 20, -10, 0],
+                          scale: [1, 1.1, 0.95, 1.05, 1],
+                        }}
+                        transition={{
+                          duration: 8,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                      {/* Carbs blob */}
+                      <motion.div
+                        className="absolute rounded-full"
+                        style={{
+                          width: `${carbsSize}%`,
+                          height: `${carbsSize * 1.5}%`,
+                          background: carbsColor,
+                          filter: 'blur(40px)',
+                          opacity: 0.4,
+                          right: '-20%',
+                          top: '-10%',
+                        }}
+                        animate={{
+                          x: [0, -25, 15, -10, 0],
+                          y: [0, 20, -15, 10, 0],
+                          scale: [1, 0.95, 1.1, 0.98, 1],
+                        }}
+                        transition={{
+                          duration: 9,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          delay: 0.5,
+                        }}
+                      />
+                      {/* Fats blob */}
+                      <motion.div
+                        className="absolute rounded-full"
+                        style={{
+                          width: `${fatsSize}%`,
+                          height: `${fatsSize * 1.2}%`,
+                          background: fatsColor,
+                          filter: 'blur(40px)',
+                          opacity: 0.4,
+                          left: '20%',
+                          bottom: '-40%',
+                        }}
+                        animate={{
+                          x: [0, 15, -20, 12, 0],
+                          y: [0, -20, 15, -12, 0],
+                          scale: [1, 1.08, 0.92, 1.04, 1],
+                        }}
+                        transition={{
+                          duration: 7,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          delay: 1,
+                        }}
+                      />
+                      
+                      {/* Content */}
+                      <div className="relative z-10 flex flex-col items-center gap-4">
+                        {/* Calories Row */}
+                        <div className="flex items-baseline gap-1">
                           {isEditingManual ? (
                             <input
                               type="number"
@@ -450,198 +446,179 @@ export const FoodDetailModal = ({
                               value={manualCalories}
                               onChange={handleMacroChange(setManualCalories)}
                               onBlur={handleMacroBlur(setManualCalories, manualCalories)}
-                              className="w-16 text-2xl font-bold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-20 text-3xl font-bold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           ) : (
-                            <span className="text-2xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
+                            <span className="text-3xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
                           )}
-                          <span className="text-xs text-white/80 drop-shadow-sm">cal</span>
+                          <span className="text-sm text-white/80 drop-shadow-sm">cal</span>
                         </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Macro Breakdown */}
-                  <div className="flex justify-between w-[140px] mt-3">
-                    <div className="flex flex-col items-start">
-                      <span className="text-[10px] font-medium mb-0.5" style={{ color: '#3DD6C6' }}>Protein</span>
-                      <div className="flex items-baseline gap-1">
-                        {isEditingManual ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={manualProtein}
-                            onChange={handleMacroChange(setManualProtein)}
-                            onBlur={handleMacroBlur(setManualProtein, manualProtein)}
-                            className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        ) : manualOverride ? (
-                          <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}</span>
-                        ) : (
-                          <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}g</span>
-                        )}
-                        {manualOverride ? (
-                          <span className="text-[10px] text-muted-foreground">g</span>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">{proteinPercentage.toFixed(0)}%</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-[10px] font-medium mb-0.5" style={{ color: '#5B8CFF' }}>Carbs</span>
-                      <div className="flex items-baseline gap-1">
-                        {isEditingManual ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={manualCarbs}
-                            onChange={handleMacroChange(setManualCarbs)}
-                            onBlur={handleMacroBlur(setManualCarbs, manualCarbs)}
-                            className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        ) : manualOverride ? (
-                          <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}</span>
-                        ) : (
-                          <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}g</span>
-                        )}
-                        {manualOverride ? (
-                          <span className="text-[10px] text-muted-foreground">g</span>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">{carbsPercentage.toFixed(0)}%</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-[10px] font-medium mb-0.5" style={{ color: '#B46BFF' }}>Fats</span>
-                      <div className="flex items-baseline gap-1">
-                        {isEditingManual ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={manualFats}
-                            onChange={handleMacroChange(setManualFats)}
-                            onBlur={handleMacroBlur(setManualFats, manualFats)}
-                            className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        ) : manualOverride ? (
-                          <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}</span>
-                        ) : (
-                          <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}g</span>
-                        )}
-                        {manualOverride ? (
-                          <span className="text-[10px] text-muted-foreground">g</span>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">{fatsPercentage.toFixed(0)}%</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Edit Macros Button */}
-                  <button
-                    onClick={handleManualButtonClick}
-                    className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors mt-3"
-                  >
-                    <Edit2 size={12} />
-                    <span>{manualOverride ? "Using manual values" : "Edit manually"}</span>
-                  </button>
-                </div>
-
-                {/* Right Column: Quantity & Unit Controls */}
-                <div className="flex-1 space-y-4">
-                  {/* Quantity */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">
-                      Quantity
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 rounded-full"
-                        onClick={decrementQuantity}
-                        disabled={quantity <= 0.1}
-                      >
-                        <Minus size={18} />
-                      </Button>
-                      {isEditingQuantity ? (
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0.1"
-                          value={quantityInput}
-                          onChange={(e) => handleQuantityInputChange(e.target.value)}
-                          onBlur={handleQuantityInputBlur}
-                          onKeyDown={handleQuantityInputKeyDown}
-                          autoFocus
-                          className="text-2xl font-bold w-20 text-center h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      ) : (
+                        
+                        {/* Macros Row */}
+                        <div className="flex justify-center gap-8">
+                          <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-medium mb-1" style={{ color: proteinColor }}>Protein</span>
+                            <div className="flex items-baseline gap-1">
+                              {isEditingManual ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.1"
+                                  value={manualProtein}
+                                  onChange={handleMacroChange(setManualProtein)}
+                                  onBlur={handleMacroBlur(setManualProtein, manualProtein)}
+                                  className="w-12 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              ) : (
+                                <span className="text-sm font-semibold text-white">{adjustedProtein.toFixed(0)}</span>
+                              )}
+                              <span className="text-xs text-white/70">g</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-medium mb-1" style={{ color: carbsColor }}>Carbs</span>
+                            <div className="flex items-baseline gap-1">
+                              {isEditingManual ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.1"
+                                  value={manualCarbs}
+                                  onChange={handleMacroChange(setManualCarbs)}
+                                  onBlur={handleMacroBlur(setManualCarbs, manualCarbs)}
+                                  className="w-12 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              ) : (
+                                <span className="text-sm font-semibold text-white">{adjustedCarbs.toFixed(0)}</span>
+                              )}
+                              <span className="text-xs text-white/70">g</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-medium mb-1" style={{ color: fatsColor }}>Fats</span>
+                            <div className="flex items-baseline gap-1">
+                              {isEditingManual ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.1"
+                                  value={manualFats}
+                                  onChange={handleMacroChange(setManualFats)}
+                                  onBlur={handleMacroBlur(setManualFats, manualFats)}
+                                  className="w-12 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              ) : (
+                                <span className="text-sm font-semibold text-white">{adjustedFats.toFixed(0)}</span>
+                              )}
+                              <span className="text-xs text-white/70">g</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Edit Macros Button */}
                         <button
-                          onClick={() => {
-                            setIsEditingQuantity(true);
-                            setQuantityInput(String(quantity));
-                          }}
-                          className="text-2xl font-bold min-w-[3rem] text-center hover:text-primary transition-colors"
+                          onClick={handleManualButtonClick}
+                          className="flex items-center gap-1.5 text-[11px] text-white/60 hover:text-white transition-colors mt-1"
                         >
-                          {quantity}
+                          <Edit2 size={12} />
+                          <span>{manualOverride ? "Using manual values" : "Edit manually"}</span>
                         </button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 rounded-full"
-                        onClick={incrementQuantity}
-                      >
-                        <Plus size={18} />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Unit */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">
-                      Unit
-                    </label>
-                    <Select value={selectedUnit} onValueChange={handleUnitChange} disabled={manualOverride}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STANDARD_UNITS.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                            {unit.hasEstimate && " (est.)"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Estimate Warning */}
-                  {isEstimate && !manualOverride && (
-                    <div className="flex items-start gap-2 p-3 bg-amber-500/10 rounded-lg text-sm">
-                      <AlertCircle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
-                      <div className="text-muted-foreground">
-                        <span className="font-medium text-foreground">Approximate conversion.</span> Cup measurements vary by food density. For accuracy, consider logging in grams or ounces.
                       </div>
                     </div>
-                  )}
-
-                  {/* Source Info */}
-                  <div className="text-xs text-muted-foreground">
-                    {isUSDA ? (
-                      <span>Source: USDA (per 100g)</span>
-                    ) : (
-                      <span>Source: Custom (per 1{baseUnit})</span>
-                    )}
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
+              {/* Quantity & Unit Controls */}
+              <div className="space-y-4">
+                {/* Quantity */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Quantity
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 rounded-full"
+                      onClick={decrementQuantity}
+                      disabled={quantity <= 0.1}
+                    >
+                      <Minus size={18} />
+                    </Button>
+                    {isEditingQuantity ? (
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={quantityInput}
+                        onChange={(e) => handleQuantityInputChange(e.target.value)}
+                        onBlur={handleQuantityInputBlur}
+                        onKeyDown={handleQuantityInputKeyDown}
+                        autoFocus
+                        className="text-2xl font-bold w-20 text-center h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setIsEditingQuantity(true);
+                          setQuantityInput(String(quantity));
+                        }}
+                        className="text-2xl font-bold min-w-[3rem] text-center hover:text-primary transition-colors"
+                      >
+                        {quantity}
+                      </button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 rounded-full"
+                      onClick={incrementQuantity}
+                    >
+                      <Plus size={18} />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Unit */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    Unit
+                  </label>
+                  <Select value={selectedUnit} onValueChange={handleUnitChange} disabled={manualOverride}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STANDARD_UNITS.map((unit) => (
+                        <SelectItem key={unit.value} value={unit.value}>
+                          {unit.label}
+                          {unit.hasEstimate && " (est.)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Estimate Warning */}
+                {isEstimate && !manualOverride && (
+                  <div className="flex items-start gap-2 p-3 bg-amber-500/10 rounded-lg text-sm">
+                    <AlertCircle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-muted-foreground">
+                      <span className="font-medium text-foreground">Approximate conversion.</span> Cup measurements vary by food density. For accuracy, consider logging in grams or ounces.
+                    </div>
+                  </div>
+                )}
+
+                {/* Source Info */}
+                <div className="text-xs text-muted-foreground">
+                  {isUSDA ? (
+                    <span>Source: USDA (per 100g)</span>
+                  ) : (
+                    <span>Source: Custom (per 1{baseUnit})</span>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Add Button */}
