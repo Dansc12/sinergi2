@@ -347,16 +347,18 @@ const CreateMealPage = () => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-foreground">{food.description}</div>
-                        <div className="text-xs text-primary mt-0.5">
-                          {food.servings} × {food.servingSize}
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm font-semibold text-primary min-w-[48px]">
+                          {food.servings}{food.servingSize}
                         </div>
-                        <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>{food.calories} cal</span>
-                          <span>P: {food.protein.toFixed(0)}g</span>
-                          <span>C: {food.carbs.toFixed(0)}g</span>
-                          <span>F: {food.fats.toFixed(0)}g</span>
+                        <div>
+                          <div className="font-medium text-foreground">{food.description}</div>
+                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                            <span>{food.calories} cal</span>
+                            <span>P: {food.protein.toFixed(0)}g</span>
+                            <span>C: {food.carbs.toFixed(0)}g</span>
+                            <span>F: {food.fats.toFixed(0)}g</span>
+                          </div>
                         </div>
                       </div>
                       <ChevronRight size={20} className="text-muted-foreground" />
@@ -414,18 +416,20 @@ const CreateMealPage = () => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm text-foreground">
-                          {food.description}
-                          {'isSessionFood' in food && food.isSessionFood && (
-                            <span className="ml-2 text-xs text-primary">(just added)</span>
-                          )}
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm font-semibold text-primary min-w-[48px]">
+                          {food.servings}{food.servingSize}
                         </div>
-                        <div className="text-xs text-primary">
-                          {food.servings} × {food.servingSize}
-                        </div>
-                        <div className="flex gap-2 mt-0.5 text-xs text-muted-foreground">
-                          <span>{food.calories} cal</span>
+                        <div>
+                          <div className="font-medium text-sm text-foreground">
+                            {food.description}
+                            {'isSessionFood' in food && food.isSessionFood && (
+                              <span className="ml-2 text-xs text-primary">(just added)</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2 mt-0.5 text-xs text-muted-foreground">
+                            <span>{food.calories} cal</span>
+                          </div>
                         </div>
                       </div>
                       <ChevronRight size={18} className="text-muted-foreground" />
@@ -688,18 +692,20 @@ const CreateMealPage = () => {
                     className="p-4 rounded-xl bg-card border border-border"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-foreground">{food.name}</div>
+                      <div className="flex items-start gap-3 flex-1">
                         {food.servings && food.servingSize && (
-                          <div className="text-xs text-primary mt-0.5">
-                            {food.servings} × {food.servingSize}
+                          <div className="text-sm font-semibold text-primary min-w-[48px] pt-0.5">
+                            {food.servings}{food.servingSize}
                           </div>
                         )}
-                        <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>{food.calories} cal</span>
-                          <span>P: {typeof food.protein === 'number' ? food.protein.toFixed(0) : food.protein}g</span>
-                          <span>C: {typeof food.carbs === 'number' ? food.carbs.toFixed(0) : food.carbs}g</span>
-                          <span>F: {typeof food.fats === 'number' ? food.fats.toFixed(0) : food.fats}g</span>
+                        <div className="flex-1">
+                          <div className="font-medium text-foreground">{food.name}</div>
+                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                            <span>{food.calories} cal</span>
+                            <span>P: {typeof food.protein === 'number' ? food.protein.toFixed(0) : food.protein}g</span>
+                            <span>C: {typeof food.carbs === 'number' ? food.carbs.toFixed(0) : food.carbs}g</span>
+                            <span>F: {typeof food.fats === 'number' ? food.fats.toFixed(0) : food.fats}g</span>
+                          </div>
                         </div>
                       </div>
                       <Button
