@@ -497,9 +497,9 @@ const CreateMealPage = () => {
                 const carbsEnd = proteinRatio + carbsRatio;
                 
                 // Softer, more pleasing colors
-                const proteinColor = '210, 60%, 65%'; // Soft blue
-                const carbsColor = '160, 45%, 55%'; // Soft teal-green
-                const fatsColor = '340, 50%, 65%'; // Soft rose
+                const proteinColor = '170, 63%, 54%'; // #3DD6C6
+                const carbsColor = '222, 100%, 68%'; // #5B8CFF
+                const fatsColor = '268, 100%, 71%'; // #B46BFF
                 
                 return (
                   <motion.div 
