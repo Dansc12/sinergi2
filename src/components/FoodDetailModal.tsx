@@ -79,6 +79,7 @@ export const FoodDetailModal = ({
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("g");
   const [manualOverride, setManualOverride] = useState(false);
+  const [isEditingManual, setIsEditingManual] = useState(false);
   const [manualCalories, setManualCalories] = useState("");
   const [manualProtein, setManualProtein] = useState("");
   const [manualCarbs, setManualCarbs] = useState("");
@@ -125,6 +126,7 @@ export const FoodDetailModal = ({
       setQuantityInput(String(defaultQty));
       setIsEditingQuantity(false);
       setManualOverride(false);
+      setIsEditingManual(false);
       
       // Initialize manual values
       const initMultiplier = calculateMultiplier(defaultUnit, defaultQty, food.baseUnit || 'g', !food.isCustom);
@@ -145,24 +147,37 @@ export const FoodDetailModal = ({
     }
   }, [quantity, selectedUnit, manualOverride, food, calculatedCalories, calculatedProtein, calculatedCarbs, calculatedFats]);
 
-  // Click outside to exit manual override
+  const finalizeManualValues = () => {
+    const normalize = (v: string) => {
+      const parsed = parseFloat(v);
+      if (v === "" || Number.isNaN(parsed)) return "0";
+      return String(Math.max(0, parsed));
+    };
+
+    setManualCalories(normalize(manualCalories));
+    setManualProtein(normalize(manualProtein));
+    setManualCarbs(normalize(manualCarbs));
+    setManualFats(normalize(manualFats));
+  };
+
+  // Click outside the macro area to exit edit mode (keep manual values)
   useEffect(() => {
-    if (!manualOverride) return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!isEditingManual) return;
+
+    const handlePointerDown = (e: Event) => {
       if (macroEditRef.current && !macroEditRef.current.contains(e.target as Node)) {
-        // Finalize empty values to 0 when exiting
-        if (manualCalories === "") setManualCalories("0");
-        if (manualProtein === "") setManualProtein("0");
-        if (manualCarbs === "") setManualCarbs("0");
-        if (manualFats === "") setManualFats("0");
-        setManualOverride(false);
+        finalizeManualValues();
+        setIsEditingManual(false);
       }
     };
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [manualOverride, manualCalories, manualProtein, manualCarbs, manualFats]);
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isEditingManual, manualCalories, manualProtein, manualCarbs, manualFats]);
 
   if (!food) return null;
 
@@ -196,22 +211,27 @@ export const FoodDetailModal = ({
     onConfirm(modifiedFood, 1, `${quantity} ${selectedUnit}`);
   };
 
-  const toggleManualOverride = () => {
+  const handleManualButtonClick = () => {
     if (!manualOverride) {
-      // Entering manual mode - set current calculated values
+      // Enable manual values + enter edit mode
       setManualCalories(String(calculatedCalories));
       setManualProtein(String(Math.round(calculatedProtein * 10) / 10));
       setManualCarbs(String(Math.round(calculatedCarbs * 10) / 10));
       setManualFats(String(Math.round(calculatedFats * 10) / 10));
       setManualOverride(true);
-    } else {
-      // Exiting manual mode - finalize empty values to 0
-      if (manualCalories === "") setManualCalories("0");
-      if (manualProtein === "") setManualProtein("0");
-      if (manualCarbs === "") setManualCarbs("0");
-      if (manualFats === "") setManualFats("0");
-      setManualOverride(false);
+      setIsEditingManual(true);
+      return;
     }
+
+    if (isEditingManual) {
+      // Done editing (keep manual values enabled)
+      finalizeManualValues();
+      setIsEditingManual(false);
+      return;
+    }
+
+    // Re-enter edit mode
+    setIsEditingManual(true);
   };
 
   const handleUnitChange = (newUnit: string) => {
@@ -313,9 +333,9 @@ export const FoodDetailModal = ({
 
             {/* Content */}
             <div className="flex-1 p-6 overflow-y-auto">
-              <div className="flex items-start gap-6" ref={macroEditRef}>
+              <div className="flex items-start gap-6">
                 {/* Left Column: Circle + Compact Macros */}
-                <div className="flex flex-col items-center flex-shrink-0">
+                <div className="flex flex-col items-center flex-shrink-0" ref={macroEditRef}>
                   {/* Calorie Circle with Blob Background */}
                   {(() => {
                     // Macro colors matching the Total Nutrition style
@@ -423,7 +443,7 @@ export const FoodDetailModal = ({
                         
                         {/* Calories content in center */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                          {manualOverride ? (
+                          {isEditingManual ? (
                             <input
                               type="number"
                               min="0"
@@ -446,7 +466,7 @@ export const FoodDetailModal = ({
                     <div className="flex flex-col items-start">
                       <span className="text-[10px] font-medium mb-0.5" style={{ color: '#3DD6C6' }}>Protein</span>
                       <div className="flex items-baseline gap-1">
-                        {manualOverride ? (
+                        {isEditingManual ? (
                           <input
                             type="number"
                             min="0"
@@ -456,6 +476,8 @@ export const FoodDetailModal = ({
                             onBlur={handleMacroBlur(setManualProtein, manualProtein)}
                             className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
+                        ) : manualOverride ? (
+                          <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}</span>
                         ) : (
                           <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}g</span>
                         )}
@@ -469,7 +491,7 @@ export const FoodDetailModal = ({
                     <div className="flex flex-col items-start">
                       <span className="text-[10px] font-medium mb-0.5" style={{ color: '#5B8CFF' }}>Carbs</span>
                       <div className="flex items-baseline gap-1">
-                        {manualOverride ? (
+                        {isEditingManual ? (
                           <input
                             type="number"
                             min="0"
@@ -479,6 +501,8 @@ export const FoodDetailModal = ({
                             onBlur={handleMacroBlur(setManualCarbs, manualCarbs)}
                             className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
+                        ) : manualOverride ? (
+                          <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}</span>
                         ) : (
                           <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}g</span>
                         )}
@@ -492,7 +516,7 @@ export const FoodDetailModal = ({
                     <div className="flex flex-col items-start">
                       <span className="text-[10px] font-medium mb-0.5" style={{ color: '#B46BFF' }}>Fats</span>
                       <div className="flex items-baseline gap-1">
-                        {manualOverride ? (
+                        {isEditingManual ? (
                           <input
                             type="number"
                             min="0"
@@ -502,6 +526,8 @@ export const FoodDetailModal = ({
                             onBlur={handleMacroBlur(setManualFats, manualFats)}
                             className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
+                        ) : manualOverride ? (
+                          <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}</span>
                         ) : (
                           <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}g</span>
                         )}
@@ -516,7 +542,7 @@ export const FoodDetailModal = ({
 
                   {/* Edit Macros Button */}
                   <button
-                    onClick={toggleManualOverride}
+                    onClick={handleManualButtonClick}
                     className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors mt-3"
                   >
                     <Edit2 size={12} />
