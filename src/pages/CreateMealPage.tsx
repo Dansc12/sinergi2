@@ -728,17 +728,14 @@ const CreateMealPage = () => {
                 <span className="font-semibold">{selectedFoods.length}</span>
               </div>
               
-              {/* Center: Calories and Macros */}
+              {/* Right: Macros and Calories */}
               <div className="flex items-center gap-3 text-sm">
-                <span>{totalCalories} cal</span>
-                <span className="text-muted-foreground">•</span>
                 <span style={{ color: '#3DD6C6' }}>P {totalProtein.toFixed(0)}g</span>
                 <span style={{ color: '#5B8CFF' }}>C {totalCarbs.toFixed(0)}g</span>
                 <span style={{ color: '#B46BFF' }}>F {totalFats.toFixed(0)}g</span>
+                <span className="text-muted-foreground">•</span>
+                <span>{totalCalories} cal</span>
               </div>
-              
-              {/* Empty right side for balance */}
-              <div className="w-10" />
             </div>
           </Button>
         </div>
