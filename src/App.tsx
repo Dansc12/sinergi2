@@ -15,6 +15,7 @@ import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import CreateWorkoutPage from "./pages/CreateWorkoutPage";
 import CreateMealPage from "./pages/CreateMealPage";
+import CreateSavedMealPage from "./pages/CreateSavedMealPage";
 import CreatePostPage from "./pages/CreatePostPage";
 import CreateGroupPage from "./pages/CreateGroupPage";
 import CreateRecipePage from "./pages/CreateRecipePage";
@@ -105,6 +106,7 @@ const AppRoutes = () => {
               <Route path="/user/:userId" element={<UserProfilePage />} />
               <Route path="/create/workout" element={<CreateWorkoutPage />} />
               <Route path="/create/meal" element={<CreateMealPage />} />
+              <Route path="/create/saved-meal" element={<CreateSavedMealPage />} />
               <Route path="/create/post" element={<CreatePostPage />} />
               <Route path="/create/group" element={<CreateGroupPage />} />
               <Route path="/create/recipe" element={<CreateRecipePage />} />

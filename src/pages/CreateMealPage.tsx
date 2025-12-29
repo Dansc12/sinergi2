@@ -639,9 +639,16 @@ const CreateMealPage = () => {
                               background: 'rgba(255, 255, 255, 0.18)',
                               boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)',
                             }}
-                            whileTap={{ scale: 0.97 }}
+                          whileTap={{ scale: 0.97 }}
                             onClick={() => {
-                              toast({ title: "Create Meal feature coming soon!" });
+                              setShowFoodsList(false);
+                              navigate('/create/saved-meal', {
+                                state: {
+                                  foods: selectedFoods,
+                                  mealType,
+                                  photos,
+                                },
+                              });
                             }}
                           >
                             <Plus size={14} />
