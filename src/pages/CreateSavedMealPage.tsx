@@ -472,7 +472,7 @@ const CreateSavedMealPage = () => {
               {/* Content */}
               <div className="relative z-10 h-14">
                 {/* Top left: Fork/knife icon with count (overlay, does not affect centering) */}
-                <div className="absolute left-0 top-0 flex items-center gap-1.5 text-white/80 text-sm">
+                <div className="absolute left-0 -top-2 flex items-center gap-1.5 text-white/80 text-sm">
                   <Utensils size={14} />
                   <span>{foods.length}</span>
                 </div>
