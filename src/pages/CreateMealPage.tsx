@@ -347,18 +347,32 @@ const CreateMealPage = () => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-semibold text-primary min-w-[48px]">
-                          {food.servings}{food.servingSize}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
+                          <span className="font-medium text-foreground">{food.description}</span>
                         </div>
-                        <div>
-                          <div className="font-medium text-foreground">{food.description}</div>
-                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                            <span>{food.calories} cal</span>
-                            <span>P: {food.protein.toFixed(0)}g</span>
-                            <span>C: {food.carbs.toFixed(0)}g</span>
-                            <span>F: {food.fats.toFixed(0)}g</span>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="text-xs text-muted-foreground">{food.calories} cal</span>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span style={{ color: '#3DD6C6' }}>P: {food.protein.toFixed(0)}g</span>
+                            <span style={{ color: '#5B8CFF' }}>C: {food.carbs.toFixed(0)}g</span>
+                            <span style={{ color: '#B46BFF' }}>F: {food.fats.toFixed(0)}g</span>
                           </div>
+                          {(() => {
+                            const total = food.protein + food.carbs + food.fats;
+                            if (total === 0) return null;
+                            const pPct = (food.protein / total) * 100;
+                            const cPct = (food.carbs / total) * 100;
+                            const fPct = (food.fats / total) * 100;
+                            return (
+                              <div className="flex h-2 w-16 rounded-full overflow-hidden bg-muted/30">
+                                <div style={{ width: `${pPct}%`, backgroundColor: '#3DD6C6' }} />
+                                <div style={{ width: `${cPct}%`, backgroundColor: '#5B8CFF' }} />
+                                <div style={{ width: `${fPct}%`, backgroundColor: '#B46BFF' }} />
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <ChevronRight size={20} className="text-muted-foreground" />
@@ -416,20 +430,37 @@ const CreateMealPage = () => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-semibold text-primary min-w-[48px]">
-                          {food.servings}{food.servingSize}
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm text-foreground">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
+                          <span className="font-medium text-sm text-foreground">
                             {food.description}
                             {'isSessionFood' in food && food.isSessionFood && (
                               <span className="ml-2 text-xs text-primary">(just added)</span>
                             )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs text-muted-foreground">{food.calories} cal</span>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span style={{ color: '#3DD6C6' }}>P: {food.protein.toFixed(0)}g</span>
+                            <span style={{ color: '#5B8CFF' }}>C: {food.carbs.toFixed(0)}g</span>
+                            <span style={{ color: '#B46BFF' }}>F: {food.fats.toFixed(0)}g</span>
                           </div>
-                          <div className="flex gap-2 mt-0.5 text-xs text-muted-foreground">
-                            <span>{food.calories} cal</span>
-                          </div>
+                          {(() => {
+                            const total = food.protein + food.carbs + food.fats;
+                            if (total === 0) return null;
+                            const pPct = (food.protein / total) * 100;
+                            const cPct = (food.carbs / total) * 100;
+                            const fPct = (food.fats / total) * 100;
+                            return (
+                              <div className="flex h-2 w-16 rounded-full overflow-hidden bg-muted/30">
+                                <div style={{ width: `${pPct}%`, backgroundColor: '#3DD6C6' }} />
+                                <div style={{ width: `${cPct}%`, backgroundColor: '#5B8CFF' }} />
+                                <div style={{ width: `${fPct}%`, backgroundColor: '#B46BFF' }} />
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <ChevronRight size={18} className="text-muted-foreground" />
@@ -692,20 +723,37 @@ const CreateMealPage = () => {
                     className="p-4 rounded-xl bg-card border border-border"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3 flex-1">
-                        {food.servings && food.servingSize && (
-                          <div className="text-sm font-semibold text-primary min-w-[48px] pt-0.5">
-                            {food.servings}{food.servingSize}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {food.servings && food.servingSize && (
+                            <span className="text-sm font-semibold text-primary">{food.servings}{food.servingSize}</span>
+                          )}
+                          <span className="font-medium text-foreground">{food.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="text-xs text-muted-foreground">{food.calories} cal</span>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span style={{ color: '#3DD6C6' }}>P: {typeof food.protein === 'number' ? food.protein.toFixed(0) : food.protein}g</span>
+                            <span style={{ color: '#5B8CFF' }}>C: {typeof food.carbs === 'number' ? food.carbs.toFixed(0) : food.carbs}g</span>
+                            <span style={{ color: '#B46BFF' }}>F: {typeof food.fats === 'number' ? food.fats.toFixed(0) : food.fats}g</span>
                           </div>
-                        )}
-                        <div className="flex-1">
-                          <div className="font-medium text-foreground">{food.name}</div>
-                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                            <span>{food.calories} cal</span>
-                            <span>P: {typeof food.protein === 'number' ? food.protein.toFixed(0) : food.protein}g</span>
-                            <span>C: {typeof food.carbs === 'number' ? food.carbs.toFixed(0) : food.carbs}g</span>
-                            <span>F: {typeof food.fats === 'number' ? food.fats.toFixed(0) : food.fats}g</span>
-                          </div>
+                          {(() => {
+                            const p = typeof food.protein === 'number' ? food.protein : 0;
+                            const c = typeof food.carbs === 'number' ? food.carbs : 0;
+                            const f = typeof food.fats === 'number' ? food.fats : 0;
+                            const total = p + c + f;
+                            if (total === 0) return null;
+                            const pPct = (p / total) * 100;
+                            const cPct = (c / total) * 100;
+                            const fPct = (f / total) * 100;
+                            return (
+                              <div className="flex h-2 w-16 rounded-full overflow-hidden bg-muted/30">
+                                <div style={{ width: `${pPct}%`, backgroundColor: '#3DD6C6' }} />
+                                <div style={{ width: `${cPct}%`, backgroundColor: '#5B8CFF' }} />
+                                <div style={{ width: `${fPct}%`, backgroundColor: '#B46BFF' }} />
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <Button
