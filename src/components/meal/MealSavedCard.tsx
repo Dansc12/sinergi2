@@ -321,30 +321,16 @@ const MealSavedCard = ({
               </Button>
             </motion.div>
           ) : (
-          /* Expanded View - Title at top, then cover photo */
+          /* Expanded View - Cover photo fills top with title overlay */
           <motion.div
             key="expanded"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="-m-4 -mt-5"
           >
-            {/* Title Row with Copy Button - at the very top */}
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <h4 className="font-bold text-foreground text-xl">{title}</h4>
-              <Button
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopy();
-                }}
-                className="shrink-0"
-              >
-                {copyButtonText}
-              </Button>
-            </div>
-
-            {/* Cover Photo Background Header */}
-            <div className="relative -mx-4 -mb-4 h-32 overflow-hidden">
+            {/* Cover Photo Background Header with Title Overlay */}
+            <div className="relative h-40 overflow-hidden rounded-t-xl">
               {coverPhotoUrl ? (
                 <img 
                   src={coverPhotoUrl} 
@@ -356,12 +342,29 @@ const MealSavedCard = ({
                   <Utensils size={40} className="text-primary/50" />
                 </div>
               )}
-              {/* Gradient overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+              {/* Subtle gradient overlay at bottom */}
+              <div className="absolute inset-0 bg-gradient-to-t from-card/40 to-transparent" />
+              
+              {/* Title Row with Copy Button - overlaid on cover photo */}
+              <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between gap-3">
+                <h4 className="font-bold text-white text-xl drop-shadow-lg">{title}</h4>
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopy();
+                  }}
+                  className="shrink-0"
+                >
+                  {copyButtonText}
+                </Button>
+              </div>
             </div>
 
-            {/* Profile Photo with Tags and Date */}
-            <div className="flex items-start gap-3 mt-6 relative z-10">
+            {/* Content below cover photo */}
+            <div className="p-4">
+              {/* Profile Photo with Tags and Date */}
+              <div className="flex items-start gap-3">
               {/* Profile Avatar - 40px (h-10) */}
               <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage src={creator.avatar_url || undefined} />
@@ -453,6 +456,7 @@ const MealSavedCard = ({
                   </div>
                 );
               })}
+            </div>
             </div>
           </motion.div>
         )}
