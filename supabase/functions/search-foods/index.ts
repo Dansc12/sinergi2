@@ -76,6 +76,7 @@ serve(async (req) => {
     // Get the authorization header to fetch custom foods for the user
     const authHeader = req.headers.get('Authorization');
     let customFoods: FoodResult[] = [];
+    let savedMealsAndRecipes: FoodResult[] = [];
 
     if (authHeader) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -107,6 +108,64 @@ serve(async (req) => {
           baseUnit: cf.base_unit,
         }));
         console.log(`Found ${customFoods.length} custom foods`);
+      }
+
+      // Get user's saved meals and recipes that match the query
+      const { data: userPosts, error: postsError } = await supabase
+        .from('posts')
+        .select('id, content_type, content_data')
+        .in('content_type', ['saved_meal', 'recipe'])
+        .limit(20);
+
+      if (!postsError && userPosts) {
+        const lowerQuery = query.toLowerCase().trim();
+        
+        savedMealsAndRecipes = userPosts
+          .filter((post: any) => {
+            const contentData = post.content_data || {};
+            const name = (contentData.name || contentData.title || '').toLowerCase();
+            return name.includes(lowerQuery);
+          })
+          .map((post: any) => {
+            const contentData = post.content_data || {};
+            const name = contentData.name || contentData.title || 'Unnamed';
+            const foods = contentData.foods || contentData.ingredients || [];
+            
+            // Calculate total macros from foods/ingredients
+            let totalCalories = 0;
+            let totalProtein = 0;
+            let totalCarbs = 0;
+            let totalFats = 0;
+            
+            foods.forEach((food: any) => {
+              totalCalories += Number(food.calories) || 0;
+              totalProtein += Number(food.protein) || 0;
+              totalCarbs += Number(food.carbs) || 0;
+              totalFats += Number(food.fats) || 0;
+            });
+            
+            const isMeal = post.content_type === 'saved_meal';
+            const label = isMeal ? 'Saved Meal' : 'Recipe';
+            
+            return {
+              fdcId: -Math.abs(post.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)),
+              description: name,
+              brandName: label,
+              calories: Math.round(totalCalories),
+              protein: Math.round(totalProtein),
+              carbs: Math.round(totalCarbs),
+              fats: Math.round(totalFats),
+              servingSize: '1 serving',
+              servingSizeValue: 1,
+              servingSizeUnit: 'serving',
+              isCustom: true,
+              baseUnit: 'serving',
+              isSavedMeal: isMeal,
+              isRecipe: !isMeal,
+            };
+          });
+        
+        console.log(`Found ${savedMealsAndRecipes.length} saved meals/recipes`);
       }
     }
 
@@ -166,8 +225,8 @@ serve(async (req) => {
         };
       });
 
-    // Combine custom foods and USDA foods
-    let foods = [...customFoods, ...usdaFoods];
+    // Combine saved meals/recipes, custom foods, and USDA foods (saved meals first)
+    let foods = [...savedMealsAndRecipes, ...customFoods, ...usdaFoods];
 
     // Rank results by relevance
     foods = rankFoods(foods, query);
@@ -175,7 +234,7 @@ serve(async (req) => {
     // Limit to 15 results
     foods = foods.slice(0, 15);
 
-    console.log(`Found ${foods.length} foods after filtering and ranking (${customFoods.length} custom, ${foods.length - customFoods.length} USDA)`);
+    console.log(`Found ${foods.length} foods after filtering and ranking (${savedMealsAndRecipes.length} saved meals/recipes, ${customFoods.length} custom, ${usdaFoods.length} USDA)`);
 
     return new Response(
       JSON.stringify({ foods }),

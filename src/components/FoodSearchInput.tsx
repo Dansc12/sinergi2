@@ -17,6 +17,8 @@ export interface FoodItem {
   servingSizeUnit?: string;
   isCustom?: boolean;
   baseUnit?: string;
+  isSavedMeal?: boolean;
+  isRecipe?: boolean;
 }
 
 interface FoodSearchInputProps {
@@ -156,21 +158,27 @@ export const FoodSearchInput = ({
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{food.description}</div>
-                      {food.brandName && (
-                        <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                          {food.isCustom && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
-                              Custom
-                            </span>
-                          )}
-                          {!food.isCustom && food.brandName}
+                      {(food.isSavedMeal || food.isRecipe) && (
+                        <div className="text-xs text-muted-foreground">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            food.isSavedMeal 
+                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              : 'bg-amber-500/20 text-amber-400'
+                          }`}>
+                            {food.isSavedMeal ? 'Saved Meal' : 'Recipe'}
+                          </span>
                         </div>
                       )}
-                      {food.isCustom && !food.brandName && (
+                      {food.isCustom && !food.isSavedMeal && !food.isRecipe && (
                         <div className="text-xs text-muted-foreground">
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
                             Custom
                           </span>
+                        </div>
+                      )}
+                      {!food.isCustom && food.brandName && (
+                        <div className="text-xs text-muted-foreground truncate">
+                          {food.brandName}
                         </div>
                       )}
                     </div>
@@ -180,8 +188,11 @@ export const FoodSearchInput = ({
                     <span>P: {food.protein}g</span>
                     <span>C: {food.carbs}g</span>
                     <span>F: {food.fats}g</span>
-                    {food.isCustom && (
+                    {food.isCustom && !food.isSavedMeal && !food.isRecipe && (
                       <span className="text-muted-foreground/70">per 1{food.baseUnit}</span>
+                    )}
+                    {(food.isSavedMeal || food.isRecipe) && (
+                      <span className="text-muted-foreground/70">per serving</span>
                     )}
                   </div>
                 </button>
