@@ -301,109 +301,97 @@ export const FoodDetailModal = ({
                     const normalizedCarbs = carbsRatioCalc / totalRatioCalc;
                     const normalizedFats = fatsRatioCalc / totalRatioCalc;
                     
-                    // Calculate blob sizes (50-100% based on ratio - larger for more prominence)
-                    const proteinSize = 50 + normalizedProtein * 50;
-                    const carbsSize = 50 + normalizedCarbs * 50;
-                    const fatsSize = 50 + normalizedFats * 50;
-                    
-                    // Calculate opacities (0.8 minimum, up to 1.0 - brighter)
-                    const proteinOpacity = totalMacros > 0 ? 0.8 + (adjustedProtein / totalMacros) * 0.2 : 0.9;
-                    const carbsOpacity = totalMacros > 0 ? 0.8 + (adjustedCarbs / totalMacros) * 0.2 : 0.9;
-                    const fatsOpacity = totalMacros > 0 ? 0.8 + (adjustedFats / totalMacros) * 0.2 : 0.9;
+                    // Calculate blob sizes (80-120% - large to fill circle)
+                    const proteinSize = 80 + normalizedProtein * 40;
+                    const carbsSize = 80 + normalizedCarbs * 40;
+                    const fatsSize = 80 + normalizedFats * 40;
                     
                     return (
                       <div 
                         className="relative w-[140px] h-[140px] rounded-full overflow-hidden"
                         style={{
-                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
                         }}
                       >
-                        {/* Liquid blob background */}
-                        <div className="absolute inset-0 bg-card">
-                          {/* Protein blob */}
-                          <motion.div
-                            className="absolute rounded-full blur-3xl"
-                            style={{
-                              width: `${proteinSize}%`,
-                              height: `${proteinSize}%`,
-                              background: `radial-gradient(circle, ${proteinColor} 0%, transparent 60%)`,
-                              opacity: proteinOpacity,
-                              left: '-10%',
-                              top: '-5%',
-                            }}
-                            animate={{
-                              x: [0, 15, -10, 5, 0],
-                              y: [0, -10, 15, -5, 0],
-                              scale: [1, 1.1, 0.95, 1.05, 1],
-                            }}
-                            transition={{
-                              duration: 8,
-                              repeat: Infinity,
-                              ease: 'easeInOut',
-                            }}
-                          />
-                          {/* Carbs blob */}
-                          <motion.div
-                            className="absolute rounded-full blur-3xl"
-                            style={{
-                              width: `${carbsSize}%`,
-                              height: `${carbsSize}%`,
-                              background: `radial-gradient(circle, ${carbsColor} 0%, transparent 60%)`,
-                              opacity: carbsOpacity,
-                              right: '-15%',
-                              top: '-10%',
-                            }}
-                            animate={{
-                              x: [0, -20, 10, -5, 0],
-                              y: [0, 15, -10, 5, 0],
-                              scale: [1, 0.95, 1.1, 0.98, 1],
-                            }}
-                            transition={{
-                              duration: 9,
-                              repeat: Infinity,
-                              ease: 'easeInOut',
-                              delay: 0.5,
-                            }}
-                          />
-                          {/* Fats blob */}
-                          <motion.div
-                            className="absolute rounded-full blur-3xl"
-                            style={{
-                              width: `${fatsSize}%`,
-                              height: `${fatsSize}%`,
-                              background: `radial-gradient(circle, ${fatsColor} 0%, transparent 60%)`,
-                              opacity: fatsOpacity,
-                              left: '20%',
-                              bottom: '-20%',
-                            }}
-                            animate={{
-                              x: [0, 10, -15, 8, 0],
-                              y: [0, -15, 10, -8, 0],
-                              scale: [1, 1.08, 0.92, 1.04, 1],
-                            }}
-                            transition={{
-                              duration: 7,
-                              repeat: Infinity,
-                              ease: 'easeInOut',
-                              delay: 1,
-                            }}
-                          />
-                        </div>
+                        {/* Dark base */}
+                        <div className="absolute inset-0 bg-card" />
                         
-                        {/* Very subtle frosted overlay - minimal to keep blobs bright */}
-                        <div 
-                          className="absolute inset-0 backdrop-blur-[1px]"
+                        {/* Protein blob - bright and saturated */}
+                        <motion.div
+                          className="absolute rounded-full"
                           style={{
-                            background: `radial-gradient(circle, 
-                              rgba(0, 0, 0, 0) 50%, 
-                              rgba(0, 0, 0, 0.03) 100%)`,
+                            width: `${proteinSize}%`,
+                            height: `${proteinSize}%`,
+                            background: proteinColor,
+                            filter: 'blur(25px)',
+                            opacity: 0.7,
+                            left: '-20%',
+                            top: '-10%',
+                          }}
+                          animate={{
+                            x: [0, 15, -10, 5, 0],
+                            y: [0, -10, 15, -5, 0],
+                            scale: [1, 1.1, 0.95, 1.05, 1],
+                          }}
+                          transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }}
+                        />
+                        {/* Carbs blob - bright and saturated */}
+                        <motion.div
+                          className="absolute rounded-full"
+                          style={{
+                            width: `${carbsSize}%`,
+                            height: `${carbsSize}%`,
+                            background: carbsColor,
+                            filter: 'blur(25px)',
+                            opacity: 0.7,
+                            right: '-25%',
+                            top: '-15%',
+                          }}
+                          animate={{
+                            x: [0, -20, 10, -5, 0],
+                            y: [0, 15, -10, 5, 0],
+                            scale: [1, 0.95, 1.1, 0.98, 1],
+                          }}
+                          transition={{
+                            duration: 9,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                            delay: 0.5,
+                          }}
+                        />
+                        {/* Fats blob - bright and saturated */}
+                        <motion.div
+                          className="absolute rounded-full"
+                          style={{
+                            width: `${fatsSize}%`,
+                            height: `${fatsSize}%`,
+                            background: fatsColor,
+                            filter: 'blur(25px)',
+                            opacity: 0.7,
+                            left: '10%',
+                            bottom: '-30%',
+                          }}
+                          animate={{
+                            x: [0, 10, -15, 8, 0],
+                            y: [0, -15, 10, -8, 0],
+                            scale: [1, 1.08, 0.92, 1.04, 1],
+                          }}
+                          transition={{
+                            duration: 7,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                            delay: 1,
                           }}
                         />
                         
                         {/* Calories content in center */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                          <span className="text-2xl font-bold text-white">{adjustedCalories}</span>
-                          <span className="text-xs text-white/70">cal</span>
+                          <span className="text-2xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
+                          <span className="text-xs text-white/80 drop-shadow-sm">cal</span>
                         </div>
                       </div>
                     );
