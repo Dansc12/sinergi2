@@ -721,19 +721,22 @@ const CreateMealPage = () => {
             className="w-full rounded-xl border-border bg-card hover:bg-muted px-4"
             onClick={() => setShowFoodsList(true)}
           >
-            <div className="flex items-center justify-between w-full">
+            <div className="relative flex items-center w-full">
               {/* Left: Icon + Count */}
               <div className="flex items-center gap-2">
                 <Utensils size={20} />
                 <span className="font-semibold">{selectedFoods.length}</span>
               </div>
               
-              {/* Right: Macros and Calories */}
-              <div className="flex items-center gap-3 text-sm">
+              {/* Center: Macros (absolutely positioned for true centering) */}
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
                 <span style={{ color: '#3DD6C6' }}>P {totalProtein.toFixed(0)}g</span>
                 <span style={{ color: '#5B8CFF' }}>C {totalCarbs.toFixed(0)}g</span>
                 <span style={{ color: '#B46BFF' }}>F {totalFats.toFixed(0)}g</span>
-                <span className="text-muted-foreground">•</span>
+              </div>
+              
+              {/* Right: Calories */}
+              <div className="ml-auto text-sm">
                 <span>{totalCalories} cal</span>
               </div>
             </div>
