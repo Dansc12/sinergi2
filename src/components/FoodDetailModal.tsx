@@ -436,8 +436,8 @@ export const FoodDetailModal = ({
                       />
                       
                       {/* Content */}
-                      <div className="relative z-10 flex flex-col items-center gap-4">
-                        {/* Calories Row */}
+                      <div className="relative z-10 flex items-center justify-between w-full">
+                        {/* Calories - Left */}
                         <div className="flex items-baseline gap-1">
                           {isEditingManual ? (
                             <input
@@ -446,19 +446,19 @@ export const FoodDetailModal = ({
                               value={manualCalories}
                               onChange={handleMacroChange(setManualCalories)}
                               onBlur={handleMacroBlur(setManualCalories, manualCalories)}
-                              className="w-20 text-3xl font-bold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-16 text-2xl font-bold text-white text-left bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           ) : (
-                            <span className="text-3xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
+                            <span className="text-2xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
                           )}
-                          <span className="text-sm text-white/80 drop-shadow-sm">cal</span>
+                          <span className="text-xs text-white/80 drop-shadow-sm">cal</span>
                         </div>
                         
-                        {/* Macros Row */}
-                        <div className="flex justify-center gap-8">
+                        {/* Macros - Right */}
+                        <div className="flex items-center gap-4">
                           <div className="flex flex-col items-center">
-                            <span className="text-[11px] font-medium mb-1" style={{ color: proteinColor }}>Protein</span>
-                            <div className="flex items-baseline gap-1">
+                            <span className="text-[10px] font-medium mb-0.5" style={{ color: proteinColor }}>P</span>
+                            <div className="flex items-baseline gap-0.5">
                               {isEditingManual ? (
                                 <input
                                   type="number"
@@ -467,17 +467,17 @@ export const FoodDetailModal = ({
                                   value={manualProtein}
                                   onChange={handleMacroChange(setManualProtein)}
                                   onBlur={handleMacroBlur(setManualProtein, manualProtein)}
-                                  className="w-12 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-10 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               ) : (
                                 <span className="text-sm font-semibold text-white">{adjustedProtein.toFixed(0)}</span>
                               )}
-                              <span className="text-xs text-white/70">g</span>
+                              <span className="text-[10px] text-white/70">g</span>
                             </div>
                           </div>
                           <div className="flex flex-col items-center">
-                            <span className="text-[11px] font-medium mb-1" style={{ color: carbsColor }}>Carbs</span>
-                            <div className="flex items-baseline gap-1">
+                            <span className="text-[10px] font-medium mb-0.5" style={{ color: carbsColor }}>C</span>
+                            <div className="flex items-baseline gap-0.5">
                               {isEditingManual ? (
                                 <input
                                   type="number"
@@ -486,17 +486,17 @@ export const FoodDetailModal = ({
                                   value={manualCarbs}
                                   onChange={handleMacroChange(setManualCarbs)}
                                   onBlur={handleMacroBlur(setManualCarbs, manualCarbs)}
-                                  className="w-12 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-10 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               ) : (
                                 <span className="text-sm font-semibold text-white">{adjustedCarbs.toFixed(0)}</span>
                               )}
-                              <span className="text-xs text-white/70">g</span>
+                              <span className="text-[10px] text-white/70">g</span>
                             </div>
                           </div>
                           <div className="flex flex-col items-center">
-                            <span className="text-[11px] font-medium mb-1" style={{ color: fatsColor }}>Fats</span>
-                            <div className="flex items-baseline gap-1">
+                            <span className="text-[10px] font-medium mb-0.5" style={{ color: fatsColor }}>F</span>
+                            <div className="flex items-baseline gap-0.5">
                               {isEditingManual ? (
                                 <input
                                   type="number"
@@ -505,28 +505,28 @@ export const FoodDetailModal = ({
                                   value={manualFats}
                                   onChange={handleMacroChange(setManualFats)}
                                   onBlur={handleMacroBlur(setManualFats, manualFats)}
-                                  className="w-12 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-10 text-sm font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               ) : (
                                 <span className="text-sm font-semibold text-white">{adjustedFats.toFixed(0)}</span>
                               )}
-                              <span className="text-xs text-white/70">g</span>
+                              <span className="text-[10px] text-white/70">g</span>
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Edit Macros Button */}
-                        <button
-                          onClick={handleManualButtonClick}
-                          className="flex items-center gap-1.5 text-[11px] text-white/60 hover:text-white transition-colors mt-1"
-                        >
-                          <Edit2 size={12} />
-                          <span>{manualOverride ? "Using manual values" : "Edit manually"}</span>
-                        </button>
                       </div>
                     </div>
                   );
                 })()}
+                
+                {/* Edit Macros Button */}
+                <button
+                  onClick={handleManualButtonClick}
+                  className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-2 w-full"
+                >
+                  <Edit2 size={12} />
+                  <span>{manualOverride ? "Using manual values" : "Edit manually"}</span>
+                </button>
               </div>
 
               {/* Quantity & Unit Controls */}
