@@ -485,40 +485,52 @@ const CreateMealPage = () => {
                 </Button>
               </div>
 
-              {/* Total Nutrition + Create Meal Button Row */}
-              <div className="flex gap-3 mb-6">
-                <div className="flex-[3] p-4 rounded-xl bg-primary/10 border border-primary/20">
-                  <div className="text-sm font-medium text-primary mb-2">Total Nutrition</div>
-                  <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                    <div>
-                      <div className="text-muted-foreground">Calories</div>
-                      <div className="font-bold text-foreground">{totalCalories}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Protein</div>
-                      <div className="font-bold text-foreground">{totalProtein.toFixed(0)}g</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Carbs</div>
-                      <div className="font-bold text-foreground">{totalCarbs.toFixed(0)}g</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Fats</div>
-                      <div className="font-bold text-foreground">{totalFats.toFixed(0)}g</div>
+              {/* Total Nutrition + Create Buttons Row */}
+              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 mb-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-primary mb-2">Total Nutrition</div>
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                      <div>
+                        <div className="text-muted-foreground">Calories</div>
+                        <div className="font-bold text-foreground">{totalCalories}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Protein</div>
+                        <div className="font-bold text-foreground">{totalProtein.toFixed(0)}g</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Carbs</div>
+                        <div className="font-bold text-foreground">{totalCarbs.toFixed(0)}g</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Fats</div>
+                        <div className="font-bold text-foreground">{totalFats.toFixed(0)}g</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex-1 flex items-center justify-center">
-                  <Button
-                    variant="outline"
-                    className="h-full w-full flex flex-col gap-1 rounded-xl border-primary/30 hover:bg-primary/10"
-                    onClick={() => {
-                      toast({ title: "Create Meal feature coming soon!" });
-                    }}
-                  >
-                    <Plus size={20} className="text-primary" />
-                    <span className="text-xs font-medium">Create Meal</span>
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="pill"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        toast({ title: "Create Meal feature coming soon!" });
+                      }}
+                    >
+                      <Plus size={14} />
+                      Create Meal
+                    </Button>
+                    <Button
+                      variant="pill"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => navigate('/create/recipe')}
+                    >
+                      <ChefHat size={14} />
+                      Create Recipe
+                    </Button>
+                  </div>
                 </div>
               </div>
 
