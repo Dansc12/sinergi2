@@ -246,65 +246,81 @@ const MealSavedCard = ({
   const calcCarbs = totalCarbs ?? items.reduce<number>((sum, f) => sum + f.carbs, 0);
   const calcFats = totalFats ?? items.reduce<number>((sum, f) => sum + f.fats, 0);
 
+  // Calculate macro percentages for gradient bar
+  const totalMacrosForBar = calcProtein + calcCarbs + calcFats;
+  const pPct = totalMacrosForBar > 0 ? (calcProtein / totalMacrosForBar) * 100 : 0;
+  const cPct = totalMacrosForBar > 0 ? (calcCarbs / totalMacrosForBar) * 100 : 0;
+
   return (
     <div
-      className="p-4 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+      className="rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors cursor-pointer relative overflow-hidden"
       onClick={() => setIsExpanded(!isExpanded)}
     >
-      <AnimatePresence mode="wait">
-        {!isExpanded ? (
-          /* Collapsed View - Show Cover Photo */
-          <motion.div
-            key="collapsed"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-start gap-3"
-          >
-            {/* Cover Photo */}
-            <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-muted">
-              {coverPhotoUrl ? (
-                <img 
-                  src={coverPhotoUrl} 
-                  alt={title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-primary/20">
-                  <Utensils size={18} className="text-primary" />
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              {/* Title */}
-              <h4 className="font-semibold text-foreground truncate">{title}</h4>
-              
-              {/* Date */}
-              <span className="text-xs text-muted-foreground -mt-0.5 block">
-                {formatDate(createdAt)}
-              </span>
-
-              {/* Items Preview */}
-              <p className="text-xs text-muted-foreground/80 mt-1.5 truncate">
-                {items.map((f) => f.name).join(", ")}
-              </p>
-            </div>
-
-            {/* Copy Button */}
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCopy();
-              }}
-              className="shrink-0"
+      {/* Macro gradient bar at top */}
+      {totalMacrosForBar > 0 && (
+        <div 
+          className="absolute left-0 right-0 top-0 h-1 z-10"
+          style={{
+            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
+          }}
+        />
+      )}
+      
+      <div className="p-4 pt-5">
+        <AnimatePresence mode="wait">
+          {!isExpanded ? (
+            /* Collapsed View - Show Cover Photo */
+            <motion.div
+              key="collapsed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-start gap-3"
             >
-              {copyButtonText}
-            </Button>
-          </motion.div>
-        ) : (
+              {/* Cover Photo */}
+              <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-muted">
+                {coverPhotoUrl ? (
+                  <img 
+                    src={coverPhotoUrl} 
+                    alt={title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                    <Utensils size={18} className="text-primary" />
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                {/* Title */}
+                <h4 className="font-semibold text-foreground truncate">{title}</h4>
+                
+                {/* Date */}
+                <span className="text-xs text-muted-foreground -mt-0.5 block">
+                  {formatDate(createdAt)}
+                </span>
+
+                {/* Items Preview */}
+                <p className="text-xs text-muted-foreground/80 mt-1.5 truncate">
+                  {items.map((f) => f.name).join(", ")}
+                </p>
+              </div>
+
+              {/* Copy Button */}
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy();
+                }}
+                className="shrink-0"
+              >
+                {copyButtonText}
+              </Button>
+            </motion.div>
+          ) : (
           /* Expanded View - Show Cover Photo as background header */
           <motion.div
             key="expanded"
@@ -394,25 +410,54 @@ const MealSavedCard = ({
               foodCount={items.length}
             />
 
-            {/* Food/Ingredient Details */}
-            <div className="mt-4 space-y-3">
-              {items.map((item, idx) => (
-                <div key={item.id || idx} className="space-y-1">
-                  <h5 className="font-medium text-foreground text-sm">{item.name}</h5>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs bg-muted/50 px-2 py-1 rounded">
-                      {item.servings || 1} × {item.servingSize || "serving"}
-                    </span>
-                    <span className="text-xs bg-muted/50 px-2 py-1 rounded">
-                      {Math.round(item.calories)} cal
-                    </span>
+            {/* Food/Ingredient Details - matching Log Meal style */}
+            <div className="mt-4 space-y-2">
+              {items.map((item, idx) => {
+                const p = item.protein;
+                const c = item.carbs;
+                const f = item.fats;
+                const total = p + c + f;
+                const itemPPct = total > 0 ? (p / total) * 100 : 0;
+                const itemCPct = total > 0 ? (c / total) * 100 : 0;
+                
+                return (
+                  <div 
+                    key={item.id || idx} 
+                    className="rounded-xl bg-muted/30 border border-border/50 relative overflow-hidden"
+                  >
+                    {/* Macro gradient bar at top */}
+                    {total > 0 && (
+                      <div 
+                        className="absolute left-0 right-0 top-0 h-1"
+                        style={{
+                          background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${itemPPct * 0.7}%, #5B8CFF ${itemPPct + itemCPct * 0.3}%, #5B8CFF ${itemPPct + itemCPct * 0.7}%, #B46BFF ${itemPPct + itemCPct + (100 - itemPPct - itemCPct) * 0.3}%, #B46BFF 100%)`,
+                        }}
+                      />
+                    )}
+                    <div className="p-3 pt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-primary">
+                          {item.servings || 1}{item.servingSize || 'g'}
+                        </span>
+                        <span className="font-medium text-foreground text-sm">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-xs text-foreground">{Math.round(item.calories)} cal</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span style={{ color: '#3DD6C6' }}>P: {Math.round(p)}g</span>
+                          <span style={{ color: '#5B8CFF' }}>C: {Math.round(c)}g</span>
+                          <span style={{ color: '#B46BFF' }}>F: {Math.round(f)}g</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
