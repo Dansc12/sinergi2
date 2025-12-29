@@ -343,7 +343,7 @@ const MealSavedCard = ({
               </Button>
             </div>
 
-            {/* Cover Photo */}
+            {/* Cover Photo Background Header */}
             <div className="relative -mx-4 h-32 overflow-hidden">
               {coverPhotoUrl ? (
                 <img 
@@ -356,6 +356,8 @@ const MealSavedCard = ({
                   <Utensils size={40} className="text-primary/50" />
                 </div>
               )}
+              {/* Gradient overlay for visual polish */}
+              <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-transparent" />
             </div>
 
             {/* Profile Photo with Tags and Date */}
