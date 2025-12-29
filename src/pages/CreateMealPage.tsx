@@ -529,8 +529,8 @@ const CreateMealPage = () => {
                         
                         {/* Calories Row - Horizontal alignment */}
                         <div className="flex items-baseline gap-2 mb-4">
-                          <span className="text-xs text-white/70">Calories</span>
                           <span className="text-2xl font-bold text-white">{totalCalories}</span>
+                          <span className="text-2xl font-bold text-white">Calories</span>
                         </div>
                         
                         {/* Macros Row */}
