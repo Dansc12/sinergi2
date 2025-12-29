@@ -589,11 +589,15 @@ const CreateMealPage = () => {
                       />
                     </div>
                     
-                    {/* Frosted glass overlay - minimal for brightness */}
+                    {/* Frosted glass overlay with subtle side vignette */}
                     <div 
                       className="absolute inset-0 backdrop-blur-[3px]"
                       style={{
-                        background: 'rgba(0, 0, 0, 0.02)',
+                        background: `linear-gradient(90deg, 
+                          rgba(0, 0, 0, 0.12) 0%, 
+                          rgba(0, 0, 0, 0.02) 15%, 
+                          rgba(0, 0, 0, 0.02) 85%, 
+                          rgba(0, 0, 0, 0.12) 100%)`,
                         boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1)',
                       }}
                     />
