@@ -488,91 +488,211 @@ const CreateMealPage = () => {
               {/* Total Nutrition + Create Buttons Row */}
               {(() => {
                 const totalMacros = totalProtein + totalCarbs + totalFats;
-                const proteinRatio = totalMacros > 0 ? (totalProtein / totalMacros) * 100 : 33.33;
-                const carbsRatio = totalMacros > 0 ? (totalCarbs / totalMacros) * 100 : 33.33;
-                const fatsRatio = totalMacros > 0 ? (totalFats / totalMacros) * 100 : 33.33;
                 
-                // Calculate gradient stops based on ratios
-                const proteinEnd = proteinRatio;
-                const carbsEnd = proteinRatio + carbsRatio;
+                // Calculate ratios with minimum presence for visual consistency
+                const proteinRatio = totalMacros > 0 ? Math.max((totalProtein / totalMacros), 0.08) : 0.33;
+                const carbsRatio = totalMacros > 0 ? Math.max((totalCarbs / totalMacros), 0.08) : 0.33;
+                const fatsRatio = totalMacros > 0 ? Math.max((totalFats / totalMacros), 0.08) : 0.33;
                 
-                // Softer, more pleasing colors
-                const proteinColor = '170, 63%, 54%'; // #3DD6C6
-                const carbsColor = '222, 100%, 68%'; // #5B8CFF
-                const fatsColor = '268, 100%, 71%'; // #B46BFF
+                // Normalize ratios
+                const totalRatio = proteinRatio + carbsRatio + fatsRatio;
+                const normalizedProtein = proteinRatio / totalRatio;
+                const normalizedCarbs = carbsRatio / totalRatio;
+                const normalizedFats = fatsRatio / totalRatio;
+                
+                // Macro colors
+                const proteinColor = '#3DD6C6';
+                const carbsColor = '#5B8CFF';
+                const fatsColor = '#B46BFF';
+                
+                // Calculate blob sizes (40-90px based on ratio)
+                const proteinSize = 40 + normalizedProtein * 50;
+                const carbsSize = 40 + normalizedCarbs * 50;
+                const fatsSize = 40 + normalizedFats * 50;
+                
+                // Calculate opacities (0.08 minimum, up to 0.45)
+                const proteinOpacity = totalMacros > 0 ? 0.08 + (totalProtein / totalMacros) * 0.37 : 0.25;
+                const carbsOpacity = totalMacros > 0 ? 0.08 + (totalCarbs / totalMacros) * 0.37 : 0.25;
+                const fatsOpacity = totalMacros > 0 ? 0.08 + (totalFats / totalMacros) * 0.37 : 0.25;
                 
                 return (
-                  <motion.div 
-                    className="p-4 rounded-xl border border-white/20 mb-6 relative overflow-hidden"
-                    style={{
-                      background: `linear-gradient(135deg, 
-                        hsl(${proteinColor}) 0%, 
-                        hsl(${proteinColor}) ${proteinEnd * 0.8}%, 
-                        hsl(${carbsColor}) ${proteinEnd}%, 
-                        hsl(${carbsColor}) ${carbsEnd * 0.95}%, 
-                        hsl(${fatsColor}) ${carbsEnd}%, 
-                        hsl(${fatsColor}) 100%)`,
-                    }}
-                    animate={{
-                      backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-                    }}
-                    transition={{
-                      duration: 8,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-                    <div className="relative z-10 flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-white/90 mb-1">Total Nutrition</div>
-                        
-                        {/* Calories Row - Horizontal alignment */}
-                        <div className="flex items-baseline gap-2 mb-2">
-                          <span className="text-2xl font-bold text-white">{totalCalories}</span>
-                          <span className="text-2xl font-medium text-white">Calories</span>
+                  <div className="relative mb-6 rounded-[18px] overflow-hidden shadow-lg shadow-black/30">
+                    {/* Liquid blob background */}
+                    <div className="absolute inset-0 bg-card">
+                      {/* Protein blob */}
+                      <motion.div
+                        className="absolute rounded-full blur-2xl"
+                        style={{
+                          width: `${proteinSize}%`,
+                          height: `${proteinSize}%`,
+                          background: `radial-gradient(circle, ${proteinColor} 0%, transparent 70%)`,
+                          opacity: proteinOpacity,
+                          left: '5%',
+                          top: '10%',
+                        }}
+                        animate={{
+                          x: [0, 15, -10, 5, 0],
+                          y: [0, -10, 15, -5, 0],
+                          scale: [1, 1.1, 0.95, 1.05, 1],
+                        }}
+                        transition={{
+                          duration: 8,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      />
+                      {/* Carbs blob */}
+                      <motion.div
+                        className="absolute rounded-full blur-2xl"
+                        style={{
+                          width: `${carbsSize}%`,
+                          height: `${carbsSize}%`,
+                          background: `radial-gradient(circle, ${carbsColor} 0%, transparent 70%)`,
+                          opacity: carbsOpacity,
+                          right: '10%',
+                          top: '5%',
+                        }}
+                        animate={{
+                          x: [0, -20, 10, -5, 0],
+                          y: [0, 15, -10, 5, 0],
+                          scale: [1, 0.95, 1.1, 0.98, 1],
+                        }}
+                        transition={{
+                          duration: 9,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          delay: 0.5,
+                        }}
+                      />
+                      {/* Fats blob */}
+                      <motion.div
+                        className="absolute rounded-full blur-2xl"
+                        style={{
+                          width: `${fatsSize}%`,
+                          height: `${fatsSize}%`,
+                          background: `radial-gradient(circle, ${fatsColor} 0%, transparent 70%)`,
+                          opacity: fatsOpacity,
+                          left: '30%',
+                          bottom: '-10%',
+                        }}
+                        animate={{
+                          x: [0, 10, -15, 8, 0],
+                          y: [0, -15, 10, -8, 0],
+                          scale: [1, 1.08, 0.92, 1.04, 1],
+                        }}
+                        transition={{
+                          duration: 7,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          delay: 1,
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Frosted glass overlay */}
+                    <div 
+                      className="absolute inset-0 backdrop-blur-md"
+                      style={{
+                        background: 'rgba(0, 0, 0, 0.22)',
+                        boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+                      }}
+                    />
+                    
+                    {/* Border overlay */}
+                    <div 
+                      className="absolute inset-0 rounded-[18px] pointer-events-none"
+                      style={{
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                      }}
+                    />
+                    
+                    {/* Content */}
+                    <div className="relative z-10 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          {/* Total Nutrition label */}
+                          <div className="text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                            Total Nutrition
+                          </div>
+                          
+                          {/* Calories - Primary emphasis */}
+                          <div className="flex items-baseline gap-1.5 mb-4">
+                            <span className="text-3xl font-bold text-white tracking-tight">{totalCalories}</span>
+                            <span className="text-lg font-medium text-white/80">Calories</span>
+                          </div>
+                          
+                          {/* Macros Row - 3 columns */}
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="flex flex-col">
+                              <div 
+                                className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
+                                style={{ color: proteinColor, opacity: 0.8 }}
+                              >
+                                Protein
+                              </div>
+                              <div className="text-base font-semibold text-white">{totalProtein.toFixed(0)}g</div>
+                            </div>
+                            <div className="flex flex-col">
+                              <div 
+                                className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
+                                style={{ color: carbsColor, opacity: 0.8 }}
+                              >
+                                Carbs
+                              </div>
+                              <div className="text-base font-semibold text-white">{totalCarbs.toFixed(0)}g</div>
+                            </div>
+                            <div className="flex flex-col">
+                              <div 
+                                className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
+                                style={{ color: fatsColor, opacity: 0.8 }}
+                              >
+                                Fats
+                              </div>
+                              <div className="text-base font-semibold text-white">{totalFats.toFixed(0)}g</div>
+                            </div>
+                          </div>
                         </div>
                         
-                        {/* Macros Row */}
-                        <div className="grid grid-cols-3 gap-3 text-center">
-                          <div className="flex flex-col items-center">
-                            <div className="text-xs font-medium" style={{ color: `hsl(${proteinColor})` }}>Protein</div>
-                            <div className="font-bold text-white">{totalProtein.toFixed(0)}g</div>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <div className="text-xs font-medium" style={{ color: `hsl(${carbsColor})` }}>Carbs</div>
-                            <div className="font-bold text-white">{totalCarbs.toFixed(0)}g</div>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <div className="text-xs font-medium" style={{ color: `hsl(${fatsColor})` }}>Fats</div>
-                            <div className="font-bold text-white">{totalFats.toFixed(0)}g</div>
-                          </div>
+                        {/* Frosted buttons */}
+                        <div className="flex flex-col gap-2">
+                          <motion.button
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white/90 transition-all"
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.12)',
+                              border: '1px solid rgba(255, 255, 255, 0.10)',
+                            }}
+                            whileHover={{
+                              background: 'rgba(255, 255, 255, 0.18)',
+                              boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)',
+                            }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => {
+                              toast({ title: "Create Meal feature coming soon!" });
+                            }}
+                          >
+                            <Plus size={14} />
+                            Create Meal
+                          </motion.button>
+                          <motion.button
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white/90 transition-all"
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.12)',
+                              border: '1px solid rgba(255, 255, 255, 0.10)',
+                            }}
+                            whileHover={{
+                              background: 'rgba(255, 255, 255, 0.18)',
+                              boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)',
+                            }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => navigate('/create/recipe')}
+                          >
+                            <ChefHat size={14} />
+                            Create Recipe
+                          </motion.button>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          variant="pill"
-                          size="sm"
-                          className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
-                          onClick={() => {
-                            toast({ title: "Create Meal feature coming soon!" });
-                          }}
-                        >
-                          <Plus size={14} />
-                          Create Meal
-                        </Button>
-                        <Button
-                          variant="pill"
-                          size="sm"
-                          className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
-                          onClick={() => navigate('/create/recipe')}
-                        >
-                          <ChefHat size={14} />
-                          Create Recipe
-                        </Button>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })()}
 
