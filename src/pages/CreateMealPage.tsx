@@ -589,15 +589,14 @@ const CreateMealPage = () => {
                       />
                     </div>
                     
-                    {/* Frosted glass overlay with subtle side vignette */}
+                    {/* Frosted glass overlay with subtle left vignette only */}
                     <div 
                       className="absolute inset-0 backdrop-blur-[2px]"
                       style={{
                         background: `linear-gradient(90deg, 
                           rgba(0, 0, 0, 0.08) 0%, 
-                          rgba(0, 0, 0, 0) 12%, 
-                          rgba(0, 0, 0, 0) 88%, 
-                          rgba(0, 0, 0, 0.08) 100%)`,
+                          rgba(0, 0, 0, 0) 15%, 
+                          rgba(0, 0, 0, 0) 100%)`,
                         boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.12)',
                       }}
                     />
@@ -620,7 +619,7 @@ const CreateMealPage = () => {
                           </div>
                           
                           {/* Calories - Primary emphasis */}
-                          <div className="flex items-baseline gap-1.5 mb-4">
+                          <div className="flex items-baseline gap-1.5 mb-2">
                             <span className="text-3xl font-bold text-white tracking-tight">{totalCalories}</span>
                             <span className="text-lg font-medium text-white/80">Calories</span>
                           </div>
@@ -632,7 +631,7 @@ const CreateMealPage = () => {
                                 className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
                                 style={{ color: proteinColor, opacity: 0.8 }}
                               >
-                                Protein
+                                P
                               </div>
                               <div className="text-base font-semibold text-white">{totalProtein.toFixed(0)}g</div>
                             </div>
@@ -641,7 +640,7 @@ const CreateMealPage = () => {
                                 className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
                                 style={{ color: carbsColor, opacity: 0.8 }}
                               >
-                                Carbs
+                                C
                               </div>
                               <div className="text-base font-semibold text-white">{totalCarbs.toFixed(0)}g</div>
                             </div>
@@ -650,7 +649,7 @@ const CreateMealPage = () => {
                                 className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
                                 style={{ color: fatsColor, opacity: 0.8 }}
                               >
-                                Fats
+                                F
                               </div>
                               <div className="text-base font-semibold text-white">{totalFats.toFixed(0)}g</div>
                             </div>
