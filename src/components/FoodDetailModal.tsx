@@ -324,7 +324,7 @@ export const FoodDetailModal = ({
                             height: `${proteinSize}%`,
                             background: proteinColor,
                             filter: 'blur(25px)',
-                            opacity: 0.7,
+                            opacity: 0.5,
                             left: '-20%',
                             top: '-10%',
                           }}
@@ -347,7 +347,7 @@ export const FoodDetailModal = ({
                             height: `${carbsSize}%`,
                             background: carbsColor,
                             filter: 'blur(25px)',
-                            opacity: 0.7,
+                            opacity: 0.5,
                             right: '-25%',
                             top: '-15%',
                           }}
@@ -371,7 +371,7 @@ export const FoodDetailModal = ({
                             height: `${fatsSize}%`,
                             background: fatsColor,
                             filter: 'blur(25px)',
-                            opacity: 0.7,
+                            opacity: 0.5,
                             left: '10%',
                             bottom: '-30%',
                           }}
