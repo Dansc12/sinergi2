@@ -297,12 +297,13 @@ export const FoodDetailModal = ({
 
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
@@ -312,7 +313,7 @@ export const FoodDetailModal = ({
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: "spring", damping: 28, stiffness: 350 }}
             className="w-full bg-background rounded-t-3xl flex flex-col max-h-[85vh]"
           >
             {/* Handle bar */}
