@@ -472,7 +472,7 @@ const CreateSavedMealPage = () => {
               {/* Content */}
               <div className="relative z-10">
                 {/* Top left: Fork/knife icon with count */}
-                <div className="flex items-center gap-1.5 text-white/80 text-sm mb-3">
+                <div className="flex items-center gap-1.5 text-white/80 text-sm mb-1">
                   <Utensils size={14} />
                   <span>{foods.length}</span>
                 </div>
@@ -487,20 +487,17 @@ const CreateSavedMealPage = () => {
                   
                   {/* Right: Macros */}
                   <div className="flex items-center gap-4">
-                    <div className="text-left">
-                      <span className="text-xs" style={{ color: proteinColor }}>P</span>
-                      <span className="text-white/60 text-xs ml-0.5">{proteinPct}%</span>
-                      <div className="text-white font-medium text-sm">{Math.round(totalProtein)}g</div>
+                    <div className="flex flex-col items-start justify-center">
+                      <span className="text-xs leading-tight" style={{ color: proteinColor }}>P <span className="text-white/60">{proteinPct}%</span></span>
+                      <div className="text-white font-medium text-sm leading-tight">{Math.round(totalProtein)}g</div>
                     </div>
-                    <div className="text-left">
-                      <span className="text-xs" style={{ color: carbsColor }}>C</span>
-                      <span className="text-white/60 text-xs ml-0.5">{carbsPct}%</span>
-                      <div className="text-white font-medium text-sm">{Math.round(totalCarbs)}g</div>
+                    <div className="flex flex-col items-start justify-center">
+                      <span className="text-xs leading-tight" style={{ color: carbsColor }}>C <span className="text-white/60">{carbsPct}%</span></span>
+                      <div className="text-white font-medium text-sm leading-tight">{Math.round(totalCarbs)}g</div>
                     </div>
-                    <div className="text-left">
-                      <span className="text-xs" style={{ color: fatsColor }}>F</span>
-                      <span className="text-white/60 text-xs ml-0.5">{fatsPct}%</span>
-                      <div className="text-white font-medium text-sm">{Math.round(totalFats)}g</div>
+                    <div className="flex flex-col items-start justify-center">
+                      <span className="text-xs leading-tight" style={{ color: fatsColor }}>F <span className="text-white/60">{fatsPct}%</span></span>
+                      <div className="text-white font-medium text-sm leading-tight">{Math.round(totalFats)}g</div>
                     </div>
                   </div>
                 </div>
