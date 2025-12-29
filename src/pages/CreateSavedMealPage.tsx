@@ -470,21 +470,21 @@ const CreateSavedMealPage = () => {
               />
               
               {/* Content */}
-              <div className="relative z-10">
-                {/* Top left: Fork/knife icon with count */}
-                <div className="flex items-center gap-1.5 text-white/80 text-sm mb-0.5">
+              <div className="relative z-10 h-14">
+                {/* Top left: Fork/knife icon with count (overlay, does not affect centering) */}
+                <div className="absolute left-0 top-0 flex items-center gap-1.5 text-white/80 text-sm">
                   <Utensils size={14} />
                   <span>{foods.length}</span>
                 </div>
-                
-                {/* Main row: Calories left, Macros right */}
-                <div className="flex items-center justify-between h-12">
+
+                {/* Main row: Calories left, Macros right (perfectly vertically centered) */}
+                <div className="flex items-center justify-between h-full">
                   {/* Left: Calories */}
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-white">{Math.round(totalCalories)}</span>
-                    <span className="text-white/60 text-sm">cal</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-3xl font-bold text-white leading-none">{Math.round(totalCalories)}</span>
+                    <span className="text-white/60 text-sm leading-none">cal</span>
                   </div>
-                  
+
                   {/* Right: Macros */}
                   <div className="flex items-center gap-4 h-full">
                     <div className="flex flex-col items-start justify-center h-full">
