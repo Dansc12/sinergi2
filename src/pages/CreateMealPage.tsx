@@ -486,53 +486,88 @@ const CreateMealPage = () => {
               </div>
 
               {/* Total Nutrition + Create Buttons Row */}
-              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 mb-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-primary mb-2">Total Nutrition</div>
-                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                      <div>
-                        <div className="text-muted-foreground">Calories</div>
-                        <div className="font-bold text-foreground">{totalCalories}</div>
+              {(() => {
+                const totalMacros = totalProtein + totalCarbs + totalFats;
+                const proteinRatio = totalMacros > 0 ? (totalProtein / totalMacros) * 100 : 33.33;
+                const carbsRatio = totalMacros > 0 ? (totalCarbs / totalMacros) * 100 : 33.33;
+                const fatsRatio = totalMacros > 0 ? (totalFats / totalMacros) * 100 : 33.33;
+                
+                // Calculate gradient stops based on ratios
+                const proteinEnd = proteinRatio;
+                const carbsEnd = proteinRatio + carbsRatio;
+                
+                const gradientStyle = {
+                  background: `linear-gradient(135deg, 
+                    hsl(220, 70%, 50%) 0%, 
+                    hsl(220, 70%, 50%) ${proteinEnd}%, 
+                    hsl(45, 80%, 50%) ${proteinEnd}%, 
+                    hsl(45, 80%, 50%) ${carbsEnd}%, 
+                    hsl(0, 70%, 50%) ${carbsEnd}%, 
+                    hsl(0, 70%, 50%) 100%)`,
+                  transition: 'background 0.5s ease-in-out'
+                };
+                
+                return (
+                  <div 
+                    className="p-4 rounded-xl border border-white/20 mb-6 relative overflow-hidden"
+                    style={gradientStyle}
+                  >
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    <div className="relative z-10 flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-white/90 mb-3">Total Nutrition</div>
+                        
+                        {/* Calories Row */}
+                        <div className="mb-3 text-center">
+                          <div className="text-xs text-white/70">Calories</div>
+                          <div className="text-2xl font-bold text-white">{totalCalories}</div>
+                        </div>
+                        
+                        {/* Macros Row */}
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                          <div className="flex flex-col items-center">
+                            <div className="w-3 h-3 rounded-full bg-[hsl(220,70%,50%)] mb-1" />
+                            <div className="text-xs text-white/70">Protein</div>
+                            <div className="font-bold text-white">{totalProtein.toFixed(0)}g</div>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <div className="w-3 h-3 rounded-full bg-[hsl(45,80%,50%)] mb-1" />
+                            <div className="text-xs text-white/70">Carbs</div>
+                            <div className="font-bold text-white">{totalCarbs.toFixed(0)}g</div>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <div className="w-3 h-3 rounded-full bg-[hsl(0,70%,50%)] mb-1" />
+                            <div className="text-xs text-white/70">Fats</div>
+                            <div className="font-bold text-white">{totalFats.toFixed(0)}g</div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-muted-foreground">Protein</div>
-                        <div className="font-bold text-foreground">{totalProtein.toFixed(0)}g</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Carbs</div>
-                        <div className="font-bold text-foreground">{totalCarbs.toFixed(0)}g</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Fats</div>
-                        <div className="font-bold text-foreground">{totalFats.toFixed(0)}g</div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="pill"
+                          size="sm"
+                          className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
+                          onClick={() => {
+                            toast({ title: "Create Meal feature coming soon!" });
+                          }}
+                        >
+                          <Plus size={14} />
+                          Create Meal
+                        </Button>
+                        <Button
+                          variant="pill"
+                          size="sm"
+                          className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
+                          onClick={() => navigate('/create/recipe')}
+                        >
+                          <ChefHat size={14} />
+                          Create Recipe
+                        </Button>
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="pill"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => {
-                        toast({ title: "Create Meal feature coming soon!" });
-                      }}
-                    >
-                      <Plus size={14} />
-                      Create Meal
-                    </Button>
-                    <Button
-                      variant="pill"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => navigate('/create/recipe')}
-                    >
-                      <ChefHat size={14} />
-                      Create Recipe
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               <div className="space-y-3">
                 {selectedFoods.map((food) => (
