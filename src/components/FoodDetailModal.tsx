@@ -390,7 +390,17 @@ export const FoodDetailModal = ({
                         
                         {/* Calories content in center */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                          <span className="text-2xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
+                          {manualOverride ? (
+                            <input
+                              type="number"
+                              min="0"
+                              value={manualCalories}
+                              onChange={handleMacroChange(setManualCalories)}
+                              className="w-16 text-2xl font-bold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          ) : (
+                            <span className="text-2xl font-bold text-white drop-shadow-md">{adjustedCalories}</span>
+                          )}
                           <span className="text-xs text-white/80 drop-shadow-sm">cal</span>
                         </div>
                       </div>
@@ -402,25 +412,79 @@ export const FoodDetailModal = ({
                     <div className="flex flex-col items-start">
                       <span className="text-[10px] font-medium mb-0.5" style={{ color: '#3DD6C6' }}>Protein</span>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}g</span>
-                        <span className="text-[10px] text-muted-foreground">{proteinPercentage.toFixed(0)}%</span>
+                        {manualOverride ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={manualProtein}
+                            onChange={handleMacroChange(setManualProtein)}
+                            className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold">{adjustedProtein.toFixed(0)}g</span>
+                        )}
+                        {manualOverride ? (
+                          <span className="text-[10px] text-muted-foreground">g</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">{proteinPercentage.toFixed(0)}%</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-start">
                       <span className="text-[10px] font-medium mb-0.5" style={{ color: '#5B8CFF' }}>Carbs</span>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}g</span>
-                        <span className="text-[10px] text-muted-foreground">{carbsPercentage.toFixed(0)}%</span>
+                        {manualOverride ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={manualCarbs}
+                            onChange={handleMacroChange(setManualCarbs)}
+                            className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold">{adjustedCarbs.toFixed(0)}g</span>
+                        )}
+                        {manualOverride ? (
+                          <span className="text-[10px] text-muted-foreground">g</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">{carbsPercentage.toFixed(0)}%</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-start">
                       <span className="text-[10px] font-medium mb-0.5" style={{ color: '#B46BFF' }}>Fats</span>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}g</span>
-                        <span className="text-[10px] text-muted-foreground">{fatsPercentage.toFixed(0)}%</span>
+                        {manualOverride ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={manualFats}
+                            onChange={handleMacroChange(setManualFats)}
+                            className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold">{adjustedFats.toFixed(0)}g</span>
+                        )}
+                        {manualOverride ? (
+                          <span className="text-[10px] text-muted-foreground">g</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">{fatsPercentage.toFixed(0)}%</span>
+                        )}
                       </div>
                     </div>
                   </div>
+
+                  {/* Edit Macros Button */}
+                  <button
+                    onClick={toggleManualOverride}
+                    className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors mt-3"
+                  >
+                    <Edit2 size={12} />
+                    <span>{manualOverride ? "Using manual values" : "Edit manually"}</span>
+                  </button>
                 </div>
 
                 {/* Right Column: Quantity & Unit Controls */}
@@ -515,69 +579,6 @@ export const FoodDetailModal = ({
                 </div>
               </div>
 
-              {/* Manual Override Section */}
-              <div className="mt-6 pt-4 border-t border-border">
-                <button
-                  onClick={toggleManualOverride}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
-                >
-                  <Edit2 size={14} />
-                  <span>{manualOverride ? "Using manual values" : "Edit macros manually"}</span>
-                </button>
-
-                {manualOverride && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="grid grid-cols-4 gap-3"
-                  >
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Calories</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={manualCalories}
-                        onChange={handleMacroChange(setManualCalories)}
-                        className="text-center"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Protein (g)</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={manualProtein}
-                        onChange={handleMacroChange(setManualProtein)}
-                        className="text-center"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Carbs (g)</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={manualCarbs}
-                        onChange={handleMacroChange(setManualCarbs)}
-                        className="text-center"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Fat (g)</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={manualFats}
-                        onChange={handleMacroChange(setManualFats)}
-                        className="text-center"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
             </div>
 
             {/* Add Button */}
