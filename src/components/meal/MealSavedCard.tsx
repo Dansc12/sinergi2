@@ -51,8 +51,8 @@ interface MealSavedCardProps {
   description?: string;
 }
 
-// Nutrition Summary Card with animated liquid blob background
-const NutritionSummaryCard = ({
+// Nutrition Summary Bar - matching Log Meal button style
+const NutritionSummaryBar = ({
   totalCalories,
   totalProtein,
   totalCarbs,
@@ -86,13 +86,9 @@ const NutritionSummaryCard = ({
   const proteinOpacity = totalMacros > 0 ? 0.6 + (totalProtein / totalMacros) * 0.4 : 0.75;
   const carbsOpacity = totalMacros > 0 ? 0.6 + (totalCarbs / totalMacros) * 0.4 : 0.75;
   const fatsOpacity = totalMacros > 0 ? 0.6 + (totalFats / totalMacros) * 0.4 : 0.75;
-
-  const proteinPct = totalMacros > 0 ? Math.round((totalProtein / totalMacros) * 100) : 0;
-  const carbsPct = totalMacros > 0 ? Math.round((totalCarbs / totalMacros) * 100) : 0;
-  const fatsPct = totalMacros > 0 ? Math.round((totalFats / totalMacros) * 100) : 0;
   
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden mt-4 shadow-lg shadow-black/30 p-4">
+    <div className="relative w-full h-14 rounded-xl overflow-hidden mt-3 shadow-lg shadow-black/30">
       {/* Liquid blob background */}
       <div className="absolute inset-0 bg-card">
         {/* Protein blob */}
@@ -180,52 +176,35 @@ const NutritionSummaryCard = ({
       
       {/* Border overlay */}
       <div 
-        className="absolute inset-0 rounded-2xl pointer-events-none"
+        className="absolute inset-0 rounded-xl pointer-events-none"
         style={{
           border: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       />
       
-      {/* Content */}
-      <div className="relative z-10 h-14">
-        {/* Top left: Fork/knife icon with count */}
-        <div className="absolute top-0 left-0 flex items-center gap-1.5 text-muted-foreground">
-          <Utensils size={14} />
-          <span className="text-xs font-medium">{foodCount}</span>
+      {/* Content - horizontal layout matching Log Meal button */}
+      <div className="relative z-10 flex items-center h-full px-4">
+        {/* Left: Icon + Count */}
+        <div className="flex items-center gap-2 text-white">
+          <Utensils size={20} />
+          <span className="font-semibold">{foodCount}</span>
         </div>
         
-        {/* Centered content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {/* Calories */}
-          <span className="text-2xl font-bold text-foreground">
-            {Math.round(totalCalories)}
-          </span>
-          <span className="text-xs text-muted-foreground -mt-0.5">calories</span>
+        {/* Center: Macros (absolutely positioned for true centering) */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
+          <span style={{ color: proteinColor }}>P {Math.round(totalProtein)}g</span>
+          <span style={{ color: carbsColor }}>C {Math.round(totalCarbs)}g</span>
+          <span style={{ color: fatsColor }}>F {Math.round(totalFats)}g</span>
         </div>
         
-        {/* Bottom macros row */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 text-xs">
-          <span>
-            <span style={{ color: proteinColor }} className="font-medium">P</span>
-            <span className="text-foreground ml-1">{Math.round(totalProtein)}g</span>
-            <span className="text-muted-foreground ml-0.5">({proteinPct}%)</span>
-          </span>
-          <span>
-            <span style={{ color: carbsColor }} className="font-medium">C</span>
-            <span className="text-foreground ml-1">{Math.round(totalCarbs)}g</span>
-            <span className="text-muted-foreground ml-0.5">({carbsPct}%)</span>
-          </span>
-          <span>
-            <span style={{ color: fatsColor }} className="font-medium">F</span>
-            <span className="text-foreground ml-1">{Math.round(totalFats)}g</span>
-            <span className="text-muted-foreground ml-0.5">({fatsPct}%)</span>
-          </span>
+        {/* Right: Calories */}
+        <div className="ml-auto text-sm text-white">
+          <span>{Math.round(totalCalories)} cal</span>
         </div>
       </div>
     </div>
   );
 };
-
 const MealSavedCard = ({
   title,
   items,
@@ -334,7 +313,7 @@ const MealSavedCard = ({
             exit={{ opacity: 0 }}
           >
             {/* Cover Photo Background Header */}
-            <div className="relative -mx-4 -mt-4 mb-4 h-32 overflow-hidden rounded-t-xl">
+            <div className="relative -mx-4 -mt-4 h-32 overflow-hidden rounded-t-xl">
               {coverPhotoUrl ? (
                 <img 
                   src={coverPhotoUrl} 
@@ -347,12 +326,12 @@ const MealSavedCard = ({
                 </div>
               )}
               {/* Gradient overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
             </div>
 
-            {/* Title Row with Copy Button */}
-            <div className="flex items-start justify-between gap-3">
-              <h4 className="font-semibold text-foreground text-lg">{title}</h4>
+            {/* Title Row with Copy Button - positioned to overlap cover photo */}
+            <div className="flex items-start justify-between gap-3 -mt-6 relative z-10">
+              <h4 className="font-bold text-foreground text-xl">{title}</h4>
               <Button
                 size="sm"
                 onClick={(e) => {
@@ -365,8 +344,8 @@ const MealSavedCard = ({
               </Button>
             </div>
 
-            {/* Profile Photo with Tags and Date */}
-            <div className="flex items-start gap-3 mt-3">
+            {/* Profile Photo with Tags and Date - minimal gap from title */}
+            <div className="flex items-start gap-3 mt-1.5">
               {/* Profile Avatar - 40px (h-10) */}
               <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage src={creator.avatar_url || undefined} />
@@ -406,8 +385,8 @@ const MealSavedCard = ({
               </p>
             )}
 
-            {/* Nutrition Summary Card - matching Create Saved Meal style */}
-            <NutritionSummaryCard
+            {/* Nutrition Summary Bar - matching Log Meal button style */}
+            <NutritionSummaryBar
               totalCalories={calcCalories}
               totalProtein={calcProtein}
               totalCarbs={calcCarbs}
