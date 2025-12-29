@@ -593,7 +593,7 @@ const CreateMealPage = () => {
                     <div 
                       className="absolute inset-0 backdrop-blur-md"
                       style={{
-                        background: 'rgba(0, 0, 0, 0.22)',
+                        background: 'rgba(0, 0, 0, 0.12)',
                         boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)',
                       }}
                     />
