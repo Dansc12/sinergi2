@@ -510,10 +510,10 @@ const CreateMealPage = () => {
                 const carbsSize = 40 + normalizedCarbs * 50;
                 const fatsSize = 40 + normalizedFats * 50;
                 
-                // Calculate opacities (0.08 minimum, up to 0.45)
-                const proteinOpacity = totalMacros > 0 ? 0.08 + (totalProtein / totalMacros) * 0.37 : 0.25;
-                const carbsOpacity = totalMacros > 0 ? 0.08 + (totalCarbs / totalMacros) * 0.37 : 0.25;
-                const fatsOpacity = totalMacros > 0 ? 0.08 + (totalFats / totalMacros) * 0.37 : 0.25;
+                // Calculate opacities (0.25 minimum, up to 0.7 for brighter colors)
+                const proteinOpacity = totalMacros > 0 ? 0.25 + (totalProtein / totalMacros) * 0.45 : 0.4;
+                const carbsOpacity = totalMacros > 0 ? 0.25 + (totalCarbs / totalMacros) * 0.45 : 0.4;
+                const fatsOpacity = totalMacros > 0 ? 0.25 + (totalFats / totalMacros) * 0.45 : 0.4;
                 
                 return (
                   <div className="relative mb-6 rounded-[18px] overflow-hidden shadow-lg shadow-black/30">
@@ -591,10 +591,10 @@ const CreateMealPage = () => {
                     
                     {/* Frosted glass overlay */}
                     <div 
-                      className="absolute inset-0 backdrop-blur-md"
+                      className="absolute inset-0 backdrop-blur-sm"
                       style={{
-                        background: 'rgba(0, 0, 0, 0.12)',
-                        boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+                        background: 'rgba(0, 0, 0, 0.05)',
+                        boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.08)',
                       }}
                     />
                     
