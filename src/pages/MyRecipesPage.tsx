@@ -168,6 +168,7 @@ const MyRecipesPage = () => {
                   totalProtein={meal.totalProtein}
                   totalCarbs={meal.totalCarbs}
                   totalFats={meal.totalFats}
+                  coverPhotoUrl={meal.coverPhoto}
                 />
               ))
             )}
@@ -198,6 +199,7 @@ const MyRecipesPage = () => {
                   totalProtein={recipe.totalNutrition.protein}
                   totalCarbs={recipe.totalNutrition.carbs}
                   totalFats={recipe.totalNutrition.fats}
+                  coverPhotoUrl={recipe.coverPhoto}
                 />
               ))
             )}

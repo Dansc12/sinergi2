@@ -46,6 +46,7 @@ interface MealSavedCardProps {
   totalProtein?: number;
   totalCarbs?: number;
   totalFats?: number;
+  coverPhotoUrl?: string | null;
 }
 
 // Nutrition Summary Card with animated liquid blob background
@@ -235,6 +236,7 @@ const MealSavedCard = ({
   totalProtein,
   totalCarbs,
   totalFats,
+  coverPhotoUrl,
 }: MealSavedCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -268,7 +270,7 @@ const MealSavedCard = ({
     >
       <AnimatePresence mode="wait">
         {!isExpanded ? (
-          /* Collapsed View */
+          /* Collapsed View - Show Cover Photo */
           <motion.div
             key="collapsed"
             initial={{ opacity: 0 }}
@@ -276,13 +278,20 @@ const MealSavedCard = ({
             exit={{ opacity: 0 }}
             className="flex items-start gap-3"
           >
-            {/* Avatar */}
-            <Avatar className="h-10 w-10 shrink-0">
-              <AvatarImage src={creator.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                {getInitials(creator.name)}
-              </AvatarFallback>
-            </Avatar>
+            {/* Cover Photo */}
+            <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-muted">
+              {coverPhotoUrl ? (
+                <img 
+                  src={coverPhotoUrl} 
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                  <Utensils size={18} className="text-primary" />
+                </div>
+              )}
+            </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
@@ -313,25 +322,47 @@ const MealSavedCard = ({
             </Button>
           </motion.div>
         ) : (
-          /* Expanded View */
+          /* Expanded View - Show Cover Photo as background header */
           <motion.div
             key="expanded"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Header Row */}
-            <div className="flex items-start gap-3">
-              {/* Avatar */}
-              <Avatar className="h-10 w-10 shrink-0">
+            {/* Cover Photo Background Header */}
+            <div className="relative -mx-4 -mt-4 mb-4 h-32 overflow-hidden rounded-t-xl">
+              {coverPhotoUrl ? (
+                <img 
+                  src={coverPhotoUrl} 
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                  <Utensils size={40} className="text-primary/50" />
+                </div>
+              )}
+              {/* Gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+            </div>
+
+            {/* Header Row with Profile Photo */}
+            <div className="flex items-start gap-3 -mt-10 relative z-10">
+              {/* Profile Avatar */}
+              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-card">
                 <AvatarImage src={creator.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/20 text-primary text-sm">
                   {getInitials(creator.name)}
                 </AvatarFallback>
               </Avatar>
 
-              {/* Spacer */}
-              <div className="flex-1" />
+              {/* Title and Date */}
+              <div className="flex-1 min-w-0 pt-1">
+                <h4 className="font-semibold text-foreground">{title}</h4>
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(createdAt)}
+                </span>
+              </div>
 
               {/* Copy Button */}
               <Button
@@ -344,14 +375,6 @@ const MealSavedCard = ({
               >
                 {copyButtonText}
               </Button>
-            </div>
-
-            {/* Title and Date under avatar */}
-            <div className="mt-3">
-              <h4 className="font-semibold text-foreground">{title}</h4>
-              <span className="text-xs text-muted-foreground">
-                {formatDate(createdAt)}
-              </span>
             </div>
 
             {/* Nutrition Summary Card - matching Create Saved Meal style */}

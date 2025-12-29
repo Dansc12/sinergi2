@@ -48,6 +48,7 @@ interface MealContentData {
   totalProtein?: number;
   totalCarbs?: number;
   totalFats?: number;
+  coverPhoto?: string;
 }
 
 interface Creator {
@@ -85,6 +86,7 @@ export interface SavedMeal {
   totalProtein: number;
   totalCarbs: number;
   totalFats: number;
+  coverPhoto: string | null;
   images: string[];
   created_at: string;
 }
@@ -190,6 +192,7 @@ export const useSavedMeals = () => {
         totalProtein?: number;
         totalCarbs?: number;
         totalFats?: number;
+        coverPhoto?: string;
       }
 
       const meals: SavedMeal[] = (data || []).map((post) => {
@@ -204,6 +207,7 @@ export const useSavedMeals = () => {
           totalProtein: contentData?.totalProtein || 0,
           totalCarbs: contentData?.totalCarbs || 0,
           totalFats: contentData?.totalFats || 0,
+          coverPhoto: contentData?.coverPhoto || (post.images && post.images[0]) || null,
           images: post.images || [],
           created_at: post.created_at,
         };
