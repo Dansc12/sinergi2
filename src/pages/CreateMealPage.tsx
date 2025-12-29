@@ -356,7 +356,7 @@ const CreateMealPage = () => {
                         <div 
                           className="absolute left-0 right-0 top-0 h-1"
                           style={{
-                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct}%, #5B8CFF ${pPct}%, #5B8CFF ${pPct + cPct}%, #B46BFF ${pPct + cPct}%, #B46BFF 100%)`,
+                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
                           }}
                         />
                       );
@@ -440,7 +440,7 @@ const CreateMealPage = () => {
                         <div 
                           className="absolute left-0 right-0 top-0 h-1"
                           style={{
-                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct}%, #5B8CFF ${pPct}%, #5B8CFF ${pPct + cPct}%, #B46BFF ${pPct + cPct}%, #B46BFF 100%)`,
+                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
                           }}
                         />
                       );
@@ -737,7 +737,7 @@ const CreateMealPage = () => {
                         <div 
                           className="absolute left-0 right-0 top-0 h-1"
                           style={{
-                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct}%, #5B8CFF ${pPct}%, #5B8CFF ${pPct + cPct}%, #B46BFF ${pPct + cPct}%, #B46BFF 100%)`,
+                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
                           }}
                         />
                       )}
