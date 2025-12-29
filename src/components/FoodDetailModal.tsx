@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, Minus, Plus, Edit2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Edit2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -79,10 +79,10 @@ export const FoodDetailModal = ({
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("g");
   const [manualOverride, setManualOverride] = useState(false);
-  const [manualCalories, setManualCalories] = useState(0);
-  const [manualProtein, setManualProtein] = useState(0);
-  const [manualCarbs, setManualCarbs] = useState(0);
-  const [manualFats, setManualFats] = useState(0);
+  const [manualCalories, setManualCalories] = useState("");
+  const [manualProtein, setManualProtein] = useState("");
+  const [manualCarbs, setManualCarbs] = useState("");
+  const [manualFats, setManualFats] = useState("");
   const macroEditRef = useRef<HTMLDivElement>(null);
   const isCustomFood = food?.isCustom || false;
   const baseUnit = food?.baseUnit || 'g';
@@ -128,20 +128,20 @@ export const FoodDetailModal = ({
       
       // Initialize manual values
       const initMultiplier = calculateMultiplier(defaultUnit, defaultQty, food.baseUnit || 'g', !food.isCustom);
-      setManualCalories(Math.round(food.calories * initMultiplier));
-      setManualProtein(Math.round(food.protein * initMultiplier * 10) / 10);
-      setManualCarbs(Math.round(food.carbs * initMultiplier * 10) / 10);
-      setManualFats(Math.round(food.fats * initMultiplier * 10) / 10);
+      setManualCalories(String(Math.round(food.calories * initMultiplier)));
+      setManualProtein(String(Math.round(food.protein * initMultiplier * 10) / 10));
+      setManualCarbs(String(Math.round(food.carbs * initMultiplier * 10) / 10));
+      setManualFats(String(Math.round(food.fats * initMultiplier * 10) / 10));
     }
   }, [isOpen, food, initialQuantity, initialUnit]);
 
   // Update manual values when quantity/unit changes
   useEffect(() => {
     if (!manualOverride && food) {
-      setManualCalories(calculatedCalories);
-      setManualProtein(Math.round(calculatedProtein * 10) / 10);
-      setManualCarbs(Math.round(calculatedCarbs * 10) / 10);
-      setManualFats(Math.round(calculatedFats * 10) / 10);
+      setManualCalories(String(calculatedCalories));
+      setManualProtein(String(Math.round(calculatedProtein * 10) / 10));
+      setManualCarbs(String(Math.round(calculatedCarbs * 10) / 10));
+      setManualFats(String(Math.round(calculatedFats * 10) / 10));
     }
   }, [quantity, selectedUnit, manualOverride, food, calculatedCalories, calculatedProtein, calculatedCarbs, calculatedFats]);
 
@@ -151,21 +151,26 @@ export const FoodDetailModal = ({
     
     const handleClickOutside = (e: MouseEvent) => {
       if (macroEditRef.current && !macroEditRef.current.contains(e.target as Node)) {
+        // Finalize empty values to 0 when exiting
+        if (manualCalories === "") setManualCalories("0");
+        if (manualProtein === "") setManualProtein("0");
+        if (manualCarbs === "") setManualCarbs("0");
+        if (manualFats === "") setManualFats("0");
         setManualOverride(false);
       }
     };
     
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [manualOverride]);
+  }, [manualOverride, manualCalories, manualProtein, manualCarbs, manualFats]);
 
   if (!food) return null;
 
   // Use manual values if override is enabled
-  const adjustedCalories = manualOverride ? manualCalories : calculatedCalories;
-  const adjustedProtein = manualOverride ? manualProtein : calculatedProtein;
-  const adjustedCarbs = manualOverride ? manualCarbs : calculatedCarbs;
-  const adjustedFats = manualOverride ? manualFats : calculatedFats;
+  const adjustedCalories = manualOverride ? (parseFloat(manualCalories) || 0) : calculatedCalories;
+  const adjustedProtein = manualOverride ? (parseFloat(manualProtein) || 0) : calculatedProtein;
+  const adjustedCarbs = manualOverride ? (parseFloat(manualCarbs) || 0) : calculatedCarbs;
+  const adjustedFats = manualOverride ? (parseFloat(manualFats) || 0) : calculatedFats;
 
   const totalMacros = adjustedProtein + adjustedCarbs + adjustedFats;
   const proteinPercentage = totalMacros > 0 ? (adjustedProtein / totalMacros) * 100 : 0;
@@ -181,35 +186,32 @@ export const FoodDetailModal = ({
   const { isEstimate } = getGramsForUnit(selectedUnit);
 
   const handleConfirm = () => {
-    if (manualOverride) {
-      const modifiedFood: FoodItem = {
-        ...food,
-        calories: manualCalories,
-        protein: manualProtein,
-        carbs: manualCarbs,
-        fats: manualFats,
-      };
-      onConfirm(modifiedFood, 1, `${quantity} ${selectedUnit}`);
-    } else {
-      const modifiedFood: FoodItem = {
-        ...food,
-        calories: adjustedCalories,
-        protein: adjustedProtein,
-        carbs: adjustedCarbs,
-        fats: adjustedFats,
-      };
-      onConfirm(modifiedFood, 1, `${quantity} ${selectedUnit}`);
-    }
+    const modifiedFood: FoodItem = {
+      ...food,
+      calories: adjustedCalories,
+      protein: adjustedProtein,
+      carbs: adjustedCarbs,
+      fats: adjustedFats,
+    };
+    onConfirm(modifiedFood, 1, `${quantity} ${selectedUnit}`);
   };
 
   const toggleManualOverride = () => {
     if (!manualOverride) {
-      setManualCalories(calculatedCalories);
-      setManualProtein(Math.round(calculatedProtein * 10) / 10);
-      setManualCarbs(Math.round(calculatedCarbs * 10) / 10);
-      setManualFats(Math.round(calculatedFats * 10) / 10);
+      // Entering manual mode - set current calculated values
+      setManualCalories(String(calculatedCalories));
+      setManualProtein(String(Math.round(calculatedProtein * 10) / 10));
+      setManualCarbs(String(Math.round(calculatedCarbs * 10) / 10));
+      setManualFats(String(Math.round(calculatedFats * 10) / 10));
+      setManualOverride(true);
+    } else {
+      // Exiting manual mode - finalize empty values to 0
+      if (manualCalories === "") setManualCalories("0");
+      if (manualProtein === "") setManualProtein("0");
+      if (manualCarbs === "") setManualCarbs("0");
+      if (manualFats === "") setManualFats("0");
+      setManualOverride(false);
     }
-    setManualOverride(!manualOverride);
   };
 
   const handleUnitChange = (newUnit: string) => {
@@ -253,9 +255,17 @@ export const FoodDetailModal = ({
     }
   };
 
-  const handleMacroChange = (setter: (value: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setter(Math.max(0, value) || 0);
+  const handleMacroChange = (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+  };
+
+  const handleMacroBlur = (setter: (value: string) => void, currentValue: string) => () => {
+    const parsed = parseFloat(currentValue);
+    if (isNaN(parsed) || currentValue === "") {
+      setter("0");
+    } else {
+      setter(String(Math.max(0, parsed)));
+    }
   };
 
 
@@ -296,8 +306,8 @@ export const FoodDetailModal = ({
                   </span>
                 )}
               </div>
-              <Button variant="ghost" size="icon" onClick={handleConfirm}>
-                <Check size={24} className="text-primary" />
+              <Button variant="default" size="sm" onClick={handleConfirm}>
+                Add
               </Button>
             </div>
 
@@ -419,6 +429,7 @@ export const FoodDetailModal = ({
                               min="0"
                               value={manualCalories}
                               onChange={handleMacroChange(setManualCalories)}
+                              onBlur={handleMacroBlur(setManualCalories, manualCalories)}
                               className="w-16 text-2xl font-bold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           ) : (
@@ -442,6 +453,7 @@ export const FoodDetailModal = ({
                             step="0.1"
                             value={manualProtein}
                             onChange={handleMacroChange(setManualProtein)}
+                            onBlur={handleMacroBlur(setManualProtein, manualProtein)}
                             className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         ) : (
@@ -464,6 +476,7 @@ export const FoodDetailModal = ({
                             step="0.1"
                             value={manualCarbs}
                             onChange={handleMacroChange(setManualCarbs)}
+                            onBlur={handleMacroBlur(setManualCarbs, manualCarbs)}
                             className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         ) : (
@@ -486,6 +499,7 @@ export const FoodDetailModal = ({
                             step="0.1"
                             value={manualFats}
                             onChange={handleMacroChange(setManualFats)}
+                            onBlur={handleMacroBlur(setManualFats, manualFats)}
                             className="w-10 text-xs font-semibold text-foreground text-center bg-transparent border-b border-muted-foreground/30 focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         ) : (
