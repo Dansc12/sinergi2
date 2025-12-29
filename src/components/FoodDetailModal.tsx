@@ -435,8 +435,16 @@ export const FoodDetailModal = ({
                         }}
                       />
                       
+                      {/* Edit pencil icon - top left */}
+                      <button
+                        onClick={handleManualButtonClick}
+                        className="absolute top-3 left-3 z-20 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <Edit2 size={14} className={isEditingManual ? "text-primary" : "text-white/60"} />
+                      </button>
+                      
                       {/* Content */}
-                      <div className="relative z-10 flex items-center justify-between w-full">
+                      <div className="relative z-10 flex items-center justify-between w-full pt-2">
                         {/* Calories - Left */}
                         <div className="flex items-baseline gap-1.5">
                           {isEditingManual ? (
@@ -456,12 +464,15 @@ export const FoodDetailModal = ({
                         
                         {/* Macros - Right */}
                         <div className="flex items-center gap-4">
-                          <div className="flex flex-col items-center">
-                            <div 
-                              className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
-                              style={{ color: proteinColor, opacity: 0.8 }}
-                            >
-                              P
+                          <div className="flex flex-col items-start">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <span 
+                                className="text-[11px] font-medium uppercase tracking-wide"
+                                style={{ color: proteinColor, opacity: 0.8 }}
+                              >
+                                P
+                              </span>
+                              <span className="text-[10px] text-white/50">{proteinPercentage.toFixed(0)}%</span>
                             </div>
                             <div className="flex items-baseline gap-0.5">
                               {isEditingManual ? (
@@ -472,19 +483,22 @@ export const FoodDetailModal = ({
                                   value={manualProtein}
                                   onChange={handleMacroChange(setManualProtein)}
                                   onBlur={handleMacroBlur(setManualProtein, manualProtein)}
-                                  className="w-10 text-base font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-10 text-base font-semibold text-white text-left bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               ) : (
                                 <span className="text-base font-semibold text-white">{adjustedProtein.toFixed(0)}g</span>
                               )}
                             </div>
                           </div>
-                          <div className="flex flex-col items-center">
-                            <div 
-                              className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
-                              style={{ color: carbsColor, opacity: 0.8 }}
-                            >
-                              C
+                          <div className="flex flex-col items-start">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <span 
+                                className="text-[11px] font-medium uppercase tracking-wide"
+                                style={{ color: carbsColor, opacity: 0.8 }}
+                              >
+                                C
+                              </span>
+                              <span className="text-[10px] text-white/50">{carbsPercentage.toFixed(0)}%</span>
                             </div>
                             <div className="flex items-baseline gap-0.5">
                               {isEditingManual ? (
@@ -495,19 +509,22 @@ export const FoodDetailModal = ({
                                   value={manualCarbs}
                                   onChange={handleMacroChange(setManualCarbs)}
                                   onBlur={handleMacroBlur(setManualCarbs, manualCarbs)}
-                                  className="w-10 text-base font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-10 text-base font-semibold text-white text-left bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               ) : (
                                 <span className="text-base font-semibold text-white">{adjustedCarbs.toFixed(0)}g</span>
                               )}
                             </div>
                           </div>
-                          <div className="flex flex-col items-center">
-                            <div 
-                              className="text-[11px] font-medium uppercase tracking-wide mb-0.5"
-                              style={{ color: fatsColor, opacity: 0.8 }}
-                            >
-                              F
+                          <div className="flex flex-col items-start">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <span 
+                                className="text-[11px] font-medium uppercase tracking-wide"
+                                style={{ color: fatsColor, opacity: 0.8 }}
+                              >
+                                F
+                              </span>
+                              <span className="text-[10px] text-white/50">{fatsPercentage.toFixed(0)}%</span>
                             </div>
                             <div className="flex items-baseline gap-0.5">
                               {isEditingManual ? (
@@ -518,7 +535,7 @@ export const FoodDetailModal = ({
                                   value={manualFats}
                                   onChange={handleMacroChange(setManualFats)}
                                   onBlur={handleMacroBlur(setManualFats, manualFats)}
-                                  className="w-10 text-base font-semibold text-white text-center bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-10 text-base font-semibold text-white text-left bg-transparent border-b border-white/30 focus:border-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               ) : (
                                 <span className="text-base font-semibold text-white">{adjustedFats.toFixed(0)}g</span>
@@ -530,15 +547,6 @@ export const FoodDetailModal = ({
                     </div>
                   );
                 })()}
-                
-                {/* Edit Macros Button */}
-                <button
-                  onClick={handleManualButtonClick}
-                  className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-2 w-full"
-                >
-                  <Edit2 size={12} />
-                  <span>{manualOverride ? "Using manual values" : "Edit manually"}</span>
-                </button>
               </div>
 
               {/* Quantity & Unit Controls */}
