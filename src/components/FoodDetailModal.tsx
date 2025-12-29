@@ -83,7 +83,7 @@ export const FoodDetailModal = ({
   const [manualProtein, setManualProtein] = useState(0);
   const [manualCarbs, setManualCarbs] = useState(0);
   const [manualFats, setManualFats] = useState(0);
-
+  const macroEditRef = useRef<HTMLDivElement>(null);
   const isCustomFood = food?.isCustom || false;
   const baseUnit = food?.baseUnit || 'g';
   const isUSDA = !isCustomFood;
@@ -144,6 +144,20 @@ export const FoodDetailModal = ({
       setManualFats(Math.round(calculatedFats * 10) / 10);
     }
   }, [quantity, selectedUnit, manualOverride, food, calculatedCalories, calculatedProtein, calculatedCarbs, calculatedFats]);
+
+  // Click outside to exit manual override
+  useEffect(() => {
+    if (!manualOverride) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (macroEditRef.current && !macroEditRef.current.contains(e.target as Node)) {
+        setManualOverride(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [manualOverride]);
 
   if (!food) return null;
 
@@ -244,21 +258,6 @@ export const FoodDetailModal = ({
     setter(Math.max(0, value) || 0);
   };
 
-  const macroEditRef = useRef<HTMLDivElement>(null);
-
-  // Click outside to exit manual override
-  useEffect(() => {
-    if (!manualOverride) return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
-      if (macroEditRef.current && !macroEditRef.current.contains(e.target as Node)) {
-        setManualOverride(false);
-      }
-    };
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [manualOverride]);
 
   return (
     <AnimatePresence>
