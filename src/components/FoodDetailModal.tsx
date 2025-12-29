@@ -85,6 +85,13 @@ export const FoodDetailModal = ({
   const [manualCarbs, setManualCarbs] = useState("");
   const [manualFats, setManualFats] = useState("");
   const macroEditRef = useRef<HTMLDivElement>(null);
+  
+  // Drag state for quantity adjustment
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef<number>(0);
+  const dragStartQuantity = useRef<number>(0);
+  const lastDragQuantity = useRef<number>(0);
+  
   const isCustomFood = food?.isCustom || false;
   const baseUnit = food?.baseUnit || 'g';
   const isUSDA = !isCustomFood;
@@ -556,30 +563,81 @@ export const FoodDetailModal = ({
                   <label className="text-sm text-muted-foreground mb-2 block">
                     Quantity
                   </label>
-                  <div className="flex items-center h-10 rounded-md border border-input bg-background">
+                  <div 
+                    className={`flex items-center h-10 rounded-md border border-input bg-background select-none ${isDragging ? 'cursor-grabbing' : 'cursor-ew-resize'}`}
+                    onMouseDown={(e) => {
+                      if (isEditingQuantity) return;
+                      e.preventDefault();
+                      setIsDragging(true);
+                      dragStartX.current = e.clientX;
+                      dragStartQuantity.current = quantity;
+                      lastDragQuantity.current = quantity;
+                    }}
+                    onMouseMove={(e) => {
+                      if (!isDragging) return;
+                      const deltaX = e.clientX - dragStartX.current;
+                      const sensitivity = 30; // pixels per unit change
+                      const unitsChange = Math.floor(deltaX / sensitivity);
+                      const newQuantity = Math.max(1, dragStartQuantity.current + unitsChange);
+                      if (newQuantity !== lastDragQuantity.current) {
+                        lastDragQuantity.current = newQuantity;
+                        setQuantity(newQuantity);
+                        setQuantityInput(String(newQuantity));
+                      }
+                    }}
+                    onMouseUp={() => setIsDragging(false)}
+                    onMouseLeave={() => setIsDragging(false)}
+                    onTouchStart={(e) => {
+                      if (isEditingQuantity) return;
+                      const touch = e.touches[0];
+                      setIsDragging(true);
+                      dragStartX.current = touch.clientX;
+                      dragStartQuantity.current = quantity;
+                      lastDragQuantity.current = quantity;
+                    }}
+                    onTouchMove={(e) => {
+                      if (!isDragging) return;
+                      const touch = e.touches[0];
+                      const deltaX = touch.clientX - dragStartX.current;
+                      const sensitivity = 30;
+                      const unitsChange = Math.floor(deltaX / sensitivity);
+                      const newQuantity = Math.max(1, dragStartQuantity.current + unitsChange);
+                      if (newQuantity !== lastDragQuantity.current) {
+                        lastDragQuantity.current = newQuantity;
+                        setQuantity(newQuantity);
+                        setQuantityInput(String(newQuantity));
+                      }
+                    }}
+                    onTouchEnd={() => setIsDragging(false)}
+                  >
                     <button
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 0.1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        decrementQuantity();
+                      }}
+                      disabled={quantity <= 1}
                       className="flex items-center justify-center h-full px-3 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <Minus size={16} />
                     </button>
-                    <div className="flex-1 h-full border-x border-input">
+                    <div className="flex-1 h-full">
                       {isEditingQuantity ? (
                         <input
                           type="number"
-                          step="0.1"
-                          min="0.1"
+                          step="1"
+                          min="1"
                           value={quantityInput}
                           onChange={(e) => handleQuantityInputChange(e.target.value)}
                           onBlur={handleQuantityInputBlur}
                           onKeyDown={handleQuantityInputKeyDown}
                           autoFocus
+                          onClick={(e) => e.stopPropagation()}
                           className="w-full h-full text-base font-medium text-center bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       ) : (
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setIsEditingQuantity(true);
                             setQuantityInput(String(quantity));
                           }}
@@ -590,7 +648,10 @@ export const FoodDetailModal = ({
                       )}
                     </div>
                     <button
-                      onClick={incrementQuantity}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        incrementQuantity();
+                      }}
                       className="flex items-center justify-center h-full px-3 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Plus size={16} />
