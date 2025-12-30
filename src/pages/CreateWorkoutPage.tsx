@@ -1175,12 +1175,18 @@ const CreateWorkoutPage = () => {
             <AlertDialogAction 
               onClick={() => {
                 if (supersetSourceExerciseId && selectedSupersetExercises.length > 0) {
+                  // Check if the source exercise is already in a superset
+                  const sourceExercise = exercises.find(e => e.id === supersetSourceExerciseId);
+                  const sourceGroupId = sourceExercise?.supersetGroupId;
+                  
                   // Check if any selected exercise is already in a superset
-                  const existingGroupId = selectedSupersetExercises
+                  const selectedExistingGroupId = selectedSupersetExercises
                     .map(id => exercises.find(e => e.id === id)?.supersetGroupId)
                     .find(gid => gid !== undefined);
                   
-                  const groupId = existingGroupId || Date.now().toString();
+                  // Priority: source exercise's group > selected exercise's group > new group
+                  const groupId = sourceGroupId || selectedExistingGroupId || Date.now().toString();
+                  const isJoiningExisting = sourceGroupId !== undefined || selectedExistingGroupId !== undefined;
                   
                   setExercises(exercises.map(e => {
                     if (e.id === supersetSourceExerciseId || selectedSupersetExercises.includes(e.id)) {
@@ -1189,12 +1195,9 @@ const CreateWorkoutPage = () => {
                     return e;
                   }));
                   
-                  const totalInSuperset = exercises.filter(e => e.supersetGroupId === groupId).length + 
-                    (existingGroupId ? 1 : selectedSupersetExercises.length + 1);
-                  
                   toast({ 
-                    title: existingGroupId ? "Added to superset!" : "Superset created!", 
-                    description: existingGroupId 
+                    title: isJoiningExisting ? "Added to superset!" : "Superset created!", 
+                    description: isJoiningExisting 
                       ? `Exercise added to existing superset.`
                       : `${selectedSupersetExercises.length + 1} exercises grouped together.`
                   });
