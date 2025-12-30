@@ -34,6 +34,8 @@ const HomePage = () => {
   const [congratsData, setCongratsData] = useState<{ contentData?: Record<string, unknown>; images?: string[] }>({});
   const [canShareContent, setCanShareContent] = useState(true);
   const [showSaveAsMealDialog, setShowSaveAsMealDialog] = useState(false);
+  const [hasMixedContent, setHasMixedContent] = useState(false);
+  const [savedMealData, setSavedMealData] = useState<{ name: string; foods: unknown[] } | null>(null);
 
   useEffect(() => {
     if (state?.showCongrats && state?.contentType) {
@@ -60,10 +62,31 @@ const HomePage = () => {
   const handleCongratsPost = () => {
     setShowCongratsPopup(false);
     
-    // If it's a meal and can't share, show the save as meal dialog
-    if (congratsContentType === "meal" && !canShareContent) {
-      setShowSaveAsMealDialog(true);
-      return;
+    // Check if it's a meal and analyze the content
+    if (congratsContentType === "meal") {
+      const foods = (congratsData.contentData as { foods?: Array<{ savedMealGroupId?: string; savedMealName?: string }> })?.foods || [];
+      const savedMealFoods = foods.filter(f => f.savedMealGroupId);
+      const individualFoods = foods.filter(f => !f.savedMealGroupId);
+      
+      // Case 1: Only individual foods - can't share
+      if (savedMealFoods.length === 0 && individualFoods.length > 0) {
+        setHasMixedContent(false);
+        setSavedMealData(null);
+        setShowSaveAsMealDialog(true);
+        return;
+      }
+      
+      // Case 2: Mix of saved meal and individual foods
+      if (savedMealFoods.length > 0 && individualFoods.length > 0) {
+        setHasMixedContent(true);
+        // Get the saved meal name from the first saved meal food
+        const savedMealName = savedMealFoods[0]?.savedMealName || "Saved Meal";
+        setSavedMealData({ name: savedMealName, foods: savedMealFoods });
+        setShowSaveAsMealDialog(true);
+        return;
+      }
+      
+      // Case 3: Only saved meal foods - can share directly
     }
     
     navigate("/share", {
@@ -75,6 +98,25 @@ const HomePage = () => {
         fromSelection: true,
       },
     });
+  };
+
+  const handleShareSavedMealOnly = () => {
+    setShowSaveAsMealDialog(false);
+    
+    if (savedMealData) {
+      navigate("/share", {
+        state: {
+          contentType: congratsContentType,
+          contentData: { 
+            ...(congratsData.contentData || {}),
+            foods: savedMealData.foods 
+          },
+          images: congratsData.images || [],
+          returnTo: "/",
+          fromSelection: true,
+        },
+      });
+    }
   };
 
   const handleCongratsDismiss = () => {
@@ -114,22 +156,43 @@ const HomePage = () => {
         onPost={handleCongratsPost}
       />
 
-      {/* Save as Meal Dialog - shown when user tries to share individual foods */}
+      {/* Save as Meal Dialog - handles both individual foods only and mixed content */}
       <Dialog open={showSaveAsMealDialog} onOpenChange={setShowSaveAsMealDialog}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Save as a Meal to Share</DialogTitle>
+            <DialogTitle>
+              {hasMixedContent ? "Mixed Content Detected" : "Save as a Meal to Share"}
+            </DialogTitle>
             <DialogDescription>
-              To share your meal with friends, you need to save it as a Meal first. Would you like to create a Saved Meal with these foods?
+              {hasMixedContent 
+                ? "You've logged items that are not part of a Saved Meal or Recipe. To share, you can create a new Saved Meal with all items, share only your Saved Meal/Recipe, or cancel."
+                : "To share your meal with friends, you need to save it as a Meal first. Would you like to create a Saved Meal with these foods?"
+              }
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowSaveAsMealDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveAsMeal}>
-              Save as Meal
-            </Button>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-col">
+            {hasMixedContent ? (
+              <>
+                <Button onClick={handleSaveAsMeal} className="w-full">
+                  Create New Saved Meal with All Items
+                </Button>
+                <Button variant="secondary" onClick={handleShareSavedMealOnly} className="w-full">
+                  Share Only Saved Meal/Recipe
+                </Button>
+                <Button variant="outline" onClick={() => setShowSaveAsMealDialog(false)} className="w-full">
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={handleSaveAsMeal} className="w-full">
+                  Save as Meal
+                </Button>
+                <Button variant="outline" onClick={() => setShowSaveAsMealDialog(false)} className="w-full">
+                  Cancel
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
