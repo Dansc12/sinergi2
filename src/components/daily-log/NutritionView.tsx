@@ -229,7 +229,10 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   }, [user]);
 
   const caloriesConsumed = totals.calories;
-  const caloriesLeft = Math.max(caloriesGoal - caloriesConsumed, 0);
+  const isOverGoal = caloriesConsumed > caloriesGoal;
+  const caloriesDisplay = isOverGoal 
+    ? caloriesConsumed - caloriesGoal 
+    : caloriesGoal - caloriesConsumed;
   const fillPercentage = (caloriesConsumed / caloriesGoal) * 100;
 
   const handleAddFood = (mealType: string) => {
@@ -246,23 +249,27 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Calories Container with Liquid Fill - edge to edge */}
-      <div className="relative overflow-visible -mx-4" style={{ minHeight: '280px' }}>
+      {/* Calories Container with Liquid Fill - edge to edge, full height */}
+      <div className="relative overflow-visible -mx-4 -mt-6" style={{ minHeight: '320px' }}>
         {/* Liquid wave animation */}
         <LiquidWave fillPercentage={fillPercentage} />
         
         {/* Content overlay */}
-        <div className="relative z-20 px-4 py-6 flex flex-col h-full" style={{ minHeight: '280px' }}>
+        <div className="relative z-20 px-4 pt-8 pb-6 flex flex-col h-full" style={{ minHeight: '320px' }}>
           {/* Calories display at top */}
           <div className="flex-1 flex flex-col items-center justify-center">
-            <span className="text-5xl font-bold text-white drop-shadow-lg">{caloriesLeft}</span>
-            <span className="text-sm text-white/80 font-medium mt-1 drop-shadow">calories remaining</span>
+            <span className={`text-5xl font-bold drop-shadow-lg ${isOverGoal ? 'text-red-400' : 'text-white'}`}>
+              {caloriesDisplay}
+            </span>
+            <span className={`text-sm font-medium mt-1 drop-shadow ${isOverGoal ? 'text-red-300/80' : 'text-white/80'}`}>
+              {isOverGoal ? 'calories over' : 'calories remaining'}
+            </span>
             <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
           </div>
           
-          {/* Macros Card pinned to bottom */}
-          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 space-y-3 mt-auto mx-4">
-            <h3 className="font-semibold text-sm">Macros</h3>
+          {/* Macros - no frame */}
+          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mt-auto mx-4">
+            <h3 className="font-semibold text-sm text-white/90">Macros</h3>
             <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="#3DD6C6" />
             <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="#5B8CFF" />
             <MacroBar label="F" current={totals.fat} goal={macroGoals.fat} color="#B46BFF" />
