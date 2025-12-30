@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Plus } from "lucide-react";
+import { Search, Loader2, Plus, Utensils } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SavedMealFood {
@@ -163,19 +163,40 @@ export const FoodSearchInput = ({
             )}
 
             {results.length > 0 ? (
-              results.map((food) => (
-                <button
-                  key={`${food.fdcId}-${food.isCustom ? 'custom' : 'usda'}`}
-                  type="button"
-                  onClick={() => handleSelect(food)}
-                  className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border last:border-0"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{food.description}</div>
-                      {(food.isSavedMeal || food.isRecipe) && (
-                        <div className="text-xs text-muted-foreground">
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+              results.map((food) => {
+                const isSavedMealOrRecipe = food.isSavedMeal || food.isRecipe;
+                
+                return (
+                  <button
+                    key={`${food.fdcId}-${food.isCustom ? 'custom' : 'usda'}`}
+                    type="button"
+                    onClick={() => handleSelect(food)}
+                    className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border last:border-0"
+                  >
+                    {isSavedMealOrRecipe ? (
+                      /* Saved Meal / Recipe display with circular cover photo */
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {/* Circular cover photo */}
+                            <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-primary/20">
+                              {food.savedMealCoverPhoto ? (
+                                <img 
+                                  src={food.savedMealCoverPhoto} 
+                                  alt={food.description}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center">
+                                  <Utensils size={18} className="text-primary" />
+                                </div>
+                              )}
+                            </div>
+                            {/* Name */}
+                            <span className="font-medium text-sm truncate">{food.description}</span>
+                          </div>
+                          {/* Label aligned right */}
+                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
                             food.isSavedMeal 
                               ? 'bg-emerald-500/20 text-emerald-400' 
                               : 'bg-amber-500/20 text-amber-400'
@@ -183,35 +204,48 @@ export const FoodSearchInput = ({
                             {food.isSavedMeal ? 'Saved Meal' : 'Recipe'}
                           </span>
                         </div>
-                      )}
-                      {food.isCustom && !food.isSavedMeal && !food.isRecipe && (
-                        <div className="text-xs text-muted-foreground">
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
-                            Custom
-                          </span>
+                        {/* Calories and macros */}
+                        <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground ml-[52px]">
+                          <span>{food.calories} cal</span>
+                          <span style={{ color: '#3DD6C6' }}>P: {food.protein}g</span>
+                          <span style={{ color: '#5B8CFF' }}>C: {food.carbs}g</span>
+                          <span style={{ color: '#B46BFF' }}>F: {food.fats}g</span>
                         </div>
-                      )}
-                      {!food.isCustom && food.brandName && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {food.brandName}
+                      </>
+                    ) : (
+                      /* Regular food / custom food display */
+                      <>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{food.description}</div>
+                            {food.isCustom && (
+                              <div className="text-xs text-muted-foreground">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                                  Custom
+                                </span>
+                              </div>
+                            )}
+                            {!food.isCustom && food.brandName && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                {food.brandName}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                    <span>{food.calories} cal</span>
-                    <span>P: {food.protein}g</span>
-                    <span>C: {food.carbs}g</span>
-                    <span>F: {food.fats}g</span>
-                    {food.isCustom && !food.isSavedMeal && !food.isRecipe && (
-                      <span className="text-muted-foreground/70">per 1{food.baseUnit}</span>
+                        <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                          <span>{food.calories} cal</span>
+                          <span>P: {food.protein}g</span>
+                          <span>C: {food.carbs}g</span>
+                          <span>F: {food.fats}g</span>
+                          {food.isCustom && (
+                            <span className="text-muted-foreground/70">per 1{food.baseUnit}</span>
+                          )}
+                        </div>
+                      </>
                     )}
-                    {(food.isSavedMeal || food.isRecipe) && (
-                      <span className="text-muted-foreground/70">per serving</span>
-                    )}
-                  </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             ) : (
               !onAddCustom && value.trim().length >= 2 && !isLoading && (
                 <div className="px-4 py-3 text-sm text-muted-foreground text-center">
