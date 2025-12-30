@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Footprints, Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, Play, Plus } from "lucide-react";
+import { Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useScheduledRoutines } from "@/hooks/useScheduledRoutines";
@@ -65,35 +64,69 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
     time: string | null;
   } | null>(null);
   
-  // Steps state
-  const [steps, setSteps] = useState(0);
-  const [showStepsInput, setShowStepsInput] = useState(false);
-  const [stepsInputValue, setStepsInputValue] = useState("");
-  const [showAddPrompt, setShowAddPrompt] = useState(false);
-  
   const { workoutLogs, isLoading } = useDailyLogs(selectedDate || new Date());
   const { routineInstances, isLoading: routinesLoading } = useScheduledRoutines(selectedDate || new Date());
-  
-  const stepsGoal = 10000;
-  const stepsLeft = Math.max(stepsGoal - steps, 0);
 
-  // Periodic "Click to add steps" prompt
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowAddPrompt(true);
-      setTimeout(() => setShowAddPrompt(false), 2500);
-    }, 12000); // Show every 12 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleStepsSubmit = () => {
-    const newSteps = parseInt(stepsInputValue);
-    if (!isNaN(newSteps) && newSteps > 0) {
-      setSteps(prev => prev + newSteps);
+  // Calculate workout summary stats
+  const getWorkoutStats = () => {
+    if (workoutLogs.length === 0) {
+      return { totalTime: 0, totalVolume: 0, primaryMuscle: "—" };
     }
-    setStepsInputValue("");
-    setShowStepsInput(false);
+
+    let totalVolume = 0;
+    const muscleGroupCounts: Record<string, number> = {};
+
+    workoutLogs.forEach(workout => {
+      const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
+      exercises.forEach(ex => {
+        // Count muscle groups
+        if (ex.muscleGroup) {
+          muscleGroupCounts[ex.muscleGroup] = (muscleGroupCounts[ex.muscleGroup] || 0) + 1;
+        }
+        // Sum volume for strength exercises
+        if (!ex.isCardio && Array.isArray(ex.sets)) {
+          ex.sets.forEach(set => {
+            const weight = parseFloat(set.weight) || 0;
+            const reps = parseFloat(set.reps) || 0;
+            totalVolume += weight * reps;
+          });
+        }
+      });
+    });
+
+    // Find primary muscle group
+    let primaryMuscle = "—";
+    let maxCount = 0;
+    Object.entries(muscleGroupCounts).forEach(([muscle, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        primaryMuscle = muscle;
+      }
+    });
+
+    // Calculate total time from first to last workout
+    let totalTime = 0;
+    workoutLogs.forEach(workout => {
+      // Estimate ~45 min per workout if no duration tracked
+      totalTime += 45;
+    });
+
+    return { totalTime, totalVolume, primaryMuscle };
+  };
+
+  const workoutStats = getWorkoutStats();
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  const formatVolume = (volume: number) => {
+    if (volume >= 1000000) return `${(volume / 1000000).toFixed(1)}M`;
+    if (volume >= 1000) return `${(volume / 1000).toFixed(1)}K`;
+    return volume.toLocaleString();
   };
 
   const toggleWorkout = (workoutId: string) => {
@@ -178,108 +211,35 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Steps Progress - Clickable */}
-      <div className="text-center">
-        <button
-          onClick={() => setShowStepsInput(true)}
-          className="relative w-40 h-40 mx-auto mb-4 cursor-pointer transition-transform hover:scale-105 active:scale-95"
-        >
-          <svg className="w-full h-full -rotate-90">
-            <circle
-              cx="80"
-              cy="80"
-              r="70"
-              strokeWidth="14"
-              stroke="hsl(var(--muted))"
-              fill="none"
-            />
-            <circle
-              cx="80"
-              cy="80"
-              r="70"
-              strokeWidth="14"
-              stroke="url(#stepsGradient)"
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={`${(steps / stepsGoal) * 440} 440`}
-            />
-            <defs>
-              <linearGradient id="stepsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="hsl(270, 91%, 65%)" />
-                <stop offset="100%" stopColor="hsl(320, 100%, 60%)" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <AnimatePresence mode="wait">
-              {showAddPrompt ? (
-                <motion.div
-                  key="prompt"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex flex-col items-center"
-                >
-                  <Plus className="text-primary mb-1" size={28} />
-                  <span className="text-sm font-medium text-primary">Click to add</span>
-                  <span className="text-sm font-medium text-primary">steps</span>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="steps"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex flex-col items-center"
-                >
-                  <Footprints className="text-primary mb-1" size={24} />
-                  <span className="text-3xl font-bold">{steps.toLocaleString()}</span>
-                  <span className="text-sm text-muted-foreground">{stepsLeft.toLocaleString()} to go</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+      {/* Workout Summary Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {/* Time Elapsed */}
+        <div className="bg-card border border-border rounded-xl p-4 text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+            <Clock size={20} className="text-primary" />
           </div>
-        </button>
-      </div>
+          <p className="text-xl font-bold">{workoutLogs.length > 0 ? formatDuration(workoutStats.totalTime) : "—"}</p>
+          <p className="text-xs text-muted-foreground">Time</p>
+        </div>
 
-      {/* Steps Input Dialog */}
-      <Dialog open={showStepsInput} onOpenChange={setShowStepsInput}>
-        <DialogContent className="max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Footprints size={20} className="text-primary" />
-              Add Steps
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="number"
-              placeholder="Enter steps..."
-              value={stepsInputValue}
-              onChange={(e) => setStepsInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleStepsSubmit()}
-              autoFocus
-              className="text-center text-lg"
-            />
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowStepsInput(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleStepsSubmit}
-                disabled={!stepsInputValue || parseInt(stepsInputValue) <= 0}
-              >
-                Add
-              </Button>
-            </div>
+        {/* Total Volume */}
+        <div className="bg-card border border-border rounded-xl p-4 text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+            <Dumbbell size={20} className="text-primary" />
           </div>
-        </DialogContent>
-      </Dialog>
+          <p className="text-xl font-bold">{workoutLogs.length > 0 ? formatVolume(workoutStats.totalVolume) : "—"}</p>
+          <p className="text-xs text-muted-foreground">Volume (lbs)</p>
+        </div>
+
+        {/* Primary Muscle */}
+        <div className="bg-card border border-border rounded-xl p-4 text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+            <Calendar size={20} className="text-primary" />
+          </div>
+          <p className="text-lg font-bold truncate">{workoutStats.primaryMuscle}</p>
+          <p className="text-xs text-muted-foreground">Focus</p>
+        </div>
+      </div>
 
       {/* Scheduled Routines Section */}
       {pendingRoutines.length > 0 && (
