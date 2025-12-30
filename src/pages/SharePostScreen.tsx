@@ -523,7 +523,7 @@ const SharePostScreen = () => {
                               return (
                                 <div 
                                   key={setIdx}
-                                  className="flex items-center gap-3 bg-muted/20 rounded-lg px-3 py-2"
+                                  className="flex items-center gap-3 py-1"
                                 >
                                   {/* Set type/# badge - matching Log Workout style */}
                                   <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
