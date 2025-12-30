@@ -484,18 +484,9 @@ const SharePostScreen = () => {
                       key={idx} 
                       className="rounded-xl bg-card border border-border overflow-hidden"
                     >
-                      {/* Superset indicator */}
-                      {isFirstInSuperset && supersetCount > 1 && (
-                        <div className={`${supersetColor} px-3 py-1.5`}>
-                          <span className="text-xs font-medium text-white">
-                            Superset · {supersetCount} exercises
-                          </span>
-                        </div>
-                      )}
-                      
                       <div className="flex">
-                        {/* Left color bar for superset exercises (not first) */}
-                        {supersetColor && !isFirstInSuperset && (
+                        {/* Left color bar for all superset exercises */}
+                        {supersetColor && (
                           <div className={`w-1 ${supersetColor}`} />
                         )}
                         
@@ -505,6 +496,12 @@ const SharePostScreen = () => {
                             <h4 className="font-semibold text-foreground">{exercise.name}</h4>
                             {exercise.isCardio && (
                               <span className="text-xs text-muted-foreground">Cardio</span>
+                            )}
+                            {/* Notes - directly below exercise name */}
+                            {exercise.notes && (
+                              <p className="text-sm text-foreground italic mt-1">
+                                {exercise.notes}
+                              </p>
                             )}
                           </div>
                           
@@ -554,12 +551,6 @@ const SharePostScreen = () => {
                             })}
                           </div>
                           
-                          {/* Notes */}
-                          {exercise.notes && (
-                            <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-2">
-                              {exercise.notes}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
