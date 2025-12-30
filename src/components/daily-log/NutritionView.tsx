@@ -74,13 +74,10 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
           <p className="text-primary font-bold text-lg mb-2">{totalCalories} cal</p>
           <div className="space-y-1">
             {allFoods.map((food, index) => {
-              // Format serving display - avoid double numbers like "2 × 100g"
-              const servingHasNumber = /\d/.test(food.servingSize);
-              const servingDisplay = food.servings === 1 
-                ? food.servingSize 
-                : servingHasNumber 
-                  ? `${food.servings} × ${food.servingSize}`
-                  : `${food.servings} ${food.servingSize}`;
+              // Format serving display - combine quantity and unit as single value
+              // e.g., servings: 63, servingSize: "63 g" should show "63g" not "63 x 63 g"
+              const servingUnit = food.servingSize?.replace(/^\d+\s*/, '').trim() || 'g';
+              const servingDisplay = `${food.servings}${servingUnit}`;
               
               return (
                 <div key={index} className="text-sm text-muted-foreground flex justify-between">
@@ -134,7 +131,7 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
   ];
   
   return (
-    <div className="absolute inset-0 overflow-hidden -mx-4">
+    <div className="absolute inset-0 overflow-hidden">
       {/* Gradient overlay for depth - blends perfectly to background */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none"
@@ -302,7 +299,7 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
         <LiquidWave fillPercentage={fillPercentage} />
         
         {/* Content overlay */}
-        <div className="relative z-20 px-4 pt-8 pb-6 flex flex-col h-full" style={{ minHeight: '320px' }}>
+        <div className="relative z-20 px-4 pt-8 pb-4 flex flex-col h-full" style={{ minHeight: '320px' }}>
           {/* Calories display at top */}
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className={`text-5xl font-bold drop-shadow-lg ${isOverGoal ? 'text-red-400' : 'text-white'}`}>
@@ -311,11 +308,11 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
             <span className={`text-sm font-medium mt-1 drop-shadow ${isOverGoal ? 'text-red-300/80' : 'text-white/80'}`}>
               {isOverGoal ? 'calories over' : 'calories remaining'}
             </span>
-              <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
+            <span className="text-xs text-white/60 mt-1">{caloriesConsumed} / {caloriesGoal} consumed</span>
           </div>
           
-          {/* Macros - no frame, reduced top spacing */}
-          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mt-2 mx-4">
+          {/* Macros - no frame, tighter spacing */}
+          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mx-4">
             <h3 className="font-semibold text-sm text-white/90">Macros</h3>
             <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="#3DD6C6" />
             <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="#5B8CFF" />
