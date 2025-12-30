@@ -22,6 +22,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRecentFoods } from "@/hooks/useRecentFoods";
 import { usePosts } from "@/hooks/usePosts";
 interface SelectedFood {
@@ -83,6 +91,7 @@ const CreateMealPage = () => {
   const [pendingFoodInitialUnit, setPendingFoodInitialUnit] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [showSaveAsMealDialog, setShowSaveAsMealDialog] = useState(false);
   
   // For saved meal expansion modal
   const [isSavedMealExpansionOpen, setIsSavedMealExpansionOpen] = useState(false);
@@ -254,6 +263,9 @@ const CreateMealPage = () => {
   const totalCarbs = selectedFoods.reduce((sum, f) => sum + f.carbs, 0);
   const totalFats = selectedFoods.reduce((sum, f) => sum + f.fats, 0);
 
+  // Check if the meal contains a saved meal group (shareable) or just individual foods
+  const hasSavedMealGroup = selectedFoods.some(food => food.savedMealGroupId);
+
   const handleSubmit = async () => {
     if (!mealType) {
       toast({ title: "Please select a meal type", variant: "destructive" });
@@ -274,12 +286,14 @@ const CreateMealPage = () => {
       });
 
       // Navigate home and show congrats popup
+      // Only show share option in popup if the meal contains a saved meal group
       navigate("/", {
         state: {
           showCongrats: true,
           contentType: "meal",
           contentData: { mealType, foods: selectedFoods, totalCalories, totalProtein, totalCarbs, totalFats },
           images: photos,
+          canShare: hasSavedMealGroup,
         },
       });
     } catch (error) {
@@ -288,6 +302,25 @@ const CreateMealPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handler for when user wants to share but doesn't have a saved meal
+  const handleShareAttempt = () => {
+    if (!hasSavedMealGroup) {
+      setShowSaveAsMealDialog(true);
+    }
+  };
+
+  // Navigate to create saved meal with current foods
+  const handleSaveAsMeal = () => {
+    setShowSaveAsMealDialog(false);
+    navigate('/create/saved-meal', {
+      state: {
+        foods: selectedFoods,
+        mealType,
+        photos,
+      },
+    });
   };
 
   // Navigation handlers for My Recipes and Discover pages
@@ -1293,6 +1326,26 @@ const CreateMealPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Save as Meal Dialog */}
+      <Dialog open={showSaveAsMealDialog} onOpenChange={setShowSaveAsMealDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save as a Meal to Share</DialogTitle>
+            <DialogDescription>
+              To share your meal with friends, you need to save it as a Meal first. Would you like to create a Saved Meal with these foods?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowSaveAsMealDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAsMeal}>
+              Save as Meal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

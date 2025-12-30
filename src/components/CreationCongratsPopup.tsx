@@ -8,6 +8,8 @@ interface CreationCongratsPopupProps {
   contentType: "workout" | "meal" | "recipe" | "routine";
   onDismiss: () => void;
   onPost: () => void;
+  onSaveAsMeal?: () => void;
+  canShare?: boolean;
 }
 
 const contentLabels: Record<string, string> = {
@@ -24,6 +26,8 @@ const CreationCongratsPopup = ({
   contentType,
   onDismiss,
   onPost,
+  onSaveAsMeal,
+  canShare = true,
 }: CreationCongratsPopupProps) => {
   const [visible, setVisible] = useState(isVisible);
   const [progress, setProgress] = useState(100);
@@ -122,7 +126,12 @@ const CreationCongratsPopup = ({
                     {contentLabels[contentType]} Saved!
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Would you like to share it with your friends?
+                    {canShare 
+                      ? "Would you like to share it with your friends?"
+                      : contentType === "meal" 
+                        ? "Save it as a Meal to share with friends."
+                        : "Would you like to share it with your friends?"
+                    }
                   </p>
                 </div>
                 <button
@@ -141,14 +150,33 @@ const CreationCongratsPopup = ({
                 >
                   Dismiss
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handlePost}
-                  className="flex-1 gap-2"
-                >
-                  <Share2 size={16} />
-                  Post
-                </Button>
+                {canShare ? (
+                  <Button
+                    size="sm"
+                    onClick={handlePost}
+                    className="flex-1 gap-2"
+                  >
+                    <Share2 size={16} />
+                    Post
+                  </Button>
+                ) : contentType === "meal" && onSaveAsMeal ? (
+                  <Button
+                    size="sm"
+                    onClick={onSaveAsMeal}
+                    className="flex-1 gap-2"
+                  >
+                    Save as Meal
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handlePost}
+                    className="flex-1 gap-2"
+                  >
+                    <Share2 size={16} />
+                    Post
+                  </Button>
+                )}
               </div>
             </div>
           </div>

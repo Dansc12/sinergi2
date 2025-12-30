@@ -11,6 +11,7 @@ interface LocationState {
   contentType?: "workout" | "meal" | "recipe" | "routine";
   contentData?: Record<string, unknown>;
   images?: string[];
+  canShare?: boolean;
 }
 
 const HomePage = () => {
@@ -22,11 +23,13 @@ const HomePage = () => {
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
   const [congratsContentType, setCongratsContentType] = useState<"workout" | "meal" | "recipe" | "routine">("workout");
   const [congratsData, setCongratsData] = useState<{ contentData?: Record<string, unknown>; images?: string[] }>({});
+  const [canShareContent, setCanShareContent] = useState(true);
 
   useEffect(() => {
     if (state?.showCongrats && state?.contentType) {
       setCongratsContentType(state.contentType);
       setCongratsData({ contentData: state.contentData, images: state.images });
+      setCanShareContent(state.canShare !== false);
       setShowCongratsPopup(true);
       // Clear the state so refresh doesn't show popup again
       window.history.replaceState({}, document.title);
@@ -61,6 +64,18 @@ const HomePage = () => {
     setShowCongratsPopup(false);
   };
 
+  const handleSaveAsMeal = () => {
+    setShowCongratsPopup(false);
+    // Navigate to create saved meal with the current foods
+    navigate("/create/saved-meal", {
+      state: {
+        foods: (congratsData.contentData as { foods?: unknown[] })?.foods || [],
+        mealType: (congratsData.contentData as { mealType?: string })?.mealType,
+        photos: congratsData.images || [],
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen">
       <HomeHeader 
@@ -80,6 +95,8 @@ const HomePage = () => {
         contentType={congratsContentType}
         onDismiss={handleCongratsDismiss}
         onPost={handleCongratsPost}
+        onSaveAsMeal={handleSaveAsMeal}
+        canShare={canShareContent}
       />
     </div>
   );
