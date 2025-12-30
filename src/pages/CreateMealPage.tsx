@@ -816,7 +816,19 @@ const CreateMealPage = () => {
                                   const servings = food.servings ?? 1;
                                   const servingSize = food.servingSize;
                                   const hasNumber = /\d/.test(servingSize);
-                                  if (hasNumber) return servings > 1 ? `${servings} × ${servingSize}` : servingSize;
+
+                                  if (hasNumber) {
+                                    const leadingMatch = servingSize.trim().match(/^(\d+(?:\.\d+)?)/);
+                                    const leadingNumber = leadingMatch ? Number(leadingMatch[1]) : NaN;
+
+                                    // If servingSize already includes the same number, don't show "N ×" (e.g. "123 × 123 g").
+                                    if (!Number.isNaN(leadingNumber) && Math.abs(servings - leadingNumber) < 1e-6) {
+                                      return servingSize;
+                                    }
+
+                                    return servings > 1 ? `${servings} × ${servingSize}` : servingSize;
+                                  }
+
                                   return `${servings}${servingSize}`;
                                 })()}
                               </span>
