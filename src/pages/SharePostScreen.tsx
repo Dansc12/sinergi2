@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Image, X, Globe, Users, Camera, ChevronDown, ChevronUp, Sparkles, Loader2, Tag, Plus, HelpCircle } from "lucide-react";
+import { ArrowLeft, Image, X, Globe, Users, Camera, ChevronDown, ChevronUp, Sparkles, Loader2, Tag, Plus, HelpCircle, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -561,6 +561,35 @@ const SharePostScreen = () => {
           </div>
         );
       case "meal":
+        const mealFoods = Array.isArray(data.foods) ? data.foods as Array<{ id: string; name: string; calories: number; protein: number; carbs: number; fats: number; servings?: number; servingSize?: string }> : [];
+        const totalCalories = (data.totalCalories as number) ?? mealFoods.reduce((sum, f) => sum + (f.calories || 0), 0);
+        const totalProtein = (data.totalProtein as number) ?? mealFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
+        const totalCarbs = (data.totalCarbs as number) ?? mealFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
+        const totalFats = (data.totalFats as number) ?? mealFoods.reduce((sum, f) => sum + (f.fats || 0), 0);
+        const coverPhotoUrl = data.coverPhotoUrl as string | undefined;
+        const mealDescription = data.description as string | undefined;
+        
+        // Macro colors matching MealSavedCard
+        const proteinColor = '#3DD6C6';
+        const carbsColor = '#5B8CFF';
+        const fatsColor = '#B46BFF';
+        
+        // Calculate macro ratios for nutrition bar
+        const totalMacros = totalProtein + totalCarbs + totalFats;
+        const proteinRatio = totalMacros > 0 ? Math.max((totalProtein / totalMacros), 0.08) : 0.33;
+        const carbsRatio = totalMacros > 0 ? Math.max((totalCarbs / totalMacros), 0.08) : 0.33;
+        const fatsRatio = totalMacros > 0 ? Math.max((totalFats / totalMacros), 0.08) : 0.33;
+        const totalRatio = proteinRatio + carbsRatio + fatsRatio;
+        const normalizedProtein = proteinRatio / totalRatio;
+        const normalizedCarbs = carbsRatio / totalRatio;
+        const normalizedFats = fatsRatio / totalRatio;
+        const proteinSize = 40 + normalizedProtein * 50;
+        const carbsSize = 40 + normalizedCarbs * 50;
+        const fatsSize = 40 + normalizedFats * 50;
+        const proteinOpacity = totalMacros > 0 ? 0.6 + (totalProtein / totalMacros) * 0.4 : 0.75;
+        const carbsOpacity = totalMacros > 0 ? 0.6 + (totalCarbs / totalMacros) * 0.4 : 0.75;
+        const fatsOpacity = totalMacros > 0 ? 0.6 + (totalFats / totalMacros) * 0.4 : 0.75;
+        
         return (
           <div className="space-y-4">
             {/* Meal Name - Inside details for meals being shared */}
@@ -677,38 +706,204 @@ const SharePostScreen = () => {
               </div>
             )}
 
-            {/* Separator between name/tags and foods */}
-            {visibility !== "private" && Array.isArray(data.foods) && (data.foods as Array<unknown>).length > 0 && (
-              <div className="border-t border-border pt-3">
-                <p className="text-xs text-muted-foreground font-medium mb-3">Foods</p>
-              </div>
+            {/* Separator between name/tags and expanded view */}
+            {visibility !== "private" && (
+              <div className="border-t border-border pt-4" />
             )}
 
-            {/* Food items - matching workout exercise card format */}
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-              {Array.isArray(data.foods) && (data.foods as Array<{ id: string; name: string; calories: number; protein: number; carbs: number; fats: number; servings?: number; servingSize?: string }>).map((food, idx) => (
-                <div 
-                  key={food.id || idx} 
-                  className="flex-shrink-0 rounded-xl bg-card border border-border text-foreground relative overflow-hidden min-w-[120px]"
-                >
-                  <div className="px-4 py-3">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="text-xs text-muted-foreground">
-                        {food.calories ?? 0} cal
-                      </span>
-                      <span className="font-medium text-sm truncate max-w-[120px]">{food.name}</span>
-                    </div>
-                  </div>
+            {/* Cover Photo - matching MealSavedCard expanded view */}
+            <div className="relative h-40 overflow-hidden rounded-xl">
+              {coverPhotoUrl ? (
+                <img 
+                  src={coverPhotoUrl} 
+                  alt={mealTitle}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                  <Utensils size={40} className="text-primary/50" />
                 </div>
-              ))}
+              )}
+              {/* Bottom gradient for soft edge */}
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
             </div>
 
-            {/* Total nutrition summary */}
-            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="font-semibold">
-                {(data.totalCalories as number) ?? 0} cal • P: {((data.totalProtein as number) ?? 0).toFixed(0)}g • C: {((data.totalCarbs as number) ?? 0).toFixed(0)}g • F: {((data.totalFats as number) ?? 0).toFixed(0)}g
+            {/* Description */}
+            {mealDescription && (
+              <p className="text-sm text-muted-foreground">
+                {mealDescription}
               </p>
+            )}
+
+            {/* Nutrition Summary Bar - matching MealSavedCard */}
+            <div className="relative w-full h-14 rounded-xl overflow-hidden shadow-lg shadow-black/30">
+              {/* Liquid blob background */}
+              <div className="absolute inset-0 bg-card">
+                {/* Protein blob */}
+                <motion.div
+                  className="absolute rounded-full blur-2xl"
+                  style={{
+                    width: `${proteinSize}%`,
+                    height: `${proteinSize * 2}%`,
+                    background: `radial-gradient(circle, ${proteinColor} 0%, transparent 70%)`,
+                    opacity: proteinOpacity,
+                    left: '5%',
+                    top: '-20%',
+                  }}
+                  animate={{
+                    x: [0, 15, -10, 5, 0],
+                    y: [0, -10, 15, -5, 0],
+                    scale: [1, 1.1, 0.95, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+                {/* Carbs blob */}
+                <motion.div
+                  className="absolute rounded-full blur-2xl"
+                  style={{
+                    width: `${carbsSize}%`,
+                    height: `${carbsSize * 2}%`,
+                    background: `radial-gradient(circle, ${carbsColor} 0%, transparent 70%)`,
+                    opacity: carbsOpacity,
+                    right: '10%',
+                    top: '-30%',
+                  }}
+                  animate={{
+                    x: [0, -20, 10, -5, 0],
+                    y: [0, 15, -10, 5, 0],
+                    scale: [1, 0.95, 1.1, 0.98, 1],
+                  }}
+                  transition={{
+                    duration: 9,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: 0.5,
+                  }}
+                />
+                {/* Fats blob */}
+                <motion.div
+                  className="absolute rounded-full blur-2xl"
+                  style={{
+                    width: `${fatsSize}%`,
+                    height: `${fatsSize * 2}%`,
+                    background: `radial-gradient(circle, ${fatsColor} 0%, transparent 70%)`,
+                    opacity: fatsOpacity,
+                    left: '30%',
+                    bottom: '-50%',
+                  }}
+                  animate={{
+                    x: [0, 10, -15, 8, 0],
+                    y: [0, -15, 10, -8, 0],
+                    scale: [1, 1.08, 0.92, 1.04, 1],
+                  }}
+                  transition={{
+                    duration: 7,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: 1,
+                  }}
+                />
+              </div>
+              
+              {/* Frosted glass overlay with subtle side vignette */}
+              <div 
+                className="absolute inset-0 backdrop-blur-[2px]"
+                style={{
+                  background: `linear-gradient(90deg, 
+                    rgba(0, 0, 0, 0.08) 0%, 
+                    rgba(0, 0, 0, 0) 12%, 
+                    rgba(0, 0, 0, 0) 88%, 
+                    rgba(0, 0, 0, 0.08) 100%)`,
+                  boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.12)',
+                }}
+              />
+              
+              {/* Border overlay */}
+              <div 
+                className="absolute inset-0 rounded-xl pointer-events-none"
+                style={{
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                }}
+              />
+              
+              {/* Content - horizontal layout matching Log Meal button */}
+              <div className="relative z-10 flex items-center h-full px-4">
+                {/* Left: Icon + Count */}
+                <div className="flex items-center gap-2 text-white">
+                  <Utensils size={20} />
+                  <span className="font-semibold">{mealFoods.length}</span>
+                </div>
+                
+                {/* Center: Macros (absolutely positioned for true centering) */}
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
+                  <span style={{ color: proteinColor }}>P {Math.round(totalProtein)}g</span>
+                  <span style={{ color: carbsColor }}>C {Math.round(totalCarbs)}g</span>
+                  <span style={{ color: fatsColor }}>F {Math.round(totalFats)}g</span>
+                </div>
+                
+                {/* Right: Calories */}
+                <div className="ml-auto text-sm text-white">
+                  <span>{Math.round(totalCalories)} cal</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Food Items - matching MealSavedCard expanded view */}
+            <div className="space-y-2">
+              {mealFoods.map((food, idx) => {
+                const p = food.protein || 0;
+                const c = food.carbs || 0;
+                const f = food.fats || 0;
+                const total = p + c + f;
+                const itemPPct = total > 0 ? (p / total) * 100 : 0;
+                const itemCPct = total > 0 ? (c / total) * 100 : 0;
+                
+                return (
+                  <div 
+                    key={food.id || idx} 
+                    className="rounded-xl bg-muted/30 border border-border/50 relative overflow-hidden"
+                  >
+                    {/* Macro gradient bar at top */}
+                    {total > 0 && (
+                      <div 
+                        className="absolute left-0 right-0 top-0 h-1"
+                        style={{
+                          background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${itemPPct * 0.7}%, #5B8CFF ${itemPPct + itemCPct * 0.3}%, #5B8CFF ${itemPPct + itemCPct * 0.7}%, #B46BFF ${itemPPct + itemCPct + (100 - itemPPct - itemCPct) * 0.3}%, #B46BFF 100%)`,
+                        }}
+                      />
+                    )}
+                    <div className="p-3 pt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-primary">
+                          {(() => {
+                            const servings = food.servings ?? 1;
+                            const servingSize = food.servingSize || 'g';
+                            // If servingSize already contains a number (e.g. "100 g"), don't prepend servings
+                            const hasNumber = /\d/.test(servingSize);
+                            if (hasNumber) {
+                              return servings > 1 ? `${servings} × ${servingSize}` : servingSize;
+                            }
+                            return `${servings}${servingSize}`;
+                          })()}
+                        </span>
+                        <span className="font-medium text-foreground text-sm">{food.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-xs text-foreground">{Math.round(food.calories || 0)} cal</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span style={{ color: '#3DD6C6' }}>P: {Math.round(p)}g</span>
+                          <span style={{ color: '#5B8CFF' }}>C: {Math.round(c)}g</span>
+                          <span style={{ color: '#B46BFF' }}>F: {Math.round(f)}g</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
