@@ -903,16 +903,31 @@ const CreateMealPage = () => {
                         setSelectedFoods(prev => prev.filter(f => !foodIds.includes(f.id)));
                       };
                       
+                      // Calculate macro percentages for the group colorbar
+                      const groupTotal = groupProtein + groupCarbs + groupFats;
+                      const groupPPct = groupTotal > 0 ? (groupProtein / groupTotal) * 100 : 0;
+                      const groupCPct = groupTotal > 0 ? (groupCarbs / groupTotal) * 100 : 0;
+                      
                       return (
                         <motion.div
                           key={groupId}
                           layout
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="rounded-xl bg-card border-2 border-primary/30 overflow-hidden"
+                          className="rounded-xl bg-card border border-border overflow-hidden relative"
                         >
+                          {/* Macro colorbar at top */}
+                          {groupTotal > 0 && (
+                            <div 
+                              className="absolute left-0 right-0 top-0 h-1"
+                              style={{
+                                background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${groupPPct * 0.7}%, #5B8CFF ${groupPPct + groupCPct * 0.3}%, #5B8CFF ${groupPPct + groupCPct * 0.7}%, #B46BFF ${groupPPct + groupCPct + (100 - groupPPct - groupCPct) * 0.3}%, #B46BFF 100%)`,
+                              }}
+                            />
+                          )}
+                          
                           {/* Header with circular cover photo and name */}
-                          <div className="flex items-center justify-between p-3 border-b border-border/50">
+                          <div className="flex items-center justify-between p-3 pt-4 border-b border-border/50">
                             <div className="flex items-center gap-3">
                               {/* Circular cover photo */}
                               <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-primary/20">
