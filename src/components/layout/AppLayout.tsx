@@ -34,8 +34,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const isHome = location.pathname === "/";
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className={hideNav ? "" : isHome ? "h-[100dvh] overflow-hidden" : "pb-24"}>
+    <div className={isHome ? "h-[100svh] overflow-hidden bg-background" : "min-h-screen bg-background"}>
+      <main className={hideNav ? "" : isHome ? "h-full" : "pb-24"}>
         {children}
       </main>
       {!hideNav && (
