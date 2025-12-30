@@ -1,5 +1,4 @@
 import { Flame } from "lucide-react";
-import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationsPanel } from "./NotificationsPanel";
 
@@ -16,8 +15,8 @@ export const HomeHeader = ({
   avatarUrl,
   onProfileClick,
 }: HomeHeaderProps) => {
-  const header = (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-background">
+  return (
+    <header className="bg-background">
       {/* Top Bar */}
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
@@ -44,9 +43,4 @@ export const HomeHeader = ({
       </div>
     </header>
   );
-
-  // Portal to <body> so the header is truly viewport-fixed even if some ancestor creates
-  // a containing block (e.g. via transform/filter/backdrop-filter).
-  if (typeof document === "undefined") return header;
-  return createPortal(header, document.body);
 };

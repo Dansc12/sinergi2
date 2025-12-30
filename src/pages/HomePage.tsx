@@ -136,17 +136,19 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <HomeHeader 
+    <div className="h-[100dvh] flex flex-col">
+      <HomeHeader
         userName={userName}
         streakCount={streakCount}
         avatarUrl={avatarUrl}
         onProfileClick={() => navigate("/profile")}
       />
-      
-      <div className="animate-fade-in pt-20">
-        <ProgressCharts />
-        <TasksSection completedTasks={completedTasks} />
+
+      <div className="flex-1 overflow-y-auto pb-24">
+        <div className="animate-fade-in">
+          <ProgressCharts />
+          <TasksSection completedTasks={completedTasks} />
+        </div>
       </div>
 
       <CreationCongratsPopup

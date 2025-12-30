@@ -31,9 +31,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   
   const hideNav = HIDDEN_NAV_ROUTES.some(route => location.pathname.startsWith(route));
 
+  const isHome = location.pathname === "/";
+
   return (
     <div className="min-h-screen bg-background">
-      <main className={hideNav ? "" : "pb-24"}>
+      <main className={hideNav ? "" : isHome ? "h-[100dvh] overflow-hidden" : "pb-24"}>
         {children}
       </main>
       {!hideNav && (
