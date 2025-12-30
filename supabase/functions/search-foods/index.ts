@@ -164,18 +164,55 @@ serve(async (req) => {
             const label = isMeal ? 'Saved Meal' : 'Recipe';
             
             // Map foods to the expected format for saved meals
-            const savedMealFoods: FoodInMeal[] = foods.map((food: any, idx: number) => ({
-              id: food.id || `${post.id}-food-${idx}`,
-              name: food.name || food.description || 'Unknown',
-              calories: Number(food.calories) || 0,
-              protein: Number(food.protein) || 0,
-              carbs: Number(food.carbs) || 0,
-              fats: Number(food.fats) || Number(food.fat) || 0,
-              servings: Number(food.servings) || Number(food.rawQuantity) || 1,
-              servingSize: food.servingSize || food.rawUnit || 'g',
-              rawQuantity: Number(food.rawQuantity) || Number(food.servings) || 1,
-              rawUnit: food.rawUnit || 'g',
-            }));
+            const savedMealFoods: FoodInMeal[] = foods.map((food: any, idx: number) => {
+              const id = food.id || `${post.id}-food-${idx}`;
+              const name = food.name || food.description || 'Unknown';
+
+              const calories = Number(food.calories) || 0;
+              const protein = Number(food.protein) || 0;
+              const carbs = Number(food.carbs) || 0;
+              const fats = Number(food.fats) || Number(food.fat) || 0;
+
+              const rawUnitText = typeof food.rawUnit === "string" ? food.rawUnit.trim() : "";
+              const rawQuantityNum = Number(food.rawQuantity);
+
+              // Some older saved data stored quantity+unit inside rawUnit (e.g. "100 g")
+              const parseQtyUnit = (value: string): { qty: number; unit: string } | null => {
+                const match = value.trim().match(/^([\d.]+)\s*(.+)$/);
+                if (!match) return null;
+                const qty = Number(match[1]);
+                if (!Number.isFinite(qty) || qty <= 0) return null;
+                return { qty, unit: match[2].trim() };
+              };
+
+              const parsedServing = typeof food.servingSize === "string" && /\d/.test(food.servingSize)
+                ? parseQtyUnit(food.servingSize)
+                : (rawUnitText && /\d/.test(rawUnitText) ? parseQtyUnit(rawUnitText) : null);
+
+              // IMPORTANT: rawQuantity is the actual quantity (e.g. 100), not the number of servings.
+              // If we can't trust rawQuantity/rawUnit, fall back to parsing servingSize.
+              const quantity = (Number.isFinite(rawQuantityNum) && rawQuantityNum > 0 && rawUnitText && !/\d/.test(rawUnitText))
+                ? rawQuantityNum
+                : (parsedServing ? parsedServing.qty : 1);
+
+              const unit = (rawUnitText && !/\d/.test(rawUnitText))
+                ? rawUnitText
+                : (parsedServing ? parsedServing.unit : "g");
+
+              return {
+                id,
+                name,
+                calories,
+                protein,
+                carbs,
+                fats,
+                // Normalize to the current app format: quantity+unit stored together.
+                servings: 1,
+                servingSize: `${quantity} ${unit}`,
+                rawQuantity: quantity,
+                rawUnit: unit,
+              };
+            });
             
             return {
               fdcId: -Math.abs(post.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)),

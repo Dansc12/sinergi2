@@ -61,6 +61,11 @@ const clampUnit = (unit: string): StandardUnit => {
 };
 
 const parseSavedServing = (food: SavedMealFood): { quantity: number; unit: StandardUnit } => {
+  const positive = (value: unknown, fallback: number) => {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
+
   const parseFromString = (value?: string) => {
     if (!value) return null;
     const match = value.trim().match(/^([\d.]+)\s*(.+)$/);
@@ -71,21 +76,24 @@ const parseSavedServing = (food: SavedMealFood): { quantity: number; unit: Stand
     return { quantity: qty, unit };
   };
 
-  // Prefer servingSize if it contains quantity + unit (e.g. "100 g")
+  // If servingSize contains quantity + unit (e.g. "100 g"), treat `servings` as a multiplier.
   const fromServingSize = parseFromString(food.servingSize);
-  if (fromServingSize) return fromServingSize;
+  if (fromServingSize) {
+    const mult = positive(food.servings, 1);
+    return { quantity: fromServingSize.quantity * mult, unit: fromServingSize.unit };
+  }
 
-  // Next try rawUnit if it contains quantity + unit (we have older saved data like rawUnit: "100 g")
+  // Older data sometimes stores quantity+unit in rawUnit (e.g. rawQuantity: 2, rawUnit: "100 g")
   const fromRawUnit = parseFromString(food.rawUnit);
-  if (fromRawUnit) return fromRawUnit;
+  if (fromRawUnit) {
+    const mult = positive(food.rawQuantity ?? food.servings, 1);
+    return { quantity: fromRawUnit.quantity * mult, unit: fromRawUnit.unit };
+  }
 
   // Otherwise fall back to numeric quantity + unit
-  const qty = Number(food.rawQuantity ?? food.servings ?? 1);
-  const unit = clampUnit(String(food.rawUnit ?? "g"));
-  return {
-    quantity: Number.isFinite(qty) && qty > 0 ? qty : 1,
-    unit,
-  };
+  const qty = positive(food.rawQuantity ?? food.servings, 1);
+  const unit = clampUnit(String(food.rawUnit ?? food.servingSize ?? "g"));
+  return { quantity: qty, unit };
 };
 
 export const SavedMealExpansionModal = ({
