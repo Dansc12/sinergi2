@@ -282,149 +282,185 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
       </Dialog>
 
       {/* Scheduled Routines Section */}
-      <div>
-        <h3 className="font-semibold mb-3">Scheduled Workouts</h3>
-        
-        {pendingRoutines.length > 0 && (
-          <div className="space-y-3">
-            {pendingRoutines.map((instance) => {
-              const routine = instance.scheduled_routine;
-              if (!routine) return null;
-              
-              const routineData = routine.routine_data as { exercises: RoutineExercise[]; description?: string };
-              const exercises = routineData.exercises || [];
-              
-              return (
-                <motion.div
-                  key={instance.id}
-                  className="bg-card border border-border rounded-xl overflow-hidden"
+      {pendingRoutines.length > 0 && (
+        <div className="space-y-3">
+          {pendingRoutines.map((instance) => {
+            const routine = instance.scheduled_routine;
+            if (!routine) return null;
+            
+            const routineData = routine.routine_data as { exercises: RoutineExercise[]; description?: string };
+            const exercises = routineData.exercises || [];
+            
+            return (
+              <motion.div
+                key={instance.id}
+                className="bg-card border border-border rounded-xl overflow-hidden"
+              >
+                {/* Routine Header */}
+                <button
+                  onClick={() => toggleRoutine(instance.id)}
+                  className="w-full p-4 flex items-center justify-between text-left"
                 >
-                  {/* Routine Header */}
-                  <button
-                    onClick={() => toggleRoutine(instance.id)}
-                    className="w-full p-4 flex items-center justify-between text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                        <Dumbbell size={18} className="text-violet-400" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">{routine.routine_name}</h4>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock size={14} />
-                          <span>{formatScheduledTime(instance.scheduled_time)}</span>
-                          <span>•</span>
-                          <span>{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</span>
-                        </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                      <Dumbbell size={18} className="text-violet-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">{routine.routine_name}</h4>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock size={14} />
+                        <span>{formatScheduledTime(instance.scheduled_time)}</span>
+                        <span>•</span>
+                        <span>{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
-                    {expandedRoutine === instance.id ? (
-                      <ChevronDown size={20} className="text-muted-foreground" />
-                    ) : (
-                      <ChevronRight size={20} className="text-muted-foreground" />
-                    )}
-                  </button>
-
-                  {/* Preview when collapsed */}
-                  {expandedRoutine !== instance.id && (
-                    <div className="px-4 pb-4">
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        {exercises.slice(0, 3).map((exercise, index) => (
-                          <div key={index} className="flex justify-between">
-                            <span>{exercise.name}</span>
-                            <span>{exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}</span>
-                          </div>
-                        ))}
-                        {exercises.length > 3 && (
-                          <span className="text-xs text-primary">
-                            +{exercises.length - 3} more exercises
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        className="w-full mt-3 gap-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartRoutine(instance);
-                        }}
-                      >
-                        <Play size={16} />
-                        Start Workout
-                      </Button>
-                    </div>
+                  </div>
+                  {expandedRoutine === instance.id ? (
+                    <ChevronDown size={20} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronRight size={20} className="text-muted-foreground" />
                   )}
+                </button>
 
-                  {/* Expanded Routine Details */}
-                  <AnimatePresence>
-                    {expandedRoutine === instance.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-4 pb-4 space-y-3">
-                          {/* Full Exercise List */}
-                          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                            {exercises.map((exercise, index) => (
-                              <div key={index} className="flex justify-between text-sm">
-                                <div>
-                                  <span className="text-foreground">{exercise.name}</span>
-                                  {exercise.notes && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">{exercise.notes}</p>
-                                  )}
-                                </div>
-                                <span className="text-muted-foreground">
-                                  {exercise.sets.length} × {exercise.sets[0]?.minReps}-{exercise.sets[0]?.maxReps} reps
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Start Workout Button */}
-                          <Button
-                            className="w-full gap-2"
-                            onClick={() => handleStartRoutine(instance)}
-                          >
-                            <Play size={16} />
-                            Start Workout
-                          </Button>
+                {/* Preview when collapsed */}
+                {expandedRoutine !== instance.id && (
+                  <div className="px-4 pb-4">
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      {exercises.slice(0, 3).map((exercise, index) => (
+                        <div key={index} className="flex justify-between">
+                          <span>{exercise.name}</span>
+                          <span>{exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}</span>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+                      ))}
+                      {exercises.length > 3 && (
+                        <span className="text-xs text-primary">
+                          +{exercises.length - 3} more exercises
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      className="w-full mt-3 gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartRoutine(instance);
+                      }}
+                    >
+                      <Play size={16} />
+                      Start Workout
+                    </Button>
+                  </div>
+                )}
 
-        {/* Quick Start Workout Button */}
-        <Button
-          variant="outline"
-          className="w-full mt-4 gap-2 border-primary/50 text-primary hover:bg-primary/10"
-          onClick={handleQuickLogWorkout}
-        >
-          <Dumbbell size={18} />
-          Quick Start Workout
-        </Button>
-      </div>
+                {/* Expanded Routine Details */}
+                <AnimatePresence>
+                  {expandedRoutine === instance.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 space-y-3">
+                        {/* Full Exercise List */}
+                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                          {exercises.map((exercise, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <div>
+                                <span className="text-foreground">{exercise.name}</span>
+                                {exercise.notes && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{exercise.notes}</p>
+                                )}
+                              </div>
+                              <span className="text-muted-foreground">
+                                {exercise.sets.length} × {exercise.sets[0]?.minReps}-{exercise.sets[0]?.maxReps} reps
+                              </span>
+                            </div>
+                          ))}
+                        </div>
 
-      {/* Logged Workouts */}
+                        {/* Start Workout Button */}
+                        <Button
+                          className="w-full gap-2"
+                          onClick={() => handleStartRoutine(instance)}
+                        >
+                          <Play size={16} />
+                          Start Workout
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Quick Start Workout Button */}
+      <Button
+        variant="outline"
+        className="w-full gap-2 border-primary/50 text-primary hover:bg-primary/10"
+        onClick={handleQuickLogWorkout}
+      >
+        <Dumbbell size={18} />
+        Quick Start Workout
+      </Button>
+
+      {/* Logged Workouts - Full inline display matching SharePostScreen style */}
       {workoutLogs.length > 0 && (
         <div>
           <h3 className="font-semibold mb-3">Logged Workouts</h3>
-          <div className="space-y-3">
-            {workoutLogs.map((workout) => (
-              <motion.div
-                key={workout.id}
-                className="bg-card border border-border rounded-xl overflow-hidden"
-              >
-                {/* Workout Header */}
-                <button
-                  onClick={() => toggleWorkout(workout.id)}
-                  className="w-full p-4 flex items-center justify-between text-left"
-                >
+          <div className="space-y-4">
+            {workoutLogs.map((workout) => {
+              const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
+              
+              // Superset handling
+              type SetType = "normal" | "warmup" | "failure" | "drop";
+              const supersetColors = ["bg-cyan-500", "bg-amber-500", "bg-emerald-500", "bg-rose-500", "bg-sky-500"];
+              
+              const getSetLabel = (setType: SetType | undefined, normalSetNumber: number): string => {
+                switch (setType) {
+                  case "warmup": return "W";
+                  case "failure": return "F";
+                  case "drop": return "D";
+                  default: return String(normalSetNumber);
+                }
+              };
+
+              const getSetBadgeStyle = (setType: SetType | undefined): string => {
+                switch (setType) {
+                  case "warmup": return "bg-yellow-500/20 text-yellow-600";
+                  case "failure": return "bg-red-500/20 text-red-600";
+                  case "drop": return "bg-blue-500/20 text-blue-600";
+                  default: return "bg-muted text-muted-foreground";
+                }
+              };
+
+              const getNormalSetNumber = (sets: Array<{ setType?: SetType }>, currentIndex: number): number => {
+                let count = 0;
+                const setsArr = Array.isArray(sets) ? sets : [];
+                for (let i = 0; i <= currentIndex; i++) {
+                  const set = setsArr[i];
+                  if (!set?.setType || set.setType === "normal") {
+                    count++;
+                  }
+                }
+                return count;
+              };
+
+              // Group exercises by superset
+              const supersetGroups = new Map<string, number>();
+              let groupIndex = 0;
+              exercises.forEach(ex => {
+                const exercise = ex as { supersetGroupId?: string };
+                if (exercise.supersetGroupId && !supersetGroups.has(exercise.supersetGroupId)) {
+                  supersetGroups.set(exercise.supersetGroupId, groupIndex++);
+                }
+              });
+
+              return (
+                <div key={workout.id} className="bg-card border border-border rounded-xl p-4 space-y-4">
+                  {/* Workout Header */}
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
                       <Dumbbell size={18} className="text-primary" />
@@ -439,73 +475,111 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
                       </div>
                     </div>
                   </div>
-                  {expandedWorkout === workout.id ? (
-                    <ChevronDown size={20} className="text-muted-foreground" />
-                  ) : (
-                    <ChevronRight size={20} className="text-muted-foreground" />
-                  )}
-                </button>
 
-                {/* Expanded Workout Details */}
-                <AnimatePresence>
-                  {expandedWorkout === workout.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 space-y-3">
-                        {/* Exercise List */}
-                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                          {(Array.isArray(workout.exercises) ? workout.exercises : []).slice(0, 5).map((exercise, index) => (
-                            <div key={index} className="flex justify-between text-sm">
-                              <span className="text-foreground">{exercise.name}</span>
-                              <span className="text-muted-foreground">
-                                {Array.isArray(exercise.sets) ? exercise.sets.length : 0} set{(Array.isArray(exercise.sets) ? exercise.sets.length : 0) !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          ))}
-                          {Array.isArray(workout.exercises) && workout.exercises.length > 5 && (
-                            <span className="text-xs text-primary">
-                              +{workout.exercises.length - 5} more exercises
-                            </span>
-                          )}
-                        </div>
-
-                        {/* View Details Button */}
-                        <Button
-                          variant="outline"
-                          className="w-full gap-2"
-                          onClick={() => setSelectedWorkout(workout)}
-                        >
-                          View Full Details
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Preview when collapsed */}
-                {expandedWorkout !== workout.id && (
-                  <div className="px-4 pb-4">
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      {(Array.isArray(workout.exercises) ? workout.exercises : []).slice(0, 3).map((exercise, index) => (
-                        <div key={index} className="flex justify-between">
-                          <span>{exercise.name}</span>
-                          <span>{Array.isArray(exercise.sets) ? exercise.sets.length : 0} set{(Array.isArray(exercise.sets) ? exercise.sets.length : 0) !== 1 ? 's' : ''}</span>
-                        </div>
-                      ))}
-                      {Array.isArray(workout.exercises) && workout.exercises.length > 3 && (
-                        <span className="text-xs text-primary">
-                          +{workout.exercises.length - 3} more exercises
-                        </span>
-                      )}
+                  {/* Notes */}
+                  {workout.notes && (
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <p className="text-sm text-muted-foreground">{workout.notes}</p>
                     </div>
+                  )}
+
+                  {/* Exercises - SharePostScreen style */}
+                  <div className="space-y-3">
+                    {exercises.map((exercise, exIdx) => {
+                      const ex = exercise as { 
+                        name: string; 
+                        notes?: string; 
+                        isCardio?: boolean;
+                        supersetGroupId?: string;
+                        sets: Array<{ weight?: string; reps?: string; distance?: string; time?: string; setType?: SetType }>;
+                      };
+                      const sets = Array.isArray(ex.sets) ? ex.sets : [];
+                      
+                      const supersetGroupIndex = ex.supersetGroupId ? supersetGroups.get(ex.supersetGroupId) : undefined;
+                      const supersetColor = supersetGroupIndex !== undefined 
+                        ? supersetColors[supersetGroupIndex % supersetColors.length]
+                        : null;
+
+                      return (
+                        <div 
+                          key={exIdx} 
+                          className="rounded-xl bg-muted/30 border border-border overflow-hidden"
+                        >
+                          <div className="flex">
+                            {/* Left color bar for superset exercises */}
+                            {supersetColor && (
+                              <div className={`w-1 ${supersetColor}`} />
+                            )}
+                            
+                            <div className="flex-1 p-3 space-y-2">
+                              {/* Exercise name */}
+                              <div>
+                                <h4 className="font-semibold text-foreground">{ex.name}</h4>
+                                {ex.isCardio && (
+                                  <span className="text-xs text-muted-foreground">Cardio</span>
+                                )}
+                                {/* Notes - directly below exercise name */}
+                                {ex.notes && (
+                                  <p className="text-sm text-foreground italic mt-1">
+                                    {ex.notes}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {/* Sets - row format */}
+                              <div className="space-y-1.5">
+                                {sets.map((set, setIdx) => {
+                                  const normalSetNumber = getNormalSetNumber(sets, setIdx);
+                                  const setLabel = getSetLabel(set.setType, normalSetNumber);
+                                  const badgeStyle = getSetBadgeStyle(set.setType);
+                                  
+                                  return (
+                                    <div 
+                                      key={setIdx}
+                                      className="flex items-center gap-3 py-1"
+                                    >
+                                      {/* Set type/# badge */}
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                                        {setLabel}
+                                      </div>
+                                      
+                                      {/* Weight/Distance and Reps/Time in boxes */}
+                                      {ex.isCardio ? (
+                                        <>
+                                          <div className="bg-muted/50 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                            <span className="text-sm font-medium text-foreground">{set.distance || '0'}</span>
+                                            <span className="text-xs text-muted-foreground">mi</span>
+                                          </div>
+                                          <div className="bg-muted/50 rounded-md px-3 py-1.5">
+                                            <span className="text-sm font-medium text-foreground">{set.time || '0:00'}</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="bg-muted/50 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                            <span className="text-sm font-medium text-foreground">{set.weight || 0}</span>
+                                            <span className="text-xs text-muted-foreground">lbs</span>
+                                          </div>
+                                          <span className="text-muted-foreground">×</span>
+                                          <div className="bg-muted/50 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                            <span className="text-sm font-medium text-foreground">{set.reps || 0}</span>
+                                            <span className="text-xs text-muted-foreground">reps</span>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </motion.div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
