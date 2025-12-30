@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSavedMeals, SavedRecipe, SavedMeal } from "@/hooks/useSavedMeals";
 import { useUserData } from "@/hooks/useUserData";
 import MealSavedCard from "@/components/meal/MealSavedCard";
+import { SavedMealExpansionModal } from "@/components/SavedMealExpansionModal";
+import { SavedMealFood } from "@/components/FoodSearchInput";
 
 const MyRecipesPage = () => {
   const navigate = useNavigate();
@@ -18,6 +20,11 @@ const MyRecipesPage = () => {
   const { profile } = useUserData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("meals");
+
+  // State for SavedMealExpansionModal
+  const [expansionModalOpen, setExpansionModalOpen] = useState(false);
+  const [expansionMealName, setExpansionMealName] = useState("");
+  const [expansionFoods, setExpansionFoods] = useState<SavedMealFood[]>([]);
 
   // Build creator object from current user's profile
   const currentUserCreator = {
@@ -58,9 +65,10 @@ const MyRecipesPage = () => {
   };
 
   const handleUseRecipe = (recipe: SavedRecipe) => {
-    // Convert recipe ingredients to meal foods format
-    const foods = recipe.ingredients.map((ing) => ({
+    // Convert recipe ingredients to SavedMealFood format and open expansion modal
+    const foods: SavedMealFood[] = recipe.ingredients.map((ing) => ({
       id: ing.id,
+      fdcId: ing.id,
       name: ing.name,
       calories: ing.calories,
       protein: ing.protein,
@@ -70,22 +78,16 @@ const MyRecipesPage = () => {
       servingSize: ing.servingSize,
     }));
 
-    navigate(returnState?.returnTo || "/create/meal", {
-      state: {
-        restored: true,
-        contentData: {
-          mealType: returnState?.mealType || "",
-          foods: [...(returnState?.currentFoods || []), ...foods],
-        },
-        images: returnState?.photos || [],
-      },
-    });
+    setExpansionMealName(recipe.title);
+    setExpansionFoods(foods);
+    setExpansionModalOpen(true);
   };
 
   const handleUseMeal = (meal: SavedMeal) => {
-    // Convert saved meal foods to current meal format
-    const foods = meal.foods.map((f) => ({
+    // Convert saved meal foods to SavedMealFood format and open expansion modal
+    const foods: SavedMealFood[] = meal.foods.map((f) => ({
       id: f.id,
+      fdcId: f.id,
       name: f.name,
       calories: f.calories,
       protein: f.protein,
@@ -94,6 +96,28 @@ const MyRecipesPage = () => {
       servings: f.servings,
       servingSize: f.servingSize,
     }));
+
+    setExpansionMealName(meal.title);
+    setExpansionFoods(foods);
+    setExpansionModalOpen(true);
+  };
+
+  const handleExpansionConfirm = (confirmedFoods: any[]) => {
+    // Map confirmed foods to the format expected by CreateMealPage
+    const foods = confirmedFoods.map((f) => ({
+      id: f.fdcId?.toString() || f.name,
+      name: f.name,
+      calories: Math.round(f.adjustedCalories ?? f.calories),
+      protein: Math.round(f.adjustedProtein ?? f.protein),
+      carbs: Math.round(f.adjustedCarbs ?? f.carbs),
+      fats: Math.round(f.adjustedFats ?? f.fats),
+      servings: f.adjustedQuantity ?? f.servings ?? 1,
+      servingSize: `${f.adjustedQuantity ?? f.servings ?? 1} ${f.adjustedUnit ?? "g"}`,
+      rawQuantity: f.adjustedQuantity ?? f.servings ?? 1,
+      rawUnit: f.adjustedUnit ?? "g",
+    }));
+
+    setExpansionModalOpen(false);
 
     navigate(returnState?.returnTo || "/create/meal", {
       state: {
@@ -210,6 +234,15 @@ const MyRecipesPage = () => {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* Saved Meal Expansion Modal */}
+      <SavedMealExpansionModal
+        isOpen={expansionModalOpen}
+        mealName={expansionMealName}
+        foods={expansionFoods}
+        onClose={() => setExpansionModalOpen(false)}
+        onConfirm={handleExpansionConfirm}
+      />
     </div>
   );
 };
