@@ -23,19 +23,31 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const totalScreens = 3;
 
   const screen1MeasureRef = useRef<HTMLDivElement | null>(null);
+  const screen2MeasureRef = useRef<HTMLDivElement | null>(null);
+  const screen3MeasureRef = useRef<HTMLDivElement | null>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     if (!isOpen) return;
-    const el = screen1MeasureRef.current;
-    if (!el) return;
 
-    const update = () => setContentHeight(Math.ceil(el.getBoundingClientRect().height));
+    const nodes = [
+      screen1MeasureRef.current,
+      screen2MeasureRef.current,
+      screen3MeasureRef.current,
+    ].filter(Boolean) as HTMLDivElement[];
+
+    if (nodes.length === 0) return;
+
+    const update = () => {
+      const maxH = nodes.reduce((acc, node) => Math.max(acc, Math.ceil(node.scrollHeight)), 0);
+      setContentHeight(maxH + 10); // small safety buffer to prevent bottom clipping
+    };
+
     update();
 
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(update);
-    ro.observe(el);
+    nodes.forEach((node) => ro.observe(node));
     return () => ro.disconnect();
   }, [isOpen]);
 
@@ -209,15 +221,23 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                 </Button>
               </div>
 
-              {/* Hidden measuring block (sets consistent height based on Screen 1) */}
+              {/* Hidden measuring block (sets consistent height based on the tallest screen) */}
               <div className="absolute inset-x-6 top-0 -z-10 opacity-0 pointer-events-none" aria-hidden="true">
-                <div ref={screen1MeasureRef}>
-                  <Screen1 />
+                <div className="space-y-6">
+                  <div ref={screen1MeasureRef}>
+                    <Screen1 />
+                  </div>
+                  <div ref={screen2MeasureRef}>
+                    <Screen2 />
+                  </div>
+                  <div ref={screen3MeasureRef}>
+                    <Screen3 />
+                  </div>
                 </div>
               </div>
 
               {/* Swipeable Content */}
-              <div className="overflow-hidden">
+              <div className="overflow-x-hidden overflow-y-visible">
                 <motion.div
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
