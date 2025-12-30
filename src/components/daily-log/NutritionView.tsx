@@ -73,12 +73,22 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
         <>
           <p className="text-primary font-bold text-lg mb-2">{totalCalories} cal</p>
           <div className="space-y-1">
-            {allFoods.map((food, index) => (
-              <div key={index} className="text-sm text-muted-foreground flex justify-between">
-                <span>{food.name}</span>
-                <span className="text-xs">{food.servings} × {food.servingSize}</span>
-              </div>
-            ))}
+            {allFoods.map((food, index) => {
+              // Format serving display - avoid double numbers like "2 × 100g"
+              const servingHasNumber = /\d/.test(food.servingSize);
+              const servingDisplay = food.servings === 1 
+                ? food.servingSize 
+                : servingHasNumber 
+                  ? `${food.servings} × ${food.servingSize}`
+                  : `${food.servings} ${food.servingSize}`;
+              
+              return (
+                <div key={index} className="text-sm text-muted-foreground flex justify-between">
+                  <span>{food.name}</span>
+                  <span className="text-xs">{servingDisplay}</span>
+                </div>
+              );
+            })}
           </div>
         </>
       ) : (
@@ -285,9 +295,9 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Calories Container with Liquid Fill - edge to edge, full height */}
-      <div className="relative overflow-visible -mx-4 -mt-6" style={{ minHeight: '320px' }}>
+      <div className="relative overflow-hidden -mx-4 -mt-6" style={{ minHeight: '320px' }}>
         {/* Liquid wave animation */}
         <LiquidWave fillPercentage={fillPercentage} />
         
@@ -301,11 +311,11 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
             <span className={`text-sm font-medium mt-1 drop-shadow ${isOverGoal ? 'text-red-300/80' : 'text-white/80'}`}>
               {isOverGoal ? 'calories over' : 'calories remaining'}
             </span>
-            <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
+              <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
           </div>
           
-          {/* Macros - no frame */}
-          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mt-auto mx-4">
+          {/* Macros - no frame, reduced top spacing */}
+          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mt-2 mx-4">
             <h3 className="font-semibold text-sm text-white/90">Macros</h3>
             <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="#3DD6C6" />
             <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="#5B8CFF" />
