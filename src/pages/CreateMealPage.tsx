@@ -911,48 +911,42 @@ const CreateMealPage = () => {
                           animate={{ opacity: 1, y: 0 }}
                           className="rounded-xl bg-card border-2 border-primary/30 overflow-hidden"
                         >
-                          {/* Header with cover photo and name */}
-                          <div className="relative">
-                            {coverPhoto ? (
-                              <div className="h-20 w-full overflow-hidden">
-                                <img 
-                                  src={coverPhoto} 
-                                  alt={mealName}
-                                  className="h-full w-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-card" />
+                          {/* Header with circular cover photo and name */}
+                          <div className="flex items-center justify-between p-3 border-b border-border/50">
+                            <div className="flex items-center gap-3">
+                              {/* Circular cover photo */}
+                              <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-primary/20">
+                                {coverPhoto ? (
+                                  <img 
+                                    src={coverPhoto} 
+                                    alt={mealName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center">
+                                    <Utensils size={18} className="text-primary" />
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="h-12 w-full bg-primary/10" />
-                            )}
-                            
-                            {/* Name and remove button overlay */}
-                            <div className={`absolute ${coverPhoto ? 'top-2' : 'top-3'} left-3 right-3 flex items-start justify-between`}>
-                              <div className="flex items-center gap-2">
-                                <Utensils size={16} className={coverPhoto ? 'text-white' : 'text-primary'} />
-                                <h4 className={`font-bold ${coverPhoto ? 'text-white drop-shadow-lg' : 'text-foreground'}`}>
-                                  {mealName}
-                                </h4>
+                              {/* Name and macros */}
+                              <div>
+                                <h4 className="font-bold text-foreground">{mealName}</h4>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-foreground font-medium">{Math.round(groupCalories)} cal</span>
+                                  <span style={{ color: '#3DD6C6' }}>P: {Math.round(groupProtein)}g</span>
+                                  <span style={{ color: '#5B8CFF' }}>C: {Math.round(groupCarbs)}g</span>
+                                  <span style={{ color: '#B46BFF' }}>F: {Math.round(groupFats)}g</span>
+                                </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={`h-6 w-6 ${coverPhoto ? 'text-white hover:bg-white/20' : 'text-destructive hover:bg-destructive/10'}`}
-                                onClick={removeGroup}
-                              >
-                                <X size={16} />
-                              </Button>
                             </div>
-                          </div>
-                          
-                          {/* Macros summary */}
-                          <div className="px-3 py-2 bg-muted/30 border-b border-border/50 flex items-center gap-4">
-                            <span className="text-sm font-semibold text-foreground">{Math.round(groupCalories)} cal</span>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span style={{ color: '#3DD6C6' }}>P: {Math.round(groupProtein)}g</span>
-                              <span style={{ color: '#5B8CFF' }}>C: {Math.round(groupCarbs)}g</span>
-                              <span style={{ color: '#B46BFF' }}>F: {Math.round(groupFats)}g</span>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              onClick={removeGroup}
+                            >
+                              <X size={16} />
+                            </Button>
                           </div>
                           
                           {/* Individual foods */}
