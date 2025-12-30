@@ -73,19 +73,12 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
         <>
           <p className="text-primary font-bold text-lg mb-2">{totalCalories} cal</p>
           <div className="space-y-1">
-            {allFoods.map((food, index) => {
-              // Format serving display - combine quantity and unit as single value
-              // e.g., servings: 63, servingSize: "63 g" should show "63g" not "63 x 63 g"
-              const servingUnit = food.servingSize?.replace(/^\d+\s*/, '').trim() || 'g';
-              const servingDisplay = `${food.servings}${servingUnit}`;
-              
-              return (
-                <div key={index} className="text-sm text-muted-foreground flex justify-between">
-                  <span>{food.name}</span>
-                  <span className="text-xs">{servingDisplay}</span>
-                </div>
-              );
-            })}
+            {allFoods.map((food, index) => (
+              <div key={index} className="text-sm text-muted-foreground flex justify-between">
+                <span>{food.name}</span>
+                <span className="text-xs">{food.servings} × {food.servingSize}</span>
+              </div>
+            ))}
           </div>
         </>
       ) : (
@@ -111,13 +104,12 @@ const Bubble = ({ delay, duration, left, size }: { delay: number; duration: numb
   />
 );
 
-// Animated liquid wave component with underwater caustics
+// Animated liquid wave component
 const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
+  // Background color from CSS: 0 0% 7%
   const bgColor = "hsl(0, 0%, 7%)";
   
-  // Caustics intensity increases as liquid nears the top
-  const causticsIntensity = Math.min(fillPercentage / 100, 1);
-  
+  // Generate random bubbles
   const bubbles = [
     { delay: 0, duration: 4, left: 15, size: 6 },
     { delay: 1.5, duration: 5, left: 35, size: 4 },
@@ -132,22 +124,8 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
   ];
   
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Underwater caustics light rays - intensity based on fill */}
-      <div 
-        className="absolute inset-0 z-5 pointer-events-none animate-caustics"
-        style={{
-          opacity: causticsIntensity * 0.4,
-          background: `
-            radial-gradient(ellipse 80% 50% at 20% 20%, rgba(255,255,255,0.15) 0%, transparent 50%),
-            radial-gradient(ellipse 60% 40% at 70% 30%, rgba(200,180,255,0.12) 0%, transparent 45%),
-            radial-gradient(ellipse 50% 60% at 40% 60%, rgba(255,255,255,0.1) 0%, transparent 40%),
-            radial-gradient(ellipse 70% 50% at 80% 70%, rgba(180,200,255,0.08) 0%, transparent 50%)
-          `,
-        }}
-      />
-      
-      {/* Gradient overlay for depth */}
+    <div className="absolute inset-0 overflow-hidden -mx-4">
+      {/* Gradient overlay for depth - blends perfectly to background */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
@@ -193,7 +171,7 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
           />
         </svg>
         
-        {/* Secondary wave */}
+        {/* Secondary wave (offset for depth) */}
         <svg 
           className="absolute -top-[15px] left-0 w-[200%] animate-liquid-wave-slow"
           viewBox="0 0 1200 120" 
@@ -212,7 +190,7 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
           />
         </svg>
         
-        {/* Liquid body */}
+        {/* Liquid body with gradient - seamlessly blending to background at bottom */}
         <div 
           className="absolute top-[5px] left-0 right-0 bottom-0"
           style={{
@@ -240,24 +218,6 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
               transparent 60%
             )`,
             backgroundSize: '200% 100%',
-          }}
-        />
-        
-        {/* Caustics ripples inside liquid - more intense near top */}
-        <div 
-          className="absolute inset-0 animate-caustics-ripple"
-          style={{
-            opacity: causticsIntensity * 0.25,
-            background: `
-              repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 20px,
-                rgba(255,255,255,0.03) 20px,
-                rgba(255,255,255,0.03) 40px
-              )
-            `,
-            transform: 'skewX(-15deg)',
           }}
         />
       </div>
@@ -325,27 +285,27 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
-      {/* Calories Container with Liquid Fill - full bleed edge to edge */}
-      <div className="relative overflow-hidden w-screen left-1/2 -translate-x-1/2 -mt-4" style={{ minHeight: '300px' }}>
+    <div className="space-y-6">
+      {/* Calories Container with Liquid Fill - edge to edge, full height */}
+      <div className="relative overflow-visible -mx-4 -mt-6" style={{ minHeight: '320px' }}>
         {/* Liquid wave animation */}
         <LiquidWave fillPercentage={fillPercentage} />
         
         {/* Content overlay */}
-        <div className="relative z-20 px-4 pt-6 pb-3 flex flex-col" style={{ minHeight: '300px' }}>
-          {/* Calories display */}
-          <div className="flex flex-col items-center justify-center" style={{ minHeight: '140px' }}>
+        <div className="relative z-20 px-4 pt-8 pb-6 flex flex-col h-full" style={{ minHeight: '320px' }}>
+          {/* Calories display at top */}
+          <div className="flex-1 flex flex-col items-center justify-center">
             <span className={`text-5xl font-bold drop-shadow-lg ${isOverGoal ? 'text-red-400' : 'text-white'}`}>
               {caloriesDisplay}
             </span>
             <span className={`text-sm font-medium mt-1 drop-shadow ${isOverGoal ? 'text-red-300/80' : 'text-white/80'}`}>
               {isOverGoal ? 'calories over' : 'calories remaining'}
             </span>
-            <span className="text-xs text-white/60 mt-1">{caloriesConsumed} / {caloriesGoal} consumed</span>
+            <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
           </div>
           
-          {/* Macros - reduced gap from consumed text */}
-          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mx-4 mt-2">
+          {/* Macros - no frame */}
+          <div className="backdrop-blur-sm rounded-xl p-4 space-y-3 mt-auto mx-4">
             <h3 className="font-semibold text-sm text-white/90">Macros</h3>
             <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="#3DD6C6" />
             <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="#5B8CFF" />
