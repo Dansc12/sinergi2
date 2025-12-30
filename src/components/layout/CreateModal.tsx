@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { X, Dumbbell, Utensils, PenSquare, Users, ChefHat, RotateCcw, UtensilsCrossed } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,23 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const [currentScreen, setCurrentScreen] = useState(0);
   const totalScreens = 3;
 
+  const screen1MeasureRef = useRef<HTMLDivElement | null>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const el = screen1MeasureRef.current;
+    if (!el) return;
+
+    const update = () => setContentHeight(Math.ceil(el.getBoundingClientRect().height));
+    update();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isOpen]);
+
   const handleOptionClick = (path: string) => {
     onClose();
     setCurrentScreen(0);
@@ -42,11 +59,21 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     }
   };
 
-  const OptionButton = ({ option, size = "normal" }: { option: CreateOption; size?: "normal" | "small" }) => (
+  const OptionButton = ({
+    option,
+    size = "normal",
+    className = "",
+  }: {
+    option: CreateOption;
+    size?: "normal" | "small";
+    className?: string;
+  }) => (
     <motion.button
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex flex-col items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-200 group ${size === "small" ? "p-3" : ""}`}
+      className={`flex flex-col items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-200 group ${
+        size === "small" ? "p-3" : ""
+      } ${className}`}
       onClick={() => handleOptionClick(option.path)}
     >
       <div className={`${size === "small" ? "w-10 h-10" : "w-12 h-12"} rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-200`}>
@@ -101,9 +128,29 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
           <p className="text-muted-foreground text-xs line-clamp-2">Build a workout routine</p>
         </div>
       </motion.button>
-      <div className="flex flex-col gap-3">
-        <OptionButton option={{ icon: <ChefHat size={20} />, label: "Recipe", description: "Share a healthy recipe", gradient: "from-rose-500 to-pink-400", path: "/create/recipe" }} size="small" />
-        <OptionButton option={{ icon: <UtensilsCrossed size={20} />, label: "Saved Meal", description: "Save a meal combo", gradient: "from-amber-500 to-yellow-400", path: "/create/saved-meal" }} size="small" />
+      <div className="flex flex-col gap-3 h-full">
+        <OptionButton
+          option={{
+            icon: <ChefHat size={20} />,
+            label: "Recipe",
+            description: "Share a healthy recipe",
+            gradient: "from-rose-500 to-pink-400",
+            path: "/create/recipe",
+          }}
+          size="small"
+          className="flex-1"
+        />
+        <OptionButton
+          option={{
+            icon: <UtensilsCrossed size={20} />,
+            label: "Saved Meal",
+            description: "Save a meal combo",
+            gradient: "from-amber-500 to-yellow-400",
+            path: "/create/saved-meal",
+          }}
+          size="small"
+          className="flex-1"
+        />
       </div>
     </div>
   );
@@ -149,7 +196,8 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-hidden"
           >
-            <div className="glass-elevated rounded-t-3xl p-6 pb-safe-bottom">
+            <div className="glass-elevated relative rounded-t-3xl p-6 pb-safe-bottom">
+
               {/* Handle */}
               <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6" />
 
@@ -159,6 +207,13 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                 <Button variant="ghost" size="icon-sm" onClick={handleClose}>
                   <X size={20} />
                 </Button>
+              </div>
+
+              {/* Hidden measuring block (sets consistent height based on Screen 1) */}
+              <div className="absolute inset-x-6 top-0 -z-10 opacity-0 pointer-events-none" aria-hidden="true">
+                <div ref={screen1MeasureRef}>
+                  <Screen1 />
+                </div>
               </div>
 
               {/* Swipeable Content */}
@@ -177,7 +232,8 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -50 }}
                       transition={{ duration: 0.2 }}
-                      className="h-[220px]"
+                      style={contentHeight ? { height: `${contentHeight}px` } : undefined}
+                      className="min-h-[220px]"
                     >
                       {screens[currentScreen]()}
                     </motion.div>
