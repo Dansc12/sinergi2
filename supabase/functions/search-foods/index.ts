@@ -10,6 +10,19 @@ const corsHeaders = {
 const USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search";
 const USDA_API_KEY = "DEMO_KEY"; // Free demo key with rate limits
 
+interface FoodInMeal {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  servings?: number;
+  servingSize?: string;
+  rawQuantity?: number;
+  rawUnit?: string;
+}
+
 interface FoodResult {
   fdcId: number;
   description: string;
@@ -23,6 +36,9 @@ interface FoodResult {
   servingSizeUnit?: string;
   isCustom?: boolean;
   baseUnit?: string;
+  isSavedMeal?: boolean;
+  isRecipe?: boolean;
+  savedMealFoods?: FoodInMeal[];
 }
 
 // Rank foods based on search term relevance
@@ -147,6 +163,20 @@ serve(async (req) => {
             const isMeal = post.content_type === 'saved_meal';
             const label = isMeal ? 'Saved Meal' : 'Recipe';
             
+            // Map foods to the expected format for saved meals
+            const savedMealFoods: FoodInMeal[] = foods.map((food: any, idx: number) => ({
+              id: food.id || `${post.id}-food-${idx}`,
+              name: food.name || food.description || 'Unknown',
+              calories: Number(food.calories) || 0,
+              protein: Number(food.protein) || 0,
+              carbs: Number(food.carbs) || 0,
+              fats: Number(food.fats) || Number(food.fat) || 0,
+              servings: Number(food.servings) || Number(food.rawQuantity) || 1,
+              servingSize: food.servingSize || food.rawUnit || 'g',
+              rawQuantity: Number(food.rawQuantity) || Number(food.servings) || 1,
+              rawUnit: food.rawUnit || 'g',
+            }));
+            
             return {
               fdcId: -Math.abs(post.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)),
               description: name,
@@ -162,6 +192,7 @@ serve(async (req) => {
               baseUnit: 'serving',
               isSavedMeal: isMeal,
               isRecipe: !isMeal,
+              savedMealFoods: isMeal ? savedMealFoods : undefined,
             };
           });
         

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Images, Loader2, ChefHat, Compass, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { FoodSearchInput, FoodItem } from "@/components/FoodSearchInput";
+import { FoodSearchInput, FoodItem, SavedMealFood } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
 import { AddCustomFoodModal } from "@/components/AddCustomFoodModal";
 import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
@@ -78,6 +78,11 @@ const CreateMealPage = () => {
   const [pendingFoodInitialUnit, setPendingFoodInitialUnit] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+  
+  // For saved meal expansion - queue of foods to review
+  const [savedMealFoodsQueue, setSavedMealFoodsQueue] = useState<SavedMealFood[]>([]);
+  const [currentSavedMealIndex, setCurrentSavedMealIndex] = useState(0);
+  const [savedMealName, setSavedMealName] = useState("");
 
   const { recentFoods, isLoading: isLoadingRecentFoods } = useRecentFoods(10);
 
@@ -113,6 +118,35 @@ const CreateMealPage = () => {
   };
 
   const handleFoodSelect = (food: FoodItem, initialQuantity?: number, initialUnit?: string) => {
+    // If it's a saved meal, expand it into individual foods for review
+    if (food.isSavedMeal && food.savedMealFoods && food.savedMealFoods.length > 0) {
+      setSavedMealName(food.description);
+      setSavedMealFoodsQueue(food.savedMealFoods);
+      setCurrentSavedMealIndex(0);
+      
+      // Open the first food for review
+      const firstFood = food.savedMealFoods[0];
+      setPendingFood({
+        fdcId: -Date.now(),
+        description: firstFood.name,
+        calories: firstFood.calories,
+        protein: firstFood.protein,
+        carbs: firstFood.carbs,
+        fats: firstFood.fats,
+        isCustom: true,
+        baseUnit: firstFood.rawUnit || 'g',
+      });
+      setPendingFoodInitialQuantity(firstFood.rawQuantity || firstFood.servings || 1);
+      setPendingFoodInitialUnit(firstFood.rawUnit || firstFood.servingSize || 'g');
+      setIsFoodDetailOpen(true);
+      setSearchValue("");
+      toast({ 
+        title: `Adding "${food.description}"`, 
+        description: `Review each food (1 of ${food.savedMealFoods.length})` 
+      });
+      return;
+    }
+    
     setPendingFood(food);
     setPendingFoodInitialQuantity(initialQuantity);
     setPendingFoodInitialUnit(initialUnit);
@@ -139,7 +173,7 @@ const CreateMealPage = () => {
     
     // FoodDetailModal now returns pre-calculated values
     const newFood: SelectedFood = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name: food.description,
       calories: Math.round(food.calories),
       protein: food.protein,
@@ -150,16 +184,69 @@ const CreateMealPage = () => {
       rawQuantity,
       rawUnit,
     };
-    setSelectedFoods([...selectedFoods, newFood]);
+    setSelectedFoods(prev => [...prev, newFood]);
+    
+    // Check if we're processing a saved meal queue
+    if (savedMealFoodsQueue.length > 0) {
+      const nextIndex = currentSavedMealIndex + 1;
+      
+      if (nextIndex < savedMealFoodsQueue.length) {
+        // Show next food in queue
+        const nextFood = savedMealFoodsQueue[nextIndex];
+        setCurrentSavedMealIndex(nextIndex);
+        setPendingFood({
+          fdcId: -Date.now(),
+          description: nextFood.name,
+          calories: nextFood.calories,
+          protein: nextFood.protein,
+          carbs: nextFood.carbs,
+          fats: nextFood.fats,
+          isCustom: true,
+          baseUnit: nextFood.rawUnit || 'g',
+        });
+        setPendingFoodInitialQuantity(nextFood.rawQuantity || nextFood.servings || 1);
+        setPendingFoodInitialUnit(nextFood.rawUnit || nextFood.servingSize || 'g');
+        toast({ 
+          title: `Added "${food.description}"`, 
+          description: `Next food (${nextIndex + 1} of ${savedMealFoodsQueue.length})` 
+        });
+        return; // Keep modal open for next food
+      } else {
+        // All foods processed
+        setSavedMealFoodsQueue([]);
+        setCurrentSavedMealIndex(0);
+        setSavedMealName("");
+        toast({ 
+          title: `"${savedMealName}" added!`, 
+          description: `All ${savedMealFoodsQueue.length} foods have been added` 
+        });
+      }
+    } else {
+      toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
+    }
+    
     setSearchValue("");
     setIsFoodDetailOpen(false);
     setPendingFood(null);
     setPendingFoodInitialQuantity(undefined);
     setPendingFoodInitialUnit(undefined);
-    toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
   };
 
   const handleFoodDetailClose = () => {
+    // If we're in the middle of a saved meal queue, clear it
+    if (savedMealFoodsQueue.length > 0) {
+      const addedCount = currentSavedMealIndex;
+      if (addedCount > 0) {
+        toast({ 
+          title: `Partial add from "${savedMealName}"`, 
+          description: `Added ${addedCount} of ${savedMealFoodsQueue.length} foods` 
+        });
+      }
+      setSavedMealFoodsQueue([]);
+      setCurrentSavedMealIndex(0);
+      setSavedMealName("");
+    }
+    
     setIsFoodDetailOpen(false);
     setPendingFood(null);
     setPendingFoodInitialQuantity(undefined);

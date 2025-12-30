@@ -4,6 +4,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface SavedMealFood {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  servings?: number;
+  servingSize?: string;
+  rawQuantity?: number;
+  rawUnit?: string;
+}
+
 export interface FoodItem {
   fdcId: number;
   description: string;
@@ -19,6 +32,7 @@ export interface FoodItem {
   baseUnit?: string;
   isSavedMeal?: boolean;
   isRecipe?: boolean;
+  savedMealFoods?: SavedMealFood[];
 }
 
 interface FoodSearchInputProps {
