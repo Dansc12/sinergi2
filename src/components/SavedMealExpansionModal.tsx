@@ -11,6 +11,12 @@ interface ExpandedFood extends SavedMealFood {
   adjustedProtein: number;
   adjustedCarbs: number;
   adjustedFats: number;
+  // Store the original values so we can properly scale
+  originalQuantity: number;
+  originalCalories: number;
+  originalProtein: number;
+  originalCarbs: number;
+  originalFats: number;
 }
 
 interface SavedMealExpansionModalProps {
@@ -38,15 +44,34 @@ export const SavedMealExpansionModal = ({
   useEffect(() => {
     if (isOpen && foods.length > 0) {
       setExpandedFoods(
-        foods.map((food) => ({
-          ...food,
-          adjustedQuantity: food.rawQuantity || food.servings || 1,
-          adjustedUnit: food.rawUnit || food.servingSize || "g",
-          adjustedCalories: food.calories,
-          adjustedProtein: food.protein,
-          adjustedCarbs: food.carbs,
-          adjustedFats: food.fats,
-        }))
+        foods.map((food) => {
+          const quantity = food.rawQuantity || food.servings || 1;
+          // Parse unit from servingSize if it contains the quantity (e.g., "100 g" -> "g")
+          let unit = food.rawUnit || "g";
+          if (food.servingSize && food.servingSize.includes(" ")) {
+            const parts = food.servingSize.trim().split(" ");
+            if (parts.length >= 2) {
+              unit = parts.slice(1).join(" "); // Get everything after the number
+            }
+          }
+          
+          return {
+            ...food,
+            adjustedQuantity: quantity,
+            adjustedUnit: unit,
+            // The stored calories/macros ARE the values for the stored quantity
+            adjustedCalories: food.calories,
+            adjustedProtein: food.protein,
+            adjustedCarbs: food.carbs,
+            adjustedFats: food.fats,
+            // Store originals for scaling
+            originalQuantity: quantity,
+            originalCalories: food.calories,
+            originalProtein: food.protein,
+            originalCarbs: food.carbs,
+            originalFats: food.fats,
+          };
+        })
       );
     }
   }, [isOpen, foods]);
@@ -57,16 +82,17 @@ export const SavedMealExpansionModal = ({
     setExpandedFoods((prev) => {
       const updated = [...prev];
       const food = updated[index];
-      const originalQuantity = food.rawQuantity || food.servings || 1;
-      const multiplier = newQuantity / originalQuantity;
+      // Calculate multiplier based on original saved quantity
+      const multiplier = newQuantity / food.originalQuantity;
       
       updated[index] = {
         ...food,
         adjustedQuantity: newQuantity,
-        adjustedCalories: Math.round(food.calories * multiplier),
-        adjustedProtein: Math.round(food.protein * multiplier * 10) / 10,
-        adjustedCarbs: Math.round(food.carbs * multiplier * 10) / 10,
-        adjustedFats: Math.round(food.fats * multiplier * 10) / 10,
+        // Scale from the original values
+        adjustedCalories: Math.round(food.originalCalories * multiplier),
+        adjustedProtein: Math.round(food.originalProtein * multiplier * 10) / 10,
+        adjustedCarbs: Math.round(food.originalCarbs * multiplier * 10) / 10,
+        adjustedFats: Math.round(food.originalFats * multiplier * 10) / 10,
       };
       return updated;
     });
