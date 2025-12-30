@@ -2,17 +2,23 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { SavedMealFood } from "@/components/FoodSearchInput";
 
 interface ExpandedFood extends SavedMealFood {
   adjustedQuantity: number;
-  adjustedUnit: string;
+  adjustedUnit: StandardUnit;
   adjustedCalories: number;
   adjustedProtein: number;
   adjustedCarbs: number;
   adjustedFats: number;
-  // Store the original values so we can properly scale
+
+  // Saved serving baseline (used for scaling)
   originalQuantity: number;
+  originalUnit: StandardUnit;
+  originalGrams: number;
+
+  // Baseline macros for the saved serving (prefer USDA-resolved values)
   originalCalories: number;
   originalProtein: number;
   originalCarbs: number;
@@ -30,6 +36,16 @@ interface SavedMealExpansionModalProps {
 const STANDARD_UNITS = ["g", "ml", "oz", "lb", "cup"] as const;
 
 type StandardUnit = (typeof STANDARD_UNITS)[number];
+
+const UNIT_TO_GRAMS: Record<StandardUnit, number> = {
+  g: 1,
+  ml: 1, // approximation (water-like)
+  oz: 28.3495,
+  lb: 453.592,
+  cup: 240, // rough estimate; varies by food
+};
+
+const gramsFor = (quantity: number, unit: StandardUnit) => quantity * UNIT_TO_GRAMS[unit];
 
 const clampUnit = (unit: string): StandardUnit => {
   const normalized = unit.trim().toLowerCase();
@@ -83,33 +99,102 @@ export const SavedMealExpansionModal = ({
   const [dragStartX, setDragStartX] = useState<number | null>(null);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
-  // Initialize expanded foods when modal opens
+  // Initialize expanded foods when modal opens (and resolve USDA-correct macros)
   useEffect(() => {
-    if (isOpen && foods.length > 0) {
-      setExpandedFoods(
-        foods.map((food) => {
-          const { quantity, unit } = parseSavedServing(food);
+    if (!isOpen || foods.length === 0) return;
 
-          return {
-            ...food,
-            adjustedQuantity: quantity,
-            adjustedUnit: unit,
-            // The stored calories/macros are for the stored quantity
-            adjustedCalories: food.calories,
-            adjustedProtein: food.protein,
-            adjustedCarbs: food.carbs,
-            adjustedFats: food.fats,
-            // Originals for scaling
-            originalQuantity: quantity,
-            originalCalories: food.calories,
-            originalProtein: food.protein,
-            originalCarbs: food.carbs,
-            originalFats: food.fats,
-          };
+    const initialExpanded: ExpandedFood[] = foods.map((food) => {
+      const { quantity, unit } = parseSavedServing(food);
+      const originalGrams = gramsFor(quantity, unit);
+
+      return {
+        ...food,
+        adjustedQuantity: quantity,
+        adjustedUnit: unit,
+        // Start with stored values; we will replace with USDA-resolved values below
+        adjustedCalories: food.calories,
+        adjustedProtein: food.protein,
+        adjustedCarbs: food.carbs,
+        adjustedFats: food.fats,
+        originalQuantity: quantity,
+        originalUnit: unit,
+        originalGrams,
+        originalCalories: food.calories,
+        originalProtein: food.protein,
+        originalCarbs: food.carbs,
+        originalFats: food.fats,
+      };
+    });
+
+    setExpandedFoods(initialExpanded);
+
+    let cancelled = false;
+
+    (async () => {
+      const resolved = await Promise.all(
+        initialExpanded.map(async (f) => {
+          try {
+            const { data, error } = await supabase.functions.invoke("search-foods", {
+              body: { query: f.name },
+            });
+            if (error) throw error;
+
+            const usda = (data?.foods || []).find((x: any) => x && x.isCustom === false);
+            if (!usda) return f;
+
+            const refQty = Number(usda.servingSizeValue) || 100;
+            const refUnit = clampUnit(String(usda.servingSizeUnit || "g"));
+            const refGrams = gramsFor(refQty, refUnit);
+            const multiplier = refGrams > 0 ? f.originalGrams / refGrams : 1;
+
+            const baseCalories = Math.round(Number(usda.calories || 0) * multiplier);
+            const baseProtein = Math.round(Number(usda.protein || 0) * multiplier * 10) / 10;
+            const baseCarbs = Math.round(Number(usda.carbs || 0) * multiplier * 10) / 10;
+            const baseFats = Math.round(Number(usda.fats || 0) * multiplier * 10) / 10;
+
+            return {
+              ...f,
+              // Set the saved-serving baseline to USDA-correct values
+              originalCalories: baseCalories,
+              originalProtein: baseProtein,
+              originalCarbs: baseCarbs,
+              originalFats: baseFats,
+              // And reflect them immediately in the UI
+              adjustedCalories: baseCalories,
+              adjustedProtein: baseProtein,
+              adjustedCarbs: baseCarbs,
+              adjustedFats: baseFats,
+            };
+          } catch (err) {
+            console.error("Failed to resolve USDA food:", f.name, err);
+            return f;
+          }
         })
       );
-    }
+
+      if (cancelled) return;
+      setExpandedFoods(resolved);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, foods]);
+
+  const recalcFromBaseline = (food: ExpandedFood, quantity: number, unit: StandardUnit) => {
+    const newGrams = gramsFor(quantity, unit);
+    const multiplier = food.originalGrams > 0 ? newGrams / food.originalGrams : 1;
+
+    return {
+      ...food,
+      adjustedQuantity: quantity,
+      adjustedUnit: unit,
+      adjustedCalories: Math.round(food.originalCalories * multiplier),
+      adjustedProtein: Math.round(food.originalProtein * multiplier * 10) / 10,
+      adjustedCarbs: Math.round(food.originalCarbs * multiplier * 10) / 10,
+      adjustedFats: Math.round(food.originalFats * multiplier * 10) / 10,
+    };
+  };
 
   const updateFoodQuantity = (index: number, newQuantity: number) => {
     if (newQuantity < 0.1) return;
@@ -117,16 +202,7 @@ export const SavedMealExpansionModal = ({
     setExpandedFoods((prev) => {
       const updated = [...prev];
       const food = updated[index];
-      const multiplier = newQuantity / food.originalQuantity;
-
-      updated[index] = {
-        ...food,
-        adjustedQuantity: newQuantity,
-        adjustedCalories: Math.round(food.originalCalories * multiplier),
-        adjustedProtein: Math.round(food.originalProtein * multiplier * 10) / 10,
-        adjustedCarbs: Math.round(food.originalCarbs * multiplier * 10) / 10,
-        adjustedFats: Math.round(food.originalFats * multiplier * 10) / 10,
-      };
+      updated[index] = recalcFromBaseline(food, newQuantity, food.adjustedUnit);
       return updated;
     });
   };
@@ -135,7 +211,8 @@ export const SavedMealExpansionModal = ({
     const unit = clampUnit(newUnit);
     setExpandedFoods((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], adjustedUnit: unit };
+      const food = updated[index];
+      updated[index] = recalcFromBaseline(food, food.adjustedQuantity, unit);
       return updated;
     });
   };
@@ -280,7 +357,13 @@ export const SavedMealExpansionModal = ({
                     <div className="p-3">
                       {/* Food name and macros */}
                       <div className="mb-3">
-                        <div className="font-medium text-sm">{food.name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-primary">
+                            {food.adjustedQuantity % 1 === 0 ? food.adjustedQuantity : food.adjustedQuantity.toFixed(1)}
+                            {food.adjustedUnit}
+                          </span>
+                          <span className="font-medium text-sm">{food.name}</span>
+                        </div>
                         <div className="flex items-center gap-3 mt-1">
                           <span className="text-xs font-medium">{food.adjustedCalories} cal</span>
                           <div className="flex items-center gap-2 text-xs">

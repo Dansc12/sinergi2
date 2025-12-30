@@ -226,12 +226,33 @@ serve(async (req) => {
         // Extract nutrients from the food data
         const nutrients = food.foodNutrients || [];
         
-        const getnutrient = (name: string): number => {
-          const nutrient = nutrients.find((n: any) => 
-            n.nutrientName?.toLowerCase().includes(name.toLowerCase()) ||
-            n.nutrientNumber === name
+        const getnutrient = (nameOrNumber: string): number => {
+          const needle = nameOrNumber.toLowerCase();
+          const nutrient = nutrients.find((n: any) =>
+            String(n.nutrientNumber) === nameOrNumber ||
+            n.nutrientName?.toLowerCase().includes(needle)
           );
-          return Math.round(nutrient?.value || 0);
+          return Math.round(Number(nutrient?.value) || 0);
+        };
+
+        // IMPORTANT: Prefer kcal (nutrientNumber 1008). If only kJ (1062) exists, convert to kcal.
+        const getEnergyKcal = (): number => {
+          const kcal = nutrients.find((n: any) =>
+            String(n.nutrientNumber) === "1008" ||
+            (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kcal")
+          );
+          if (kcal?.value != null) return Math.round(Number(kcal.value));
+
+          const kj = nutrients.find((n: any) =>
+            String(n.nutrientNumber) === "1062" ||
+            (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kj")
+          );
+          if (kj?.value != null) return Math.round(Number(kj.value) / 4.184);
+
+          const anyEnergyKcal = nutrients.find((n: any) =>
+            n.nutrientName?.toLowerCase().includes("energy") && String(n.unitName).toLowerCase() === "kcal"
+          );
+          return Math.round(Number(anyEnergyKcal?.value) || 0);
         };
 
         // Parse serving size into value and unit
@@ -244,7 +265,7 @@ serve(async (req) => {
           fdcId: food.fdcId,
           description: food.description,
           brandName: food.brandName || food.brandOwner,
-          calories: getnutrient('energy') || getnutrient('1008'),
+          calories: getEnergyKcal(),
           protein: getnutrient('protein') || getnutrient('1003'),
           carbs: getnutrient('carbohydrate') || getnutrient('1005'),
           fats: getnutrient('fat') || getnutrient('1004'),
