@@ -566,7 +566,8 @@ const SharePostScreen = () => {
         const totalProtein = (data.totalProtein as number) ?? mealFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
         const totalCarbs = (data.totalCarbs as number) ?? mealFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
         const totalFats = (data.totalFats as number) ?? mealFoods.reduce((sum, f) => sum + (f.fats || 0), 0);
-        const coverPhotoUrl = data.coverPhotoUrl as string | undefined;
+        // Cover photo can come from contentData.coverPhotoUrl OR from images array (first image)
+        const coverPhotoUrl = (data.coverPhotoUrl as string | undefined) || (images.length > 0 ? images[0] : undefined);
         const mealDescription = data.description as string | undefined;
         
         // Macro colors matching MealSavedCard
