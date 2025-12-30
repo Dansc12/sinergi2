@@ -411,6 +411,7 @@ const SharePostScreen = () => {
             {/* Exercise details - vertical list format */}
             <div className="space-y-3">
               {Array.isArray(data.exercises) && (() => {
+                type SetType = "normal" | "warmup" | "failure" | "drop";
                 type ExerciseType = { 
                   name: string; 
                   category?: string; 
@@ -418,10 +419,41 @@ const SharePostScreen = () => {
                   supersetGroupId?: string; 
                   notes?: string;
                   isCardio?: boolean;
-                  sets: Array<{ weight?: number; reps?: number; distance?: string; time?: string; completed?: boolean }> 
+                  sets: Array<{ weight?: number; reps?: number; distance?: string; time?: string; completed?: boolean; setType?: SetType }> 
                 };
                 const exercises = data.exercises as ExerciseType[];
                 const supersetColors = ["bg-cyan-500", "bg-amber-500", "bg-emerald-500", "bg-rose-500", "bg-sky-500"];
+                
+                // Helper to get set label matching Log Workout style
+                const getSetLabel = (setType: SetType | undefined, normalSetNumber: number): string => {
+                  switch (setType) {
+                    case "warmup": return "W";
+                    case "failure": return "F";
+                    case "drop": return "D";
+                    default: return String(normalSetNumber);
+                  }
+                };
+
+                // Get styling for set type badge matching Log Workout
+                const getSetBadgeStyle = (setType: SetType | undefined): string => {
+                  switch (setType) {
+                    case "warmup": return "bg-yellow-500/20 text-yellow-600";
+                    case "failure": return "bg-red-500/20 text-red-600";
+                    case "drop": return "bg-blue-500/20 text-blue-600";
+                    default: return "bg-muted text-muted-foreground";
+                  }
+                };
+
+                // Calculate normal set number (only counts normal sets)
+                const getNormalSetNumber = (sets: ExerciseType["sets"], currentIndex: number): number => {
+                  let count = 0;
+                  for (let i = 0; i <= currentIndex; i++) {
+                    if (!sets[i].setType || sets[i].setType === "normal") {
+                      count++;
+                    }
+                  }
+                  return count;
+                };
                 
                 // Group exercises by superset
                 const supersetGroups = new Map<string, number>();
@@ -481,27 +513,50 @@ const SharePostScreen = () => {
                             </span>
                           </div>
                           
-                          {/* Sets grid */}
-                          <div className="grid grid-cols-3 gap-2">
-                            {exercise.sets.map((set, setIdx) => (
-                              <div 
-                                key={setIdx}
-                                className="bg-muted/30 rounded-lg px-3 py-2 text-center"
-                              >
-                                <span className="text-[10px] text-muted-foreground block mb-0.5">
-                                  Set {setIdx + 1}
-                                </span>
-                                {exercise.isCardio ? (
-                                  <span className="text-sm font-medium text-foreground">
-                                    {set.distance || '0'} mi · {set.time || '0:00'}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm font-medium text-foreground">
-                                    {set.weight || 0} lbs × {set.reps || 0}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
+                          {/* Sets - row format */}
+                          <div className="space-y-1.5">
+                            {exercise.sets.map((set, setIdx) => {
+                              const normalSetNumber = getNormalSetNumber(exercise.sets, setIdx);
+                              const setLabel = getSetLabel(set.setType, normalSetNumber);
+                              const badgeStyle = getSetBadgeStyle(set.setType);
+                              
+                              return (
+                                <div 
+                                  key={setIdx}
+                                  className="flex items-center gap-3 bg-muted/20 rounded-lg px-3 py-2"
+                                >
+                                  {/* Set type/# badge - matching Log Workout style */}
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                                    {setLabel}
+                                  </div>
+                                  
+                                  {/* Weight/Distance and Reps/Time */}
+                                  {exercise.isCardio ? (
+                                    <>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-medium text-foreground">{set.distance || '0'}</span>
+                                        <span className="text-xs text-muted-foreground">mi</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-medium text-foreground">{set.time || '0:00'}</span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-medium text-foreground">{set.weight || 0}</span>
+                                        <span className="text-xs text-muted-foreground">lbs</span>
+                                      </div>
+                                      <span className="text-muted-foreground">×</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-medium text-foreground">{set.reps || 0}</span>
+                                        <span className="text-xs text-muted-foreground">reps</span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                           
                           {/* Notes */}
