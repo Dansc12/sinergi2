@@ -107,13 +107,25 @@ export const useDailyLogs = (selectedDate: Date) => {
         .eq("log_date", dateStr);
 
       if (workouts) {
-        const parsedWorkouts = workouts.map((workout) => ({
-          id: workout.id,
-          exercises: (workout.exercises as unknown as WorkoutExercise[]) || [],
-          notes: workout.notes,
-          photos: workout.photos,
-          created_at: workout.created_at,
-        }));
+        const parsedWorkouts = workouts.map((workout) => {
+          // Handle both formats: direct array or {title, exercises} object
+          const exercisesData = workout.exercises as unknown;
+          let exercises: WorkoutExercise[] = [];
+          
+          if (Array.isArray(exercisesData)) {
+            exercises = exercisesData as WorkoutExercise[];
+          } else if (exercisesData && typeof exercisesData === 'object' && 'exercises' in exercisesData) {
+            exercises = (exercisesData as { exercises: WorkoutExercise[] }).exercises || [];
+          }
+          
+          return {
+            id: workout.id,
+            exercises,
+            notes: workout.notes,
+            photos: workout.photos,
+            created_at: workout.created_at,
+          };
+        });
         setWorkoutLogs(parsedWorkouts);
       }
 
