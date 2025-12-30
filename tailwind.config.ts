@@ -130,6 +130,28 @@ export default {
             opacity: "0" 
           },
         },
+        "caustics": {
+          "0%, 100%": { 
+            transform: "scale(1) rotate(0deg)",
+            opacity: "0.3"
+          },
+          "33%": { 
+            transform: "scale(1.1) rotate(1deg)",
+            opacity: "0.5"
+          },
+          "66%": { 
+            transform: "scale(0.95) rotate(-1deg)",
+            opacity: "0.4"
+          },
+        },
+        "caustics-ripple": {
+          "0%": { 
+            transform: "skewX(-15deg) translateX(0)",
+          },
+          "100%": { 
+            transform: "skewX(-15deg) translateX(40px)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -143,6 +165,8 @@ export default {
         "liquid-wave-slow": "liquid-wave 12s linear infinite",
         "liquid-shimmer": "liquid-shimmer 4s ease-in-out infinite",
         "bubble": "bubble 4s ease-in-out infinite",
+        "caustics": "caustics 6s ease-in-out infinite",
+        "caustics-ripple": "caustics-ripple 3s linear infinite",
       },
       spacing: {
         "safe-bottom": "env(safe-area-inset-bottom)",
