@@ -120,6 +120,8 @@ const SelectContentPage = () => {
         savedMeals?.forEach((m) => {
           const data = m.content_data as Record<string, unknown>;
           const foods = data.foods as Array<{ name: string }>;
+          const coverPhotoUrl = (Array.isArray(m.images) && m.images.length > 0) ? m.images[0] : undefined;
+
           items.push({
             id: m.id,
             type: "meal",
@@ -130,10 +132,12 @@ const SelectContentPage = () => {
               mealType: "saved_meal",
               foods: data.foods,
               tags: data.tags,
+              description: data.description,
               totalCalories: data.totalCalories,
               totalProtein: data.totalProtein,
               totalCarbs: data.totalCarbs,
               totalFats: data.totalFats,
+              coverPhotoUrl,
             },
             created_at: m.created_at,
           });

@@ -566,8 +566,18 @@ const SharePostScreen = () => {
         const totalProtein = (data.totalProtein as number) ?? mealFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
         const totalCarbs = (data.totalCarbs as number) ?? mealFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
         const totalFats = (data.totalFats as number) ?? mealFoods.reduce((sum, f) => sum + (f.fats || 0), 0);
-        // Cover photo can come from contentData.coverPhotoUrl OR from images array (first image)
-        const coverPhotoUrl = (data.coverPhotoUrl as string | undefined) || (images.length > 0 ? images[0] : undefined);
+
+        // Cover photo comes from saved meal data (NOT the share-post photo list)
+        const coverFromFoods = (() => {
+          const first = mealFoods?.[0] as unknown as { savedMealCoverPhoto?: unknown } | undefined;
+          return typeof first?.savedMealCoverPhoto === "string" ? first.savedMealCoverPhoto : undefined;
+        })();
+
+        const coverPhotoUrl =
+          (data.coverPhotoUrl as string | undefined) ||
+          (data.coverPhoto as string | undefined) ||
+          coverFromFoods;
+
         const mealDescription = data.description as string | undefined;
         
         // Macro colors matching MealSavedCard
