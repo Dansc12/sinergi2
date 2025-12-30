@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { FoodSearchInput, FoodItem, SavedMealFood } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
+import { SavedMealExpansionModal } from "@/components/SavedMealExpansionModal";
 import { AddCustomFoodModal } from "@/components/AddCustomFoodModal";
 import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
@@ -79,9 +80,9 @@ const CreateMealPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   
-  // For saved meal expansion - queue of foods to review
-  const [savedMealFoodsQueue, setSavedMealFoodsQueue] = useState<SavedMealFood[]>([]);
-  const [currentSavedMealIndex, setCurrentSavedMealIndex] = useState(0);
+  // For saved meal expansion modal
+  const [isSavedMealExpansionOpen, setIsSavedMealExpansionOpen] = useState(false);
+  const [savedMealFoods, setSavedMealFoods] = useState<SavedMealFood[]>([]);
   const [savedMealName, setSavedMealName] = useState("");
 
   const { recentFoods, isLoading: isLoadingRecentFoods } = useRecentFoods(10);
@@ -118,32 +119,12 @@ const CreateMealPage = () => {
   };
 
   const handleFoodSelect = (food: FoodItem, initialQuantity?: number, initialUnit?: string) => {
-    // If it's a saved meal, expand it into individual foods for review
+    // If it's a saved meal, open the expansion modal to review all foods at once
     if (food.isSavedMeal && food.savedMealFoods && food.savedMealFoods.length > 0) {
       setSavedMealName(food.description);
-      setSavedMealFoodsQueue(food.savedMealFoods);
-      setCurrentSavedMealIndex(0);
-      
-      // Open the first food for review
-      const firstFood = food.savedMealFoods[0];
-      setPendingFood({
-        fdcId: -Date.now(),
-        description: firstFood.name,
-        calories: firstFood.calories,
-        protein: firstFood.protein,
-        carbs: firstFood.carbs,
-        fats: firstFood.fats,
-        isCustom: true,
-        baseUnit: firstFood.rawUnit || 'g',
-      });
-      setPendingFoodInitialQuantity(firstFood.rawQuantity || firstFood.servings || 1);
-      setPendingFoodInitialUnit(firstFood.rawUnit || firstFood.servingSize || 'g');
-      setIsFoodDetailOpen(true);
+      setSavedMealFoods(food.savedMealFoods);
+      setIsSavedMealExpansionOpen(true);
       setSearchValue("");
-      toast({ 
-        title: `Adding "${food.description}"`, 
-        description: `Review each food (1 of ${food.savedMealFoods.length})` 
-      });
       return;
     }
     
@@ -186,67 +167,49 @@ const CreateMealPage = () => {
     };
     setSelectedFoods(prev => [...prev, newFood]);
     
-    // Check if we're processing a saved meal queue
-    if (savedMealFoodsQueue.length > 0) {
-      const nextIndex = currentSavedMealIndex + 1;
-      
-      if (nextIndex < savedMealFoodsQueue.length) {
-        // Show next food in queue
-        const nextFood = savedMealFoodsQueue[nextIndex];
-        setCurrentSavedMealIndex(nextIndex);
-        setPendingFood({
-          fdcId: -Date.now(),
-          description: nextFood.name,
-          calories: nextFood.calories,
-          protein: nextFood.protein,
-          carbs: nextFood.carbs,
-          fats: nextFood.fats,
-          isCustom: true,
-          baseUnit: nextFood.rawUnit || 'g',
-        });
-        setPendingFoodInitialQuantity(nextFood.rawQuantity || nextFood.servings || 1);
-        setPendingFoodInitialUnit(nextFood.rawUnit || nextFood.servingSize || 'g');
-        toast({ 
-          title: `Added "${food.description}"`, 
-          description: `Next food (${nextIndex + 1} of ${savedMealFoodsQueue.length})` 
-        });
-        return; // Keep modal open for next food
-      } else {
-        // All foods processed
-        setSavedMealFoodsQueue([]);
-        setCurrentSavedMealIndex(0);
-        setSavedMealName("");
-        toast({ 
-          title: `"${savedMealName}" added!`, 
-          description: `All ${savedMealFoodsQueue.length} foods have been added` 
-        });
-      }
-    } else {
-      toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
-    }
-    
     setSearchValue("");
     setIsFoodDetailOpen(false);
     setPendingFood(null);
     setPendingFoodInitialQuantity(undefined);
     setPendingFoodInitialUnit(undefined);
+    toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
+  };
+
+  // Handle saved meal expansion confirmation
+  const handleSavedMealConfirm = (expandedFoods: Array<{
+    id: string;
+    name: string;
+    adjustedQuantity: number;
+    adjustedUnit: string;
+    adjustedCalories: number;
+    adjustedProtein: number;
+    adjustedCarbs: number;
+    adjustedFats: number;
+  }>) => {
+    const newFoods: SelectedFood[] = expandedFoods.map((food) => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: food.name,
+      calories: food.adjustedCalories,
+      protein: food.adjustedProtein,
+      carbs: food.adjustedCarbs,
+      fats: food.adjustedFats,
+      servings: food.adjustedQuantity,
+      servingSize: `${food.adjustedQuantity} ${food.adjustedUnit}`,
+      rawQuantity: food.adjustedQuantity,
+      rawUnit: food.adjustedUnit,
+    }));
+    
+    setSelectedFoods(prev => [...prev, ...newFoods]);
+    setIsSavedMealExpansionOpen(false);
+    setSavedMealFoods([]);
+    setSavedMealName("");
+    toast({ 
+      title: `"${savedMealName}" added!`, 
+      description: `${expandedFoods.length} foods have been added` 
+    });
   };
 
   const handleFoodDetailClose = () => {
-    // If we're in the middle of a saved meal queue, clear it
-    if (savedMealFoodsQueue.length > 0) {
-      const addedCount = currentSavedMealIndex;
-      if (addedCount > 0) {
-        toast({ 
-          title: `Partial add from "${savedMealName}"`, 
-          description: `Added ${addedCount} of ${savedMealFoodsQueue.length} foods` 
-        });
-      }
-      setSavedMealFoodsQueue([]);
-      setCurrentSavedMealIndex(0);
-      setSavedMealName("");
-    }
-    
     setIsFoodDetailOpen(false);
     setPendingFood(null);
     setPendingFoodInitialQuantity(undefined);
@@ -1073,6 +1036,19 @@ const CreateMealPage = () => {
         onClose={() => setIsCustomFoodModalOpen(false)}
         onSuccess={handleCustomFoodCreated}
         initialName={customFoodInitialName}
+      />
+
+      {/* Saved Meal Expansion Modal */}
+      <SavedMealExpansionModal
+        isOpen={isSavedMealExpansionOpen}
+        mealName={savedMealName}
+        foods={savedMealFoods}
+        onClose={() => {
+          setIsSavedMealExpansionOpen(false);
+          setSavedMealFoods([]);
+          setSavedMealName("");
+        }}
+        onConfirm={handleSavedMealConfirm}
       />
 
       {/* Back Confirmation Dialog */}
