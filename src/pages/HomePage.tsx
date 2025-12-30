@@ -136,7 +136,7 @@ const HomePage = () => {
   };
 
   return (
-    <div className="h-full overflow-y-auto overscroll-contain pb-24">
+    <div className="h-full flex flex-col overflow-hidden">
       <HomeHeader
         userName={userName}
         streakCount={streakCount}
@@ -144,7 +144,7 @@ const HomePage = () => {
         onProfileClick={() => navigate("/profile")}
       />
 
-      <main className="animate-fade-in">
+      <main className="flex-1 overflow-y-auto overscroll-contain pb-24 animate-fade-in">
         <section aria-label="Your Progress">
           <ProgressCharts />
         </section>
