@@ -319,14 +319,22 @@ const SelectContentPage = () => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
-        className="p-4 flex-1 pb-28"
+        className="p-4 flex-1"
       >
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft size={24} />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft size={24} />
+            </Button>
+            <h1 className="text-2xl font-bold">Select Content</h1>
+          </div>
+          <Button
+            onClick={selectedItem ? handleNext : handleSkip}
+            className="px-6"
+          >
+            {selectedItem ? "Next" : "Skip"}
           </Button>
-          <h1 className="text-2xl font-bold">Select Content</h1>
         </div>
 
         {/* Filter Options */}
@@ -441,26 +449,6 @@ const SelectContentPage = () => {
           </div>
         )}
       </motion.div>
-
-      {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="flex flex-col gap-2">
-          <Button
-            className="w-full h-16 text-lg glow-primary"
-            onClick={handleNext}
-            disabled={!selectedItem}
-          >
-            Next
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full h-12 text-lg"
-            onClick={handleSkip}
-          >
-            Skip
-          </Button>
-        </div>
-      </div>
     </div>
   );
 };
