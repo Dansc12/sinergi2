@@ -175,43 +175,41 @@ export const FoodSearchInput = ({
                   >
                     {isSavedMealOrRecipe ? (
                       /* Saved Meal / Recipe display with circular cover photo */
-                      <>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            {/* Circular cover photo */}
-                            <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-primary/20">
-                              {food.savedMealCoverPhoto ? (
-                                <img 
-                                  src={food.savedMealCoverPhoto} 
-                                  alt={food.description}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center">
-                                  <Utensils size={18} className="text-primary" />
-                                </div>
-                              )}
+                      <div className="flex items-center gap-3">
+                        {/* Circular cover photo - 40px diameter */}
+                        <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-primary/20">
+                          {food.savedMealCoverPhoto ? (
+                            <img 
+                              src={food.savedMealCoverPhoto} 
+                              alt={food.description}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <Utensils size={18} className="text-primary" />
                             </div>
-                            {/* Name */}
+                          )}
+                        </div>
+                        {/* Name on top, cals/macros on bottom - total height matches circle */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center h-10">
+                          <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-sm truncate">{food.description}</span>
+                            <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                              food.isSavedMeal 
+                                ? 'bg-emerald-500/20 text-emerald-400' 
+                                : 'bg-amber-500/20 text-amber-400'
+                            }`}>
+                              {food.isSavedMeal ? 'Saved Meal' : 'Recipe'}
+                            </span>
                           </div>
-                          {/* Label aligned right */}
-                          <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                            food.isSavedMeal 
-                              ? 'bg-emerald-500/20 text-emerald-400' 
-                              : 'bg-amber-500/20 text-amber-400'
-                          }`}>
-                            {food.isSavedMeal ? 'Saved Meal' : 'Recipe'}
-                          </span>
+                          <div className="flex gap-3 text-xs text-muted-foreground">
+                            <span>{food.calories} cal</span>
+                            <span style={{ color: '#3DD6C6' }}>P: {food.protein}g</span>
+                            <span style={{ color: '#5B8CFF' }}>C: {food.carbs}g</span>
+                            <span style={{ color: '#B46BFF' }}>F: {food.fats}g</span>
+                          </div>
                         </div>
-                        {/* Calories and macros */}
-                        <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground ml-[52px]">
-                          <span>{food.calories} cal</span>
-                          <span style={{ color: '#3DD6C6' }}>P: {food.protein}g</span>
-                          <span style={{ color: '#5B8CFF' }}>C: {food.carbs}g</span>
-                          <span style={{ color: '#B46BFF' }}>F: {food.fats}g</span>
-                        </div>
-                      </>
+                      </div>
                     ) : (
                       /* Regular food / custom food display */
                       <>
