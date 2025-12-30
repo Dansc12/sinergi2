@@ -79,6 +79,9 @@ const SelectContentPage = () => {
 
         workouts?.forEach((w) => {
           const exercises = w.exercises as Array<{ name: string }>;
+          // Skip workouts with 0 exercises
+          if (!exercises || exercises.length === 0) return;
+          
           // Use workoutTitle from notes if it exists, otherwise generate a name
           const workoutData = w as Record<string, unknown>;
           const storedTitle = (workoutData.notes as string)?.startsWith("__TITLE__") 
@@ -102,27 +105,31 @@ const SelectContentPage = () => {
           });
         });
 
-        // Fetch meals
-        const { data: meals } = await supabase
-          .from("meal_logs")
+        // Fetch saved meals (user-created saved meals only, not meal logs)
+        const { data: savedMeals } = await supabase
+          .from("posts")
           .select("*")
           .eq("user_id", user.id)
+          .eq("content_type", "saved_meal")
           .order("created_at", { ascending: false });
 
-        meals?.forEach((m) => {
-          const foods = m.foods as Array<{ name: string }>;
+        savedMeals?.forEach((m) => {
+          const data = m.content_data as Record<string, unknown>;
+          const foods = data.foods as Array<{ name: string }>;
           items.push({
             id: m.id,
             type: "meal",
-            title: `${m.meal_type.charAt(0).toUpperCase() + m.meal_type.slice(1)}`,
-            subtitle: `${m.total_calories} cal • ${format(new Date(m.created_at), "MMM d")}`,
+            title: (data.name as string) || "Saved Meal",
+            subtitle: `${foods?.length || 0} items • ${format(new Date(m.created_at), "MMM d")}`,
             data: {
-              mealType: m.meal_type,
-              foods: m.foods,
-              totalCalories: m.total_calories,
-              totalProtein: m.total_protein,
-              totalCarbs: m.total_carbs,
-              totalFats: m.total_fat,
+              name: data.name,
+              mealType: "saved_meal",
+              foods: data.foods,
+              tags: data.tags,
+              totalCalories: data.totalCalories,
+              totalProtein: data.totalProtein,
+              totalCarbs: data.totalCarbs,
+              totalFats: data.totalFats,
             },
             created_at: m.created_at,
           });
