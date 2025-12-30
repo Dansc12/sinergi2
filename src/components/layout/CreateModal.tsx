@@ -168,7 +168,7 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -50 }}
                       transition={{ duration: 0.2 }}
-                      className="h-[180px]"
+                      className="min-h-[200px]"
                     >
                       {screens[currentScreen]()}
                     </motion.div>
