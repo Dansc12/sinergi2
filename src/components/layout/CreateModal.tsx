@@ -84,10 +84,12 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     </div>
   );
 
-  // Screen 2: Routine (left), Recipe and Saved Meal stacked (right)
+  // Screen 2: Routine (left, vertically centered), Recipe and Saved Meal stacked (right)
   const Screen2 = () => (
     <div className="grid grid-cols-2 gap-3">
-      <OptionButton option={{ icon: <RotateCcw size={24} />, label: "Routine", description: "Build a workout routine", gradient: "from-violet-500 to-purple-400", path: "/create/routine" }} />
+      <div className="flex items-center">
+        <OptionButton option={{ icon: <RotateCcw size={24} />, label: "Routine", description: "Build a workout routine", gradient: "from-violet-500 to-purple-400", path: "/create/routine" }} />
+      </div>
       <div className="flex flex-col gap-3">
         <OptionButton option={{ icon: <ChefHat size={20} />, label: "Recipe", description: "Share a healthy recipe", gradient: "from-rose-500 to-pink-400", path: "/create/recipe" }} size="small" />
         <OptionButton option={{ icon: <UtensilsCrossed size={20} />, label: "Saved Meal", description: "Save a meal combo", gradient: "from-amber-500 to-yellow-400", path: "/create/saved-meal" }} size="small" />
@@ -95,20 +97,20 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     </div>
   );
 
-  // Screen 3: Groups only
+  // Screen 3: Groups only (full height)
   const Screen3 = () => (
-    <div className="flex justify-center">
+    <div className="flex items-center justify-center h-full">
       <motion.button
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xs flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-200 group"
+        className="w-full flex flex-col items-center justify-center gap-4 p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-200 group h-full"
         onClick={() => handleOptionClick("/create/group")}
       >
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-200">
-          <Users size={24} />
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-200">
+          <Users size={28} />
         </div>
-        <div className="text-left">
-          <p className="font-semibold text-foreground">Group</p>
+        <div className="text-center">
+          <p className="font-semibold text-foreground text-lg">Group</p>
           <p className="text-sm text-muted-foreground">Create a fitness group</p>
         </div>
       </motion.button>
@@ -166,7 +168,7 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -50 }}
                       transition={{ duration: 0.2 }}
-                      className="min-h-[160px]"
+                      className="h-[180px]"
                     >
                       {screens[currentScreen]()}
                     </motion.div>
