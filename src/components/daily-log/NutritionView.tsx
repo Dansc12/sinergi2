@@ -91,14 +91,16 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
 // Animated liquid wave component
 const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
   return (
-    <div className="absolute inset-0 overflow-hidden rounded-2xl">
-      {/* Gradient overlay for depth - darker at bottom, vibrant at top */}
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Gradient overlay for depth - very dark at bottom fading to transparent */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
           background: `linear-gradient(to top, 
-            rgba(0,0,0,0.6) 0%, 
-            rgba(0,0,0,0.3) 30%, 
+            hsl(var(--background)) 0%,
+            rgba(0,0,0,0.95) 5%,
+            rgba(0,0,0,0.7) 20%, 
+            rgba(0,0,0,0.3) 40%, 
             rgba(0,0,0,0) 60%
           )`,
         }}
@@ -147,14 +149,16 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
           />
         </svg>
         
-        {/* Liquid body with gradient */}
+        {/* Liquid body with gradient - darker at bottom */}
         <div 
           className="absolute top-[5px] left-0 right-0 bottom-0"
           style={{
             background: `linear-gradient(to top, 
-              hsl(290, 70%, 25%) 0%,
-              hsl(280, 80%, 40%) 40%,
-              hsl(270, 85%, 55%) 70%,
+              hsl(290, 50%, 8%) 0%,
+              hsl(290, 60%, 15%) 15%,
+              hsl(285, 70%, 25%) 30%,
+              hsl(280, 80%, 40%) 50%,
+              hsl(270, 85%, 55%) 75%,
               hsl(265, 90%, 60%) 100%
             )`,
           }}
@@ -166,7 +170,7 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
           style={{
             background: `linear-gradient(105deg, 
               transparent 40%, 
-              rgba(255,255,255,0.1) 50%, 
+              rgba(255,255,255,0.08) 50%, 
               transparent 60%
             )`,
             backgroundSize: '200% 100%',
@@ -235,8 +239,8 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Calories Container with Liquid Fill */}
-      <div className="relative rounded-2xl overflow-hidden bg-card border border-border" style={{ minHeight: '280px' }}>
+      {/* Calories Container with Liquid Fill - no frame */}
+      <div className="relative overflow-hidden" style={{ minHeight: '280px' }}>
         {/* Liquid wave animation */}
         <LiquidWave fillPercentage={fillPercentage} />
         
