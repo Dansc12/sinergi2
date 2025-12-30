@@ -91,17 +91,17 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
 // Animated liquid wave component
 const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Gradient overlay for depth - very dark at bottom fading to transparent */}
+    <div className="absolute inset-0 overflow-hidden -mx-4">
+      {/* Gradient overlay for depth - blends to background at bottom */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
           background: `linear-gradient(to top, 
-            hsl(var(--background)) 0%,
-            rgba(0,0,0,0.95) 5%,
-            rgba(0,0,0,0.7) 20%, 
-            rgba(0,0,0,0.3) 40%, 
-            rgba(0,0,0,0) 60%
+            hsl(240, 6%, 10%) 0%,
+            hsla(240, 6%, 10%, 0.95) 8%,
+            hsla(260, 15%, 12%, 0.7) 25%, 
+            hsla(270, 20%, 15%, 0.3) 45%, 
+            transparent 65%
           )`,
         }}
       />
@@ -149,16 +149,17 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
           />
         </svg>
         
-        {/* Liquid body with gradient - darker at bottom */}
+        {/* Liquid body with gradient - blending to dark grey at bottom */}
         <div 
           className="absolute top-[5px] left-0 right-0 bottom-0"
           style={{
             background: `linear-gradient(to top, 
-              hsl(290, 50%, 8%) 0%,
-              hsl(290, 60%, 15%) 15%,
-              hsl(285, 70%, 25%) 30%,
-              hsl(280, 80%, 40%) 50%,
-              hsl(270, 85%, 55%) 75%,
+              hsl(240, 6%, 10%) 0%,
+              hsl(260, 20%, 15%) 10%,
+              hsl(280, 40%, 22%) 25%,
+              hsl(280, 60%, 35%) 45%,
+              hsl(275, 75%, 48%) 65%,
+              hsl(270, 85%, 55%) 80%,
               hsl(265, 90%, 60%) 100%
             )`,
           }}
@@ -239,13 +240,13 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Calories Container with Liquid Fill - no frame */}
-      <div className="relative overflow-hidden" style={{ minHeight: '280px' }}>
+      {/* Calories Container with Liquid Fill - edge to edge */}
+      <div className="relative overflow-visible -mx-4" style={{ minHeight: '280px' }}>
         {/* Liquid wave animation */}
         <LiquidWave fillPercentage={fillPercentage} />
         
         {/* Content overlay */}
-        <div className="relative z-20 p-6 flex flex-col h-full" style={{ minHeight: '280px' }}>
+        <div className="relative z-20 px-4 py-6 flex flex-col h-full" style={{ minHeight: '280px' }}>
           {/* Calories display at top */}
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className="text-5xl font-bold text-white drop-shadow-lg">{caloriesLeft}</span>
@@ -254,7 +255,7 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
           </div>
           
           {/* Macros Card pinned to bottom */}
-          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 space-y-3 mt-auto">
+          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 space-y-3 mt-auto mx-4">
             <h3 className="font-semibold text-sm">Macros</h3>
             <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="#3DD6C6" />
             <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="#5B8CFF" />
