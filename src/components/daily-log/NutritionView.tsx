@@ -124,7 +124,7 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
   ];
   
   return (
-    <div className="absolute inset-0 overflow-hidden -mx-4">
+    <div className="absolute inset-0 overflow-hidden">
       {/* Gradient overlay for depth - blends perfectly to background */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none"
