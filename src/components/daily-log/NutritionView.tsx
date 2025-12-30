@@ -46,10 +46,15 @@ interface MealLog {
 
 // Helper to format serving display consistently
 const formatServingDisplay = (servings: number, servingSize: string): string => {
-  // Check if servingSize already contains the numeric value (e.g., "114 g", "100g")
+  // Check if servingSize already contains a numeric value (e.g., "114 g", "100g", "123 g")
   const numericMatch = servingSize.match(/^(\d+(?:\.\d+)?)\s*/);
   if (numericMatch) {
     const sizeValue = parseFloat(numericMatch[1]);
+    // If servings equals the numeric value in servingSize, data is "baked in" - just show servingSize
+    // This handles saved meals where servings=123 and servingSize="123 g"
+    if (servings === sizeValue) {
+      return servingSize;
+    }
     // If servings is 1, just show the serving size directly
     if (servings === 1) {
       return servingSize;
