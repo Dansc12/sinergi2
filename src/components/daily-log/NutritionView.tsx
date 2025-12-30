@@ -90,18 +90,22 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
 
 // Animated liquid wave component
 const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
+  // Background color from CSS: 0 0% 7%
+  const bgColor = "hsl(0, 0%, 7%)";
+  
   return (
     <div className="absolute inset-0 overflow-hidden -mx-4">
-      {/* Gradient overlay for depth - blends to background at bottom */}
+      {/* Gradient overlay for depth - blends perfectly to background */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
           background: `linear-gradient(to top, 
-            hsl(240, 6%, 10%) 0%,
-            hsla(240, 6%, 10%, 0.95) 8%,
-            hsla(260, 15%, 12%, 0.7) 25%, 
-            hsla(270, 20%, 15%, 0.3) 45%, 
-            transparent 65%
+            ${bgColor} 0%,
+            hsla(0, 0%, 7%, 0.98) 5%,
+            hsla(0, 0%, 7%, 0.9) 12%,
+            hsla(270, 10%, 10%, 0.7) 25%, 
+            hsla(270, 20%, 15%, 0.4) 40%, 
+            transparent 60%
           )`,
         }}
       />
@@ -149,17 +153,19 @@ const LiquidWave = ({ fillPercentage }: { fillPercentage: number }) => {
           />
         </svg>
         
-        {/* Liquid body with gradient - blending to dark grey at bottom */}
+        {/* Liquid body with gradient - seamlessly blending to background at bottom */}
         <div 
           className="absolute top-[5px] left-0 right-0 bottom-0"
           style={{
             background: `linear-gradient(to top, 
-              hsl(240, 6%, 10%) 0%,
-              hsl(260, 20%, 15%) 10%,
-              hsl(280, 40%, 22%) 25%,
-              hsl(280, 60%, 35%) 45%,
-              hsl(275, 75%, 48%) 65%,
-              hsl(270, 85%, 55%) 80%,
+              ${bgColor} 0%,
+              hsl(0, 0%, 8%) 5%,
+              hsl(270, 15%, 12%) 15%,
+              hsl(275, 35%, 20%) 30%,
+              hsl(280, 55%, 32%) 45%,
+              hsl(275, 70%, 45%) 60%,
+              hsl(270, 82%, 52%) 75%,
+              hsl(268, 88%, 58%) 90%,
               hsl(265, 90%, 60%) 100%
             )`,
           }}
