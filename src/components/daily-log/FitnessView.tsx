@@ -285,7 +285,7 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
       <div>
         <h3 className="font-semibold mb-3">Scheduled Workouts</h3>
         
-        {pendingRoutines.length > 0 ? (
+        {pendingRoutines.length > 0 && (
           <div className="space-y-3">
             {pendingRoutines.map((instance) => {
               const routine = instance.scheduled_routine;
@@ -397,15 +397,7 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
               );
             })}
           </div>
-        ) : !hadRoutinesScheduled ? (
-          <div className="bg-card border border-border rounded-xl p-6 text-center">
-            <Calendar size={32} className="mx-auto mb-3 text-muted-foreground/50" />
-            <p className="text-muted-foreground mb-1">No workout routines scheduled for this day</p>
-            <p className="text-sm text-muted-foreground/70 mb-4">
-              Create a routine to schedule recurring workouts
-            </p>
-          </div>
-        ) : null}
+        )}
 
         {/* Quick Start Workout Button */}
         <Button

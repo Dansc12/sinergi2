@@ -184,9 +184,9 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
       {/* Macros */}
       <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
         <h3 className="font-semibold mb-3">Macros</h3>
-        <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="hsl(270, 91%, 65%)" />
-        <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="hsl(142, 76%, 45%)" />
-        <MacroBar label="F" current={totals.fat} goal={macroGoals.fat} color="hsl(38, 92%, 50%)" />
+        <MacroBar label="P" current={totals.protein} goal={macroGoals.protein} color="#3DD6C6" />
+        <MacroBar label="C" current={totals.carbs} goal={macroGoals.carbs} color="#5B8CFF" />
+        <MacroBar label="F" current={totals.fat} goal={macroGoals.fat} color="#B46BFF" />
       </div>
 
       {/* Logged Meals */}

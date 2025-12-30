@@ -250,9 +250,7 @@ const CreateWorkoutPage = () => {
     setExercises([...exercises, newExercise]);
     setSelectedExerciseId(newExerciseId); // Auto-select the new exercise
     
-    if (historicalSets.length > 0) {
-      toast({ title: "Previous workout loaded", description: `Loaded ${historicalSets.length} sets from your last session.` });
-    }
+    // Removed toast notification for adding exercise
   };
 
   const removeExercise = (exerciseId: string) => {

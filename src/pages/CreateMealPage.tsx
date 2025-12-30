@@ -187,7 +187,7 @@ const CreateMealPage = () => {
     setPendingFood(null);
     setPendingFoodInitialQuantity(undefined);
     setPendingFoodInitialUnit(undefined);
-    toast({ title: "Food added!", description: `${servingSize} of ${food.description}` });
+    // Removed toast notification for adding food
   };
 
   // Handle saved meal expansion confirmation
@@ -227,10 +227,7 @@ const CreateMealPage = () => {
     setSavedMealFoods([]);
     setSavedMealName("");
     setSavedMealCoverPhoto(undefined);
-    toast({ 
-      title: `"${mealName}" added!`, 
-      description: `${expandedFoods.length} foods have been added` 
-    });
+    // Removed toast notification for adding saved meal
   };
 
   const handleFoodDetailClose = () => {

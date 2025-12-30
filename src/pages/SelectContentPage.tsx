@@ -336,7 +336,7 @@ const SelectContentPage = () => {
           <Button
             variant={selectedItem ? "default" : "outline"}
             onClick={selectedItem ? handleNext : handleSkip}
-            className="w-20"
+            className="w-20 rounded-full"
           >
             {selectedItem ? "Next" : "Skip"}
           </Button>
