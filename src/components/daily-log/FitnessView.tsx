@@ -1,17 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, Play } from "lucide-react";
+import { Clock, Dumbbell, ChevronRight, ChevronDown, Calendar, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useScheduledRoutines } from "@/hooks/useScheduledRoutines";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WorkoutExercise {
   id: string;
@@ -64,9 +76,35 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
     exercises: RoutineExercise[];
     time: string | null;
   } | null>(null);
+  const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
+  const [isDeletingWorkout, setIsDeletingWorkout] = useState(false);
   
-  const { workoutLogs, isLoading } = useDailyLogs(selectedDate || new Date());
+  const { workoutLogs, isLoading, refetch } = useDailyLogs(selectedDate || new Date());
   const { routineInstances, isLoading: routinesLoading } = useScheduledRoutines(selectedDate || new Date());
+
+  // Delete workout handler
+  const handleDeleteWorkout = async () => {
+    if (!workoutToDelete) return;
+    
+    setIsDeletingWorkout(true);
+    try {
+      const { error } = await supabase
+        .from("workout_logs")
+        .delete()
+        .eq("id", workoutToDelete);
+      
+      if (error) throw error;
+      
+      toast({ title: "Workout deleted", description: "The workout has been removed." });
+      refetch();
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+      toast({ title: "Error", description: "Failed to delete workout.", variant: "destructive" });
+    } finally {
+      setIsDeletingWorkout(false);
+      setWorkoutToDelete(null);
+    }
+  };
 
   // Calculate workout summary stats
   const getWorkoutStats = () => {
@@ -422,9 +460,17 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
               });
 
               return (
-                <div key={workout.id} className="bg-card border border-border rounded-xl p-4 space-y-4">
+                <div key={workout.id} className="bg-card border border-border rounded-xl p-4 space-y-4 relative">
+                  {/* Delete button - top right */}
+                  <button
+                    onClick={() => setWorkoutToDelete(workout.id)}
+                    className="absolute top-3 right-3 p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  
                   {/* Workout Header */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 pr-10">
                     <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
                       <Dumbbell size={18} className="text-primary" />
                     </div>
@@ -621,6 +667,28 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Workout Confirmation Dialog */}
+      <AlertDialog open={!!workoutToDelete} onOpenChange={(open) => !open && setWorkoutToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Are you sure you want to permanently delete this workout?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingWorkout}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWorkout}
+              disabled={isDeletingWorkout}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingWorkout ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

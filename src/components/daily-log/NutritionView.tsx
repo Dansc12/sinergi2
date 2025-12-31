@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 interface MacroBarProps {
   label: string;
   current: number;
@@ -42,6 +52,15 @@ interface MealLog {
   meal_type: string;
   foods: LoggedFood[];
   total_calories: number;
+  total_protein?: number;
+  total_carbs?: number;
+  total_fat?: number;
+}
+
+interface FoodToDelete {
+  mealLogId: string;
+  foodIndex: number;
+  foodName: string;
 }
 
 // Helper to format serving display consistently
@@ -75,10 +94,10 @@ interface MealLogDisplayProps {
   mealType: string;
   mealLogs: MealLog[];
   onAddFood: () => void;
+  onDeleteFood: (mealLogId: string, foodIndex: number, foodName: string) => void;
 }
 
-const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
-  const allFoods = mealLogs.flatMap((log) => log.foods || []);
+const MealLogDisplay = ({ name, mealLogs, onAddFood, onDeleteFood }: MealLogDisplayProps) => {
   const totalCalories = mealLogs.reduce((sum, log) => sum + (log.total_calories || 0), 0);
   
   return (
@@ -95,15 +114,23 @@ const MealLogDisplay = ({ name, mealLogs, onAddFood }: MealLogDisplayProps) => {
         </Button>
       </div>
       
-      {allFoods.length > 0 ? (
+      {mealLogs.length > 0 && mealLogs.some(log => log.foods?.length > 0) ? (
         <>
           <p className="text-primary font-bold text-lg mb-2">{totalCalories} cal</p>
           <div className="space-y-1">
-            {allFoods.map((food, index) => (
-              <div key={index} className="text-sm text-muted-foreground flex justify-between">
-                <span>{food.name}</span>
-                <span className="text-xs">{formatServingDisplay(food.servings, food.servingSize)}</span>
-              </div>
+            {mealLogs.map((log) => (
+              (log.foods || []).map((food, foodIndex) => (
+                <div key={`${log.id}-${foodIndex}`} className="text-sm text-muted-foreground flex items-center gap-2">
+                  <button
+                    onClick={() => onDeleteFood(log.id, foodIndex, food.name)}
+                    className="p-1 rounded hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <span className="flex-1 truncate">{food.name}</span>
+                  <span className="text-xs flex-shrink-0">{formatServingDisplay(food.servings, food.servingSize)}</span>
+                </div>
+              ))
             ))}
           </div>
         </>
@@ -258,9 +285,71 @@ interface NutritionViewProps {
 export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { mealsByType, totals, isLoading } = useDailyLogs(selectedDate || new Date());
+  const { mealsByType, mealLogs, totals, isLoading, refetch } = useDailyLogs(selectedDate || new Date());
   const [caloriesGoal, setCaloriesGoal] = useState(2200);
   const [macroGoals, setMacroGoals] = useState({ protein: 150, carbs: 250, fat: 70 });
+  const [foodToDelete, setFoodToDelete] = useState<FoodToDelete | null>(null);
+  const [isDeletingFood, setIsDeletingFood] = useState(false);
+
+  // Delete food handler
+  const handleDeleteFood = async () => {
+    if (!foodToDelete) return;
+    
+    setIsDeletingFood(true);
+    try {
+      // Find the meal log
+      const mealLog = mealLogs.find(m => m.id === foodToDelete.mealLogId);
+      if (!mealLog) throw new Error("Meal log not found");
+      
+      const updatedFoods = [...(mealLog.foods || [])];
+      const removedFood = updatedFoods[foodToDelete.foodIndex];
+      updatedFoods.splice(foodToDelete.foodIndex, 1);
+      
+      if (updatedFoods.length === 0) {
+        // If no foods left, delete the entire meal log
+        const { error } = await supabase
+          .from("meal_logs")
+          .delete()
+          .eq("id", foodToDelete.mealLogId);
+        
+        if (error) throw error;
+      } else {
+        // Recalculate totals
+        const newTotals = updatedFoods.reduce((acc, food) => ({
+          calories: acc.calories + (food.calories || 0),
+          protein: acc.protein + (food.protein || 0),
+          carbs: acc.carbs + (food.carbs || 0),
+          fat: acc.fat + (food.fat || 0),
+        }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        
+        const { error } = await supabase
+          .from("meal_logs")
+          .update({
+            foods: updatedFoods as unknown as import("@/integrations/supabase/types").Json,
+            total_calories: Math.round(newTotals.calories),
+            total_protein: newTotals.protein,
+            total_carbs: newTotals.carbs,
+            total_fat: newTotals.fat,
+          })
+          .eq("id", foodToDelete.mealLogId);
+        
+        if (error) throw error;
+      }
+      
+      toast({ title: "Food deleted", description: `${removedFood?.name || "Food item"} has been removed.` });
+      refetch();
+    } catch (error) {
+      console.error("Error deleting food:", error);
+      toast({ title: "Error", description: "Failed to delete food item.", variant: "destructive" });
+    } finally {
+      setIsDeletingFood(false);
+      setFoodToDelete(null);
+    }
+  };
+
+  const handleFoodDeleteRequest = (mealLogId: string, foodIndex: number, foodName: string) => {
+    setFoodToDelete({ mealLogId, foodIndex, foodName });
+  };
 
   // Fetch user's calorie target from profile
   useEffect(() => {
@@ -349,27 +438,53 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
             mealType="breakfast"
             mealLogs={mealsByType.breakfast}
             onAddFood={() => handleAddFood("breakfast")}
+            onDeleteFood={handleFoodDeleteRequest}
           />
           <MealLogDisplay 
             name="Lunch"
             mealType="lunch"
             mealLogs={mealsByType.lunch}
             onAddFood={() => handleAddFood("lunch")}
+            onDeleteFood={handleFoodDeleteRequest}
           />
           <MealLogDisplay 
             name="Dinner"
             mealType="dinner"
             mealLogs={mealsByType.dinner}
             onAddFood={() => handleAddFood("dinner")}
+            onDeleteFood={handleFoodDeleteRequest}
           />
           <MealLogDisplay 
             name="Snack"
             mealType="snack"
             mealLogs={mealsByType.snack}
             onAddFood={() => handleAddFood("snack")}
+            onDeleteFood={handleFoodDeleteRequest}
           />
         </div>
       </div>
+
+      {/* Delete Food Confirmation Dialog */}
+      <AlertDialog open={!!foodToDelete} onOpenChange={(open) => !open && setFoodToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Food Item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Are you sure you want to remove "{foodToDelete?.foodName}" from your log?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingFood}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFood}
+              disabled={isDeletingFood}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingFood ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
