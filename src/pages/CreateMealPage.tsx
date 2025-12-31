@@ -437,6 +437,9 @@ const CreateMealPage = () => {
                       protein: food.protein,
                       carbs: food.carbs,
                       fats: food.fats,
+                      // Mark as custom with per-1-unit base so FoodDetailModal uses correct multiplier
+                      isCustom: true,
+                      baseUnit: food.servingSize || 'g',
                     }, food.servings, food.servingSize)}
                     className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
                     whileTap={{ scale: 0.98 }}
@@ -534,16 +537,23 @@ const CreateMealPage = () => {
                       protein: food.protein,
                       carbs: food.carbs,
                       fats: food.fats,
+                      // Mark as custom with per-1-unit base so FoodDetailModal uses correct multiplier
+                      isCustom: true,
+                      baseUnit: food.servingSize || 'g',
                     }, food.servings, food.servingSize)}
                     className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
                     whileTap={{ scale: 0.98 }}
                   >
                     {/* Macro gradient bar at top */}
                     {(() => {
-                      const total = food.protein + food.carbs + food.fats;
+                      // Calculate total macros for display (servings × per-unit values)
+                      const displayProtein = food.protein * (food.servings ?? 1);
+                      const displayCarbs = food.carbs * (food.servings ?? 1);
+                      const displayFats = food.fats * (food.servings ?? 1);
+                      const total = displayProtein + displayCarbs + displayFats;
                       if (total === 0) return null;
-                      const pPct = (food.protein / total) * 100;
-                      const cPct = (food.carbs / total) * 100;
+                      const pPct = (displayProtein / total) * 100;
+                      const cPct = (displayCarbs / total) * 100;
                       return (
                         <div 
                           className="absolute left-0 right-0 top-0 h-1"
@@ -573,11 +583,12 @@ const CreateMealPage = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-foreground">{food.calories} cal</span>
+                          {/* Display calculated totals (servings × per-unit values) */}
+                          <span className="text-xs text-foreground">{Math.round(food.calories * (food.servings ?? 1))} cal</span>
                           <div className="flex items-center gap-2 text-xs">
-                            <span style={{ color: '#3DD6C6' }}>P: {food.protein.toFixed(0)}g</span>
-                            <span style={{ color: '#5B8CFF' }}>C: {food.carbs.toFixed(0)}g</span>
-                            <span style={{ color: '#B46BFF' }}>F: {food.fats.toFixed(0)}g</span>
+                            <span style={{ color: '#3DD6C6' }}>P: {Math.round(food.protein * (food.servings ?? 1))}g</span>
+                            <span style={{ color: '#5B8CFF' }}>C: {Math.round(food.carbs * (food.servings ?? 1))}g</span>
+                            <span style={{ color: '#B46BFF' }}>F: {Math.round(food.fats * (food.servings ?? 1))}g</span>
                           </div>
                         </div>
                       </div>
