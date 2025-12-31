@@ -515,7 +515,7 @@ const CreateWorkoutPage = () => {
     try {
       await createPost({
         content_type: "workout",
-        content_data: { title, exercises, tags },
+        content_data: { title, exercises, tags, durationSeconds: elapsedSeconds },
         images: photos,
         visibility: "private",
       });

@@ -46,6 +46,7 @@ interface WorkoutLog {
   notes: string | null;
   photos: string[] | null;
   created_at: string;
+  duration_seconds: number | null;
 }
 
 interface WaterLog {
@@ -124,6 +125,7 @@ export const useDailyLogs = (selectedDate: Date) => {
             notes: workout.notes,
             photos: workout.photos,
             created_at: workout.created_at,
+            duration_seconds: (workout as any).duration_seconds || null,
           };
         });
         setWorkoutLogs(parsedWorkouts);

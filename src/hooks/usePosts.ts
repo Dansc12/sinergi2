@@ -191,6 +191,7 @@ export const usePosts = () => {
           exercises: exercisesWithMeta as unknown as Json,
           notes: (workoutData.notes as string) || null,
           photos: postData.images || [],
+          duration_seconds: (workoutData.durationSeconds as number) || null,
         });
     }
 

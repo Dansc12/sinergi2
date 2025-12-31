@@ -36,6 +36,7 @@ interface WorkoutLog {
   notes: string | null;
   photos: string[] | null;
   created_at: string;
+  duration_seconds: number | null;
 }
 
 interface RoutineExercise {
@@ -104,12 +105,14 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
       }
     });
 
-    // Calculate total time from first to last workout
-    let totalTime = 0;
+    // Calculate total time from logged duration_seconds
+    let totalTimeSeconds = 0;
     workoutLogs.forEach(workout => {
-      // Estimate ~45 min per workout if no duration tracked
-      totalTime += 45;
+      if (workout.duration_seconds) {
+        totalTimeSeconds += workout.duration_seconds;
+      }
     });
+    const totalTime = Math.round(totalTimeSeconds / 60); // Convert to minutes
 
     return { totalTime, totalVolume, primaryMuscle };
   };
