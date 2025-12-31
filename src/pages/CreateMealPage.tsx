@@ -54,6 +54,7 @@ interface RestoredState {
   contentData?: { mealType?: string; foods?: SelectedFood[] };
   images?: string[];
   preselectedMealType?: string;
+  logDate?: string; // ISO date string for logging to a specific date
   // From MyRecipesPage or DiscoverMealsPage
   selectedRecipe?: {
     ingredients: {
@@ -280,6 +281,7 @@ const CreateMealPage = () => {
         content_data: { mealType, foods: selectedFoods, totalCalories, totalProtein, totalCarbs, totalFats },
         images: photos,
         visibility: "private",
+        logDate: restoredState?.logDate,
       });
 
       // Navigate home and show congrats popup

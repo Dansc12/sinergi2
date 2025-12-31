@@ -179,7 +179,11 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
   };
 
   const handleQuickLogWorkout = () => {
-    navigate("/create/workout");
+    navigate("/create/workout", {
+      state: {
+        logDate: selectedDate ? selectedDate.toISOString() : undefined,
+      }
+    });
   };
 
   const handleStartRoutine = (instance: typeof routineInstances[0]) => {
@@ -214,6 +218,7 @@ export const FitnessView = ({ selectedDate }: FitnessViewProps) => {
         routineName: routine.routine_name,
         exercises: prefilledExercises,
         routineInstanceId: instance.id,
+        logDate: selectedDate ? selectedDate.toISOString() : undefined,
       },
     });
   };

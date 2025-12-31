@@ -67,6 +67,7 @@ interface RestoredState {
   routineName?: string;
   exercises?: Exercise[];
   routineInstanceId?: string;
+  logDate?: string; // ISO date string for logging to a specific date
   // From MySavedPage
   selectedRoutine?: SavedRoutine;
   selectedPastWorkout?: PastWorkout;
@@ -518,6 +519,7 @@ const CreateWorkoutPage = () => {
         content_data: { title, exercises, tags, durationSeconds: elapsedSeconds },
         images: photos,
         visibility: "private",
+        logDate: restoredState?.logDate,
       });
 
       // If this workout was from a routine, mark the instance as completed

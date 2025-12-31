@@ -388,7 +388,12 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   const fillPercentage = (caloriesConsumed / caloriesGoal) * 100;
 
   const handleAddFood = (mealType: string) => {
-    navigate("/create/meal", { state: { preselectedMealType: mealType } });
+    navigate("/create/meal", { 
+      state: { 
+        preselectedMealType: mealType,
+        logDate: selectedDate ? selectedDate.toISOString() : undefined,
+      } 
+    });
   };
 
   if (isLoading) {

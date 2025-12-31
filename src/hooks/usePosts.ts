@@ -135,6 +135,7 @@ export const usePosts = () => {
     description?: string;
     images?: string[];
     visibility: string;
+    logDate?: string; // Optional: ISO date string for logging to a specific date
   }) => {
     if (!user) throw new Error("Not authenticated");
 
@@ -163,6 +164,11 @@ export const usePosts = () => {
         fat: f.fats, // Note: CreateMealPage uses 'fats', meal_logs uses 'fat'
       }));
 
+      // Calculate log_date from provided logDate or use current date
+      const logDate = postData.logDate 
+        ? new Date(postData.logDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+
       await supabase
         .from("meal_logs")
         .insert({
@@ -173,6 +179,7 @@ export const usePosts = () => {
           total_protein: mealData.totalProtein as number,
           total_carbs: mealData.totalCarbs as number,
           total_fat: mealData.totalFats as number,
+          log_date: logDate,
         });
     }
 
@@ -184,6 +191,12 @@ export const usePosts = () => {
         title: workoutData.title as string || "",
         exercises: workoutData.exercises,
       };
+      
+      // Calculate log_date from provided logDate or use current date
+      const logDate = postData.logDate 
+        ? new Date(postData.logDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+
       await supabase
         .from("workout_logs")
         .insert({
@@ -192,6 +205,7 @@ export const usePosts = () => {
           notes: (workoutData.notes as string) || null,
           photos: postData.images || [],
           duration_seconds: (workoutData.durationSeconds as number) || null,
+          log_date: logDate,
         });
     }
 
