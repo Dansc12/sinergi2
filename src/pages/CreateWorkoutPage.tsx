@@ -104,6 +104,7 @@ const CreateWorkoutPage = () => {
   const [pendingReorderIndex, setPendingReorderIndex] = useState<number | null>(null);
   const [showIncompleteConfirm, setShowIncompleteConfirm] = useState(false);
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>([]);
+  const [animatingExerciseIds, setAnimatingExerciseIds] = useState<string[]>([]);
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -117,6 +118,30 @@ const CreateWorkoutPage = () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  // Effect to detect exercise completion and trigger animation
+  useEffect(() => {
+    exercises.forEach(exercise => {
+      const completedSets = exercise.sets.filter(s => s.completed).length;
+      const totalSets = exercise.sets.length;
+      const isAllSetsComplete = completedSets === totalSets && totalSets > 0;
+      
+      // If exercise just completed all sets and hasn't been animated yet
+      if (isAllSetsComplete && !completedExerciseIds.includes(exercise.id) && !animatingExerciseIds.includes(exercise.id)) {
+        // Mark as animating to prevent re-triggering
+        setAnimatingExerciseIds(prev => [...prev, exercise.id]);
+        
+        // Start animation after a microtask
+        setTimeout(() => {
+          // Remove animation after 1.5 seconds with fade out
+          setTimeout(() => {
+            setAnimatingExerciseIds(prev => prev.filter(id => id !== exercise.id));
+            setCompletedExerciseIds(prev => [...prev, exercise.id]);
+          }, 1500);
+        }, 0);
+      }
+    });
+  }, [exercises, completedExerciseIds, animatingExerciseIds]);
 
   // Format elapsed time
   const formatTime = (seconds: number) => {
@@ -914,20 +939,7 @@ const CreateWorkoutPage = () => {
                 const completedSets = exercise.sets.filter(s => s.completed).length;
                 const totalSets = exercise.sets.length;
                 const supersetBarColor = exercise.supersetGroupId ? getSupersetBarColor(exercise.supersetGroupId) : null;
-                const isAllSetsComplete = completedSets === totalSets && totalSets > 0;
-                const justCompleted = isAllSetsComplete && completedExerciseIds.includes(exercise.id);
-                
-                // Check if exercise just completed all sets and trigger animation
-                if (isAllSetsComplete && !completedExerciseIds.includes(exercise.id)) {
-                  // Add to completed list after a microtask to avoid state update during render
-                  setTimeout(() => {
-                    setCompletedExerciseIds(prev => [...prev, exercise.id]);
-                    // Remove from animation after 2 seconds
-                    setTimeout(() => {
-                      setCompletedExerciseIds(prev => prev.filter(id => id !== exercise.id));
-                    }, 2000);
-                  }, 0);
-                }
+                const isAnimatingComplete = animatingExerciseIds.includes(exercise.id);
                 
                 return (
                   <div
@@ -940,17 +952,18 @@ const CreateWorkoutPage = () => {
                   >
                     {/* Completion animation overlay */}
                     <AnimatePresence>
-                      {justCompleted && (
+                      {isAnimatingComplete && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.5 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.5 }}
+                          exit={{ opacity: 0, scale: 1.2 }}
                           transition={{ duration: 0.3 }}
                           className="absolute inset-0 bg-emerald-500/90 flex items-center justify-center z-20 rounded-xl"
                         >
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: [0, 1.3, 1] }}
+                            exit={{ scale: 1.5, opacity: 0 }}
                             transition={{ duration: 0.4, times: [0, 0.5, 1] }}
                           >
                             <Check size={32} className="text-white" strokeWidth={3} />
