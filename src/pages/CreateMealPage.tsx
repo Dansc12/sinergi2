@@ -93,6 +93,7 @@ const CreateMealPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showSaveAsMealDialog, setShowSaveAsMealDialog] = useState(false);
+  const [logDate] = useState<string | undefined>(restoredState?.logDate);
   
   // For saved meal expansion modal
   const [isSavedMealExpansionOpen, setIsSavedMealExpansionOpen] = useState(false);
@@ -281,7 +282,7 @@ const CreateMealPage = () => {
         content_data: { mealType, foods: selectedFoods, totalCalories, totalProtein, totalCarbs, totalFats },
         images: photos,
         visibility: "private",
-        logDate: restoredState?.logDate,
+        logDate: logDate,
       });
 
       // Navigate home and show congrats popup
