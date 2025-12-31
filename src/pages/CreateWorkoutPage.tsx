@@ -106,6 +106,7 @@ const CreateWorkoutPage = () => {
   const [showIncompleteConfirm, setShowIncompleteConfirm] = useState(false);
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>([]);
   const [animatingExerciseIds, setAnimatingExerciseIds] = useState<string[]>([]);
+  const [logDate, setLogDate] = useState<string | undefined>(restoredState?.logDate);
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -519,7 +520,7 @@ const CreateWorkoutPage = () => {
         content_data: { title, exercises, tags, durationSeconds: elapsedSeconds },
         images: photos,
         visibility: "private",
-        logDate: restoredState?.logDate,
+        logDate: logDate,
       });
 
       // If this workout was from a routine, mark the instance as completed
