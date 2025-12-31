@@ -69,14 +69,17 @@ export const useRecentFoods = (limit: number = 10) => {
               const rawUnit = match ? match[2].trim() : "g";
               
               // Only keep the most recent entry for each food
+              // Normalize macros to per-1-unit values for proper recalculation when re-logging
               if (!foodsMap.has(key)) {
+                const divisor = rawQuantity > 0 ? rawQuantity : 1;
                 foodsMap.set(key, {
                   fdcId: -Math.abs(key.split('').reduce((a, b) => a + b.charCodeAt(0), 0)),
                   description: food.name,
-                  calories: food.calories || 0,
-                  protein: food.protein || 0,
-                  carbs: food.carbs || 0,
-                  fats: food.fats || 0,
+                  // Store per-1-unit values (e.g., calories per 1g)
+                  calories: (food.calories || 0) / divisor,
+                  protein: (food.protein || 0) / divisor,
+                  carbs: (food.carbs || 0) / divisor,
+                  fats: (food.fats || 0) / divisor,
                   servings: rawQuantity,
                   servingSize: rawUnit,
                   loggedAt: meal.created_at,
