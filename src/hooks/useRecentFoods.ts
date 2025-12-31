@@ -65,13 +65,18 @@ export const useRecentFoods = (limit: number = 10) => {
               // Parse servingSize to extract quantity and unit (format: "50 ml" or "100 g")
               const servingSizeStr = food.servingSize || "1 g";
               const match = servingSizeStr.match(/^([\d.]+)\s*(.+)$/);
-              const rawQuantity = match ? parseFloat(match[1]) : 1;
+              const baseQuantity = match ? parseFloat(match[1]) : 1;
               const rawUnit = match ? match[2].trim() : "g";
               
+              // Calculate total quantity: baseQuantity * servings
+              // e.g., "100 g" with servings: 2 = 200g total
+              const foodServings = food.servings ?? 1;
+              const totalQuantity = baseQuantity * foodServings;
+              
               // Only keep the most recent entry for each food
-              // Normalize macros to per-1-unit values for proper recalculation when re-logging
+              // Store per-1-unit values for proper recalculation when re-logging
               if (!foodsMap.has(key)) {
-                const divisor = rawQuantity > 0 ? rawQuantity : 1;
+                const divisor = totalQuantity > 0 ? totalQuantity : 1;
                 foodsMap.set(key, {
                   fdcId: -Math.abs(key.split('').reduce((a, b) => a + b.charCodeAt(0), 0)),
                   description: food.name,
@@ -80,7 +85,8 @@ export const useRecentFoods = (limit: number = 10) => {
                   protein: (food.protein || 0) / divisor,
                   carbs: (food.carbs || 0) / divisor,
                   fats: (food.fats || 0) / divisor,
-                  servings: rawQuantity,
+                  // Store the total quantity logged for display
+                  servings: totalQuantity,
                   servingSize: rawUnit,
                   loggedAt: meal.created_at,
                 });
