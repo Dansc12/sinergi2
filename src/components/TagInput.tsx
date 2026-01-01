@@ -1,14 +1,22 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X } from "lucide-react";
+import { Tag, HelpCircle, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface TagInputProps {
   tags: string[];
   onTagsChange: (tags: string[]) => void;
   placeholder?: string;
   maxTags?: number;
+  showLabel?: boolean;
 }
 
 export const TagInput = ({
@@ -16,8 +24,10 @@ export const TagInput = ({
   onTagsChange,
   placeholder = "Add tag...",
   maxTags = 10,
+  showLabel = true,
 }: TagInputProps) => {
   const [newTag, setNewTag] = useState("");
+  const [showTagsInfo, setShowTagsInfo] = useState(false);
 
   const handleAddTag = () => {
     const processed = newTag.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -33,34 +43,63 @@ export const TagInput = ({
 
   return (
     <div className="space-y-2">
+      {/* Label Row */}
+      {showLabel && (
+        <Label className="flex items-center gap-2 text-sm">
+          <Tag size={14} />
+          <button 
+            type="button"
+            onClick={() => setShowTagsInfo(true)}
+            className="flex items-center gap-1 hover:text-primary transition-colors underline-offset-2 hover:underline"
+          >
+            Tags
+            <HelpCircle size={12} className="text-muted-foreground" />
+          </button>
+          <span className="text-xs text-muted-foreground ml-1">({tags.length}/{maxTags})</span>
+        </Label>
+      )}
+
       {/* Tag Input Row */}
-      <div className="flex gap-2">
-        <Input
-          placeholder={placeholder}
-          value={newTag}
-          onChange={(e) => {
-            const value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
-            setNewTag(value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAddTag();
-            }
-          }}
-          className="flex-1 h-9 bg-muted/50 border-0 text-sm"
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={handleAddTag}
-          disabled={!newTag.trim() || tags.length >= maxTags}
-          className="h-9"
-        >
-          <Plus size={16} />
-        </Button>
-      </div>
+      <Input
+        placeholder={placeholder}
+        value={newTag}
+        onChange={(e) => {
+          const value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
+          setNewTag(value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleAddTag();
+          }
+        }}
+        className="h-9 bg-muted/50 border-0 text-sm"
+      />
+
+      {/* Tags Info Dialog */}
+      <Dialog open={showTagsInfo} onOpenChange={setShowTagsInfo}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag size={18} />
+              What are Tags?
+            </DialogTitle>
+            <DialogDescription className="text-left space-y-3 pt-2">
+              <p>
+                Tags help categorize your content and make it easier for others to discover.
+              </p>
+              <p>
+                <strong>Tips for good tags:</strong>
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Use relevant keywords (e.g., "highprotein", "quickmeal")</li>
+                <li>Keep tags short and descriptive</li>
+                <li>Add up to {maxTags} tags per item</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
       {/* Tags Display */}
       {tags.length > 0 && (
