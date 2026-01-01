@@ -23,6 +23,7 @@ const HIDDEN_NAV_ROUTES = [
   "/meal/discover",
   "/profile",
   "/user",
+  "/diary",
 ];
 
 export const AppLayout = ({ children }: AppLayoutProps) => {

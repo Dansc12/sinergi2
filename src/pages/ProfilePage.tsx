@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Settings, Flame, Camera, Loader2 } from "lucide-react";
+import { ChevronLeft, Settings, Flame, Camera, Loader2, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,9 +144,14 @@ const ProfilePage = () => {
           <ChevronLeft size={24} />
         </Button>
         <h1 className="font-semibold">Profile</h1>
-        <Button variant="ghost" size="icon-sm" onClick={() => setSettingsOpen(true)}>
-          <Settings size={20} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/diary")}>
+            <BookOpen size={20} />
+          </Button>
+          <Button variant="ghost" size="icon-sm" onClick={() => setSettingsOpen(true)}>
+            <Settings size={20} />
+          </Button>
+        </div>
       </header>
 
       <div className="px-4 py-6 animate-fade-in">
