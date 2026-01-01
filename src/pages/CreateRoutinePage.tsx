@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, RotateCcw, Trash2, Plus, ChevronDown, ChevronUp, Dumbbell, Loader2, MoreVertical, ArrowUpDown, X, Check } from "lucide-react";
+import { MinutesPickerPopover } from "@/components/MinutesPickerPopover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -96,7 +97,7 @@ const CreateRoutinePage = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [estimatedMinutes, setEstimatedMinutes] = useState<string>("");
+  const [estimatedMinutes, setEstimatedMinutes] = useState<number>(0);
   const [selectedDays, setSelectedDays] = useState<Record<string, DaySchedule>>(
     daysOfWeek.reduce((acc, day) => ({ ...acc, [day.full]: { selected: false } }), {})
   );
@@ -116,18 +117,6 @@ const CreateRoutinePage = () => {
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
 
-  // Format time display
-  const formatTimeDisplay = (minutes: string): string => {
-    const mins = parseInt(minutes) || 0;
-    if (mins === 0) return "0:00";
-    const hrs = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    if (hrs > 0) {
-      return `${hrs}:${remainingMins.toString().padStart(2, '0')}`;
-    }
-    return `${mins}:00`;
-  };
-
   // Restore state if coming back from share screen
   useEffect(() => {
     if (restoredState?.restored && restoredState.contentData) {
@@ -136,7 +125,7 @@ const CreateRoutinePage = () => {
       if (data.description) setDescription(data.description);
       if (data.tags) setTags(data.tags);
       if (data.selectedDays) setSelectedDays(data.selectedDays);
-      if (data.estimatedMinutes) setEstimatedMinutes(data.estimatedMinutes.toString());
+      if (data.estimatedMinutes) setEstimatedMinutes(data.estimatedMinutes);
       if (data.exercises) {
         setExercises(data.exercises);
         if (data.exercises.length > 0) {
@@ -317,7 +306,7 @@ const CreateRoutinePage = () => {
           tags, 
           selectedDays, 
           exercises,
-          estimatedMinutes: parseInt(estimatedMinutes) || 0
+          estimatedMinutes: estimatedMinutes || 0
         },
         images: photos,
         visibility: "private",
@@ -327,7 +316,7 @@ const CreateRoutinePage = () => {
         state: {
           showCongrats: true,
           contentType: "routine",
-          contentData: { routineName: name, description, tags, selectedDays, exercises, estimatedMinutes: parseInt(estimatedMinutes) || 0 },
+          contentData: { routineName: name, description, tags, selectedDays, exercises, estimatedMinutes: estimatedMinutes || 0 },
           images: photos,
         },
       });
@@ -353,15 +342,12 @@ const CreateRoutinePage = () => {
           </Button>
           <div className="absolute left-0 right-0 flex flex-col items-center pointer-events-none">
             <span className="text-xs text-muted-foreground">Est. Time</span>
-            <div className="pointer-events-auto flex items-center gap-1">
-              <Input
-                type="number"
-                placeholder="0"
+            <div className="pointer-events-auto">
+              <MinutesPickerPopover
                 value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(e.target.value)}
-                className="w-16 text-center text-2xl font-bold font-mono h-auto py-0 bg-transparent border-0 focus-visible:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onChange={setEstimatedMinutes}
+                defaultWhenOpened={60}
               />
-              <span className="text-lg text-muted-foreground font-mono">min</span>
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={!isValid() || isSubmitting} className="rounded-full px-6 ml-auto z-10">
