@@ -17,7 +17,7 @@ const minutes = Array.from({ length: 60 }, (_, i) => i);
 export const TimePickerPopover = ({
   value,
   onChange,
-  placeholder = "0 min",
+  placeholder = "Select Time",
   className,
 }: TimePickerPopoverProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,21 +37,29 @@ export const TimePickerPopover = ({
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
-        if (hoursRef.current) {
-          const selectedElement = hoursRef.current.querySelector('[data-selected="true"]');
-          if (selectedElement) {
-            selectedElement.scrollIntoView({ block: "center", behavior: "instant" });
-          }
-        }
-        if (minutesRef.current) {
-          const selectedElement = minutesRef.current.querySelector('[data-selected="true"]');
-          if (selectedElement) {
-            selectedElement.scrollIntoView({ block: "center", behavior: "instant" });
-          }
-        }
-      }, 0);
+        scrollToSelected(hoursRef, selectedHours);
+        scrollToSelected(minutesRef, selectedMinutes);
+      }, 50);
     }
-  }, [isOpen]);
+  }, [isOpen, selectedHours, selectedMinutes]);
+
+  const scrollToSelected = (ref: React.RefObject<HTMLDivElement>, value: number) => {
+    if (ref.current) {
+      const itemHeight = 44; // Height of each item
+      const scrollTop = value * itemHeight;
+      ref.current.scrollTo({ top: scrollTop, behavior: "instant" });
+    }
+  };
+
+  const handleScroll = (ref: React.RefObject<HTMLDivElement>, setter: (val: number) => void, items: number[]) => {
+    if (ref.current) {
+      const itemHeight = 44;
+      const scrollTop = ref.current.scrollTop;
+      const selectedIndex = Math.round(scrollTop / itemHeight);
+      const clampedIndex = Math.max(0, Math.min(selectedIndex, items.length - 1));
+      setter(items[clampedIndex]);
+    }
+  };
 
   const handleConfirm = () => {
     onChange(selectedHours * 60 + selectedMinutes);
@@ -59,7 +67,7 @@ export const TimePickerPopover = ({
   };
 
   const formatDisplayValue = () => {
-    if (value === 0) return placeholder;
+    if (value === 0) return "";
     const h = Math.floor(value / 60);
     const m = value % 60;
     if (h === 0) return `${m} min`;
@@ -72,71 +80,111 @@ export const TimePickerPopover = ({
       <PopoverTrigger asChild>
         <Input
           readOnly
-          value={value > 0 ? formatDisplayValue() : ""}
+          value={formatDisplayValue()}
           placeholder={placeholder}
           className={cn("cursor-pointer", className)}
         />
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0 bg-popover border-border" align="start">
-        <div className="p-3 border-b border-border">
-          <p className="text-sm font-medium text-center">Select Time</p>
-        </div>
-        
-        <div className="flex">
-          {/* Hours Column */}
-          <div className="flex-1 border-r border-border">
-            <div className="text-xs text-muted-foreground text-center py-2 border-b border-border">Hours</div>
+      <PopoverContent className="w-72 p-0 bg-card border-border overflow-hidden" align="start">
+        {/* Samsung-style wheel picker */}
+        <div className="relative flex justify-center py-4">
+          {/* Selection highlight bar */}
+          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-11 bg-primary/10 rounded-lg border border-primary/20 pointer-events-none z-0" />
+          
+          {/* Hours wheel */}
+          <div className="relative flex flex-col items-center">
             <div 
               ref={hoursRef}
-              className="h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full"
+              onScroll={() => handleScroll(hoursRef, setSelectedHours, hours)}
+              className="h-[132px] overflow-y-auto snap-y snap-mandatory scrollbar-hide relative z-10"
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch'
+              }}
             >
-              {hours.map((h) => (
-                <button
-                  key={h}
-                  type="button"
-                  data-selected={selectedHours === h}
-                  onClick={() => setSelectedHours(h)}
-                  className={cn(
-                    "w-full py-2 text-sm text-center transition-colors",
-                    selectedHours === h
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  {h}
-                </button>
-              ))}
+              {/* Top padding for centering */}
+              <div className="h-11" />
+              {hours.map((h) => {
+                const isSelected = selectedHours === h;
+                return (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => {
+                      setSelectedHours(h);
+                      scrollToSelected(hoursRef, h);
+                    }}
+                    className={cn(
+                      "w-16 h-11 flex items-center justify-center snap-center transition-all duration-150",
+                      isSelected
+                        ? "text-foreground text-2xl font-semibold"
+                        : "text-muted-foreground/50 text-lg"
+                    )}
+                  >
+                    {String(h).padStart(2, '0')}
+                  </button>
+                );
+              })}
+              {/* Bottom padding for centering */}
+              <div className="h-11" />
             </div>
+            <span className="text-xs text-muted-foreground mt-1">hours</span>
           </div>
-          
-          {/* Minutes Column */}
-          <div className="flex-1">
-            <div className="text-xs text-muted-foreground text-center py-2 border-b border-border">Minutes</div>
+
+          {/* Separator */}
+          <div className="flex items-center justify-center text-2xl font-bold text-foreground px-2 relative z-10">
+            :
+          </div>
+
+          {/* Minutes wheel */}
+          <div className="relative flex flex-col items-center">
             <div 
               ref={minutesRef}
-              className="h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full"
+              onScroll={() => handleScroll(minutesRef, setSelectedMinutes, minutes)}
+              className="h-[132px] overflow-y-auto snap-y snap-mandatory scrollbar-hide relative z-10"
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch'
+              }}
             >
-              {minutes.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  data-selected={selectedMinutes === m}
-                  onClick={() => setSelectedMinutes(m)}
-                  className={cn(
-                    "w-full py-2 text-sm text-center transition-colors",
-                    selectedMinutes === m
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  {m}
-                </button>
-              ))}
+              {/* Top padding for centering */}
+              <div className="h-11" />
+              {minutes.map((m) => {
+                const isSelected = selectedMinutes === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setSelectedMinutes(m);
+                      scrollToSelected(minutesRef, m);
+                    }}
+                    className={cn(
+                      "w-16 h-11 flex items-center justify-center snap-center transition-all duration-150",
+                      isSelected
+                        ? "text-foreground text-2xl font-semibold"
+                        : "text-muted-foreground/50 text-lg"
+                    )}
+                  >
+                    {String(m).padStart(2, '0')}
+                  </button>
+                );
+              })}
+              {/* Bottom padding for centering */}
+              <div className="h-11" />
             </div>
+            <span className="text-xs text-muted-foreground mt-1">min</span>
           </div>
         </div>
+
+        {/* Top/bottom fade gradients */}
+        <div className="absolute top-4 left-4 right-4 h-10 bg-gradient-to-b from-card to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-16 left-4 right-4 h-10 bg-gradient-to-t from-card to-transparent pointer-events-none z-20" />
         
-        <div className="p-3 border-t border-border flex gap-2">
+        {/* Action buttons */}
+        <div className="p-3 border-t border-border flex gap-2 relative z-30 bg-card">
           <Button 
             variant="outline" 
             size="sm" 
