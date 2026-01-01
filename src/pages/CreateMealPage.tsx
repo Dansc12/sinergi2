@@ -1280,7 +1280,7 @@ const CreateMealPage = () => {
                       className="flex items-center gap-3 text-sm"
                     >
                       {showMacrosHint ? (
-                        <span className="text-white/90 font-medium">tap to view your foods</span>
+                        <span className="text-white/90 font-medium">Tap to view your foods</span>
                       ) : (
                         <>
                           <span style={{ color: proteinColor }}>P {totalProtein.toFixed(0)}g</span>
