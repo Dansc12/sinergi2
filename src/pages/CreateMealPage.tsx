@@ -94,6 +94,18 @@ const CreateMealPage = () => {
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showSaveAsMealDialog, setShowSaveAsMealDialog] = useState(false);
   const [logDate] = useState<string | undefined>(restoredState?.logDate);
+  const [showMacrosHint, setShowMacrosHint] = useState(false);
+  
+  // Cycle between showing macros and hint text on the bottom button
+  useEffect(() => {
+    if (selectedFoods.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setShowMacrosHint(prev => !prev);
+    }, 4000); // Toggle every 4 seconds
+    
+    return () => clearInterval(interval);
+  }, [selectedFoods.length]);
   
   // For saved meal expansion modal
   const [isSavedMealExpansionOpen, setIsSavedMealExpansionOpen] = useState(false);
@@ -1256,11 +1268,28 @@ const CreateMealPage = () => {
                   <span className="font-semibold">{selectedFoods.length}</span>
                 </div>
                 
-                {/* Center: Macros (absolutely positioned for true centering) */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
-                  <span style={{ color: proteinColor }}>P {totalProtein.toFixed(0)}g</span>
-                  <span style={{ color: carbsColor }}>C {totalCarbs.toFixed(0)}g</span>
-                  <span style={{ color: fatsColor }}>F {totalFats.toFixed(0)}g</span>
+                {/* Center: Alternating Macros / Hint Text */}
+                <div className="absolute left-1/2 -translate-x-1/2">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={showMacrosHint ? "hint" : "macros"}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      className="flex items-center gap-3 text-sm"
+                    >
+                      {showMacrosHint ? (
+                        <span className="text-white/90 font-medium">tap to view your foods</span>
+                      ) : (
+                        <>
+                          <span style={{ color: proteinColor }}>P {totalProtein.toFixed(0)}g</span>
+                          <span style={{ color: carbsColor }}>C {totalCarbs.toFixed(0)}g</span>
+                          <span style={{ color: fatsColor }}>F {totalFats.toFixed(0)}g</span>
+                        </>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
                 
                 {/* Right: Calories */}
