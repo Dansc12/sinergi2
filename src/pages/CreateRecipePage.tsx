@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TagInput } from "@/components/TagInput";
+import { TimePickerPopover } from "@/components/TimePickerPopover";
 import { toast } from "@/hooks/use-toast";
 import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
@@ -34,8 +35,8 @@ interface RestoredState {
     title?: string;
     description?: string;
     tags?: string[];
-    prepTime?: string;
-    cookTime?: string;
+    prepTime?: number;
+    cookTime?: number;
     servings?: string;
     ingredients?: Ingredient[];
     instructions?: string[];
@@ -53,8 +54,8 @@ const CreateRecipePage = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [prepTime, setPrepTime] = useState("");
-  const [cookTime, setCookTime] = useState("");
+  const [prepTime, setPrepTime] = useState(0); // in minutes
+  const [cookTime, setCookTime] = useState(0); // in minutes
   const [servings, setServings] = useState("");
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -85,8 +86,8 @@ const CreateRecipePage = () => {
       if (data.title) setTitle(data.title);
       if (data.description) setDescription(data.description);
       if (data.tags) setTags(data.tags);
-      if (data.prepTime) setPrepTime(data.prepTime);
-      if (data.cookTime) setCookTime(data.cookTime);
+      if (data.prepTime !== undefined) setPrepTime(data.prepTime);
+      if (data.cookTime !== undefined) setCookTime(data.cookTime);
       if (data.servings) setServings(data.servings);
       if (data.ingredients) setIngredients(data.ingredients);
       if (data.instructions) setInstructions(data.instructions);
@@ -298,11 +299,21 @@ const CreateRecipePage = () => {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Prep Time</Label>
-                <Input placeholder="10 min" value={prepTime} onChange={(e) => setPrepTime(e.target.value)} className="bg-muted/50 border-0" />
+                <TimePickerPopover 
+                  value={prepTime} 
+                  onChange={setPrepTime} 
+                  placeholder="0 min"
+                  className="bg-muted/50 border-0"
+                />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cook Time</Label>
-                <Input placeholder="20 min" value={cookTime} onChange={(e) => setCookTime(e.target.value)} className="bg-muted/50 border-0" />
+                <TimePickerPopover 
+                  value={cookTime} 
+                  onChange={setCookTime} 
+                  placeholder="0 min"
+                  className="bg-muted/50 border-0"
+                />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Servings</Label>
