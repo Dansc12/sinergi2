@@ -430,70 +430,73 @@ const CreateMealPage = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {recentFoods.map((food, index) => (
-                  <motion.button
-                    key={`${food.fdcId}-${index}`}
-                    onClick={() => handleFoodSelect({
-                      fdcId: food.fdcId,
-                      description: food.description,
-                      calories: food.calories,
-                      protein: food.protein,
-                      carbs: food.carbs,
-                      fats: food.fats,
-                      // Mark as custom with per-1-unit base so FoodDetailModal uses correct multiplier
-                      isCustom: true,
-                      baseUnit: food.servingSize || 'g',
-                    }, food.servings, food.servingSize)}
-                    className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {/* Macro gradient bar at top */}
-                    {(() => {
-                      // Calculate total macros for display (servings × per-unit values)
-                      const displayProtein = food.protein * (food.servings ?? 1);
-                      const displayCarbs = food.carbs * (food.servings ?? 1);
-                      const displayFats = food.fats * (food.servings ?? 1);
-                      const total = displayProtein + displayCarbs + displayFats;
-                      if (total === 0) return null;
-                      const pPct = (displayProtein / total) * 100;
-                      const cPct = (displayCarbs / total) * 100;
-                      return (
-                        <div 
-                          className="absolute left-0 right-0 top-0 h-1"
-                          style={{
-                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
-                          }}
-                        />
-                      );
-                    })()}
-                    <div className="flex items-center justify-between p-4 pt-5">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-primary">
-                            {(() => {
-                              const servings = food.servings ?? 1;
-                              const servingSize = food.servingSize || 'g';
-                              const hasNumber = /\d/.test(servingSize);
-                              if (hasNumber) return servings > 1 ? `${servings} × ${servingSize}` : servingSize;
-                              return `${servings}${servingSize}`;
-                            })()}
-                          </span>
-                          <span className="font-medium text-foreground">{food.description}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          {/* Display calculated totals (servings × per-unit values) */}
-                          <span className="text-xs text-foreground">{Math.round(food.calories * (food.servings ?? 1))} cal</span>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span style={{ color: '#3DD6C6' }}>P: {Math.round(food.protein * (food.servings ?? 1))}g</span>
-                            <span style={{ color: '#5B8CFF' }}>C: {Math.round(food.carbs * (food.servings ?? 1))}g</span>
-                            <span style={{ color: '#B46BFF' }}>F: {Math.round(food.fats * (food.servings ?? 1))}g</span>
+                {recentFoods.map((food, index) => {
+                  // Recent foods store TOTAL values with quantity/unit
+                  const displayQuantity = food.quantity;
+                  const displayUnit = food.unit;
+                  
+                  return (
+                    <motion.button
+                      key={`${food.fdcId}-${index}`}
+                      onClick={() => {
+                        // Calculate per-unit values for FoodDetailModal
+                        const perUnitCalories = displayQuantity > 0 ? food.calories / displayQuantity : food.calories;
+                        const perUnitProtein = displayQuantity > 0 ? food.protein / displayQuantity : food.protein;
+                        const perUnitCarbs = displayQuantity > 0 ? food.carbs / displayQuantity : food.carbs;
+                        const perUnitFats = displayQuantity > 0 ? food.fats / displayQuantity : food.fats;
+                        
+                        handleFoodSelect({
+                          fdcId: food.fdcId,
+                          description: food.description,
+                          // Pass per-unit values so FoodDetailModal can multiply correctly
+                          calories: perUnitCalories,
+                          protein: perUnitProtein,
+                          carbs: perUnitCarbs,
+                          fats: perUnitFats,
+                          isCustom: true,
+                          baseUnit: displayUnit,
+                        }, displayQuantity, displayUnit);
+                      }}
+                      className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {/* Macro gradient bar at top */}
+                      {(() => {
+                        const total = food.protein + food.carbs + food.fats;
+                        if (total === 0) return null;
+                        const pPct = (food.protein / total) * 100;
+                        const cPct = (food.carbs / total) * 100;
+                        return (
+                          <div 
+                            className="absolute left-0 right-0 top-0 h-1"
+                            style={{
+                              background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
+                            }}
+                          />
+                        );
+                      })()}
+                      <div className="flex items-center justify-between p-4 pt-5">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-primary">
+                              {displayQuantity}{displayUnit}
+                            </span>
+                            <span className="font-medium text-foreground">{food.description}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className="text-xs text-foreground">{Math.round(food.calories)} cal</span>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span style={{ color: '#3DD6C6' }}>P: {Math.round(food.protein)}g</span>
+                              <span style={{ color: '#5B8CFF' }}>C: {Math.round(food.carbs)}g</span>
+                              <span style={{ color: '#B46BFF' }}>F: {Math.round(food.fats)}g</span>
+                            </div>
                           </div>
                         </div>
+                        <ChevronRight size={20} className="text-muted-foreground" />
                       </div>
-                      <ChevronRight size={20} className="text-muted-foreground" />
-                    </div>
-                  </motion.button>
-                ))}
+                    </motion.button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -501,16 +504,17 @@ const CreateMealPage = () => {
 
         {/* Recent Foods to add more when foods are selected */}
         {selectedFoods.length > 0 && !showFoodsList && (() => {
-          // Combine current session foods (reversed, most recent first) with DB recent foods
+          // Session foods: from current selection, already have TOTAL values stored
           const sessionFoods = [...selectedFoods].reverse().map(f => ({
             fdcId: -parseInt(f.id),
             description: f.name,
+            // These are TOTAL values for the portion
             calories: f.calories,
             protein: f.protein,
             carbs: f.carbs,
             fats: f.fats,
-            servings: f.rawQuantity || f.servings || 1,
-            servingSize: f.rawUnit || "g",
+            quantity: f.rawQuantity || f.servings || 1,
+            unit: f.rawUnit || "g",
             loggedAt: new Date().toISOString(),
             isSessionFood: true,
           }));
@@ -519,7 +523,21 @@ const CreateMealPage = () => {
           const sessionFoodNames = new Set(sessionFoods.map(f => f.description.toLowerCase()));
           const filteredDbFoods = recentFoods.filter(f => !sessionFoodNames.has(f.description.toLowerCase()));
           
-          const combinedFoods = [...sessionFoods, ...filteredDbFoods].slice(0, 5);
+          // Map DB foods to same shape
+          const mappedDbFoods = filteredDbFoods.map(f => ({
+            fdcId: f.fdcId,
+            description: f.description,
+            calories: f.calories,
+            protein: f.protein,
+            carbs: f.carbs,
+            fats: f.fats,
+            quantity: f.quantity,
+            unit: f.unit,
+            loggedAt: f.loggedAt,
+            isSessionFood: false,
+          }));
+          
+          const combinedFoods = [...sessionFoods, ...mappedDbFoods].slice(0, 5);
           
           if (combinedFoods.length === 0) return null;
           
@@ -530,75 +548,76 @@ const CreateMealPage = () => {
                 <span className="text-sm font-medium">Add More</span>
               </div>
               <div className="space-y-2">
-                {combinedFoods.map((food, index) => (
-                  <motion.button
-                    key={`add-more-${food.fdcId}-${index}`}
-                    onClick={() => handleFoodSelect({
-                      fdcId: food.fdcId,
-                      description: food.description,
-                      calories: food.calories,
-                      protein: food.protein,
-                      carbs: food.carbs,
-                      fats: food.fats,
-                      // Mark as custom with per-1-unit base so FoodDetailModal uses correct multiplier
-                      isCustom: true,
-                      baseUnit: food.servingSize || 'g',
-                    }, food.servings, food.servingSize)}
-                    className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {/* Macro gradient bar at top */}
-                    {(() => {
-                      // Calculate total macros for display (servings × per-unit values)
-                      const displayProtein = food.protein * (food.servings ?? 1);
-                      const displayCarbs = food.carbs * (food.servings ?? 1);
-                      const displayFats = food.fats * (food.servings ?? 1);
-                      const total = displayProtein + displayCarbs + displayFats;
-                      if (total === 0) return null;
-                      const pPct = (displayProtein / total) * 100;
-                      const cPct = (displayCarbs / total) * 100;
-                      return (
-                        <div 
-                          className="absolute left-0 right-0 top-0 h-1"
-                          style={{
-                            background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
-                          }}
-                        />
-                      );
-                    })()}
-                    <div className="flex items-center justify-between p-3 pt-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-primary">
-                            {(() => {
-                              const servings = food.servings ?? 1;
-                              const servingSize = food.servingSize || 'g';
-                              const hasNumber = /\d/.test(servingSize);
-                              if (hasNumber) return servings > 1 ? `${servings} × ${servingSize}` : servingSize;
-                              return `${servings}${servingSize}`;
-                            })()}
-                          </span>
-                          <span className="font-medium text-sm text-foreground">
-                            {food.description}
-                            {'isSessionFood' in food && food.isSessionFood && (
-                              <span className="ml-2 text-xs text-primary">(just added)</span>
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          {/* Display calculated totals (servings × per-unit values) */}
-                          <span className="text-xs text-foreground">{Math.round(food.calories * (food.servings ?? 1))} cal</span>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span style={{ color: '#3DD6C6' }}>P: {Math.round(food.protein * (food.servings ?? 1))}g</span>
-                            <span style={{ color: '#5B8CFF' }}>C: {Math.round(food.carbs * (food.servings ?? 1))}g</span>
-                            <span style={{ color: '#B46BFF' }}>F: {Math.round(food.fats * (food.servings ?? 1))}g</span>
+                {combinedFoods.map((food, index) => {
+                  const displayQuantity = food.quantity;
+                  const displayUnit = food.unit;
+                  
+                  return (
+                    <motion.button
+                      key={`add-more-${food.fdcId}-${index}`}
+                      onClick={() => {
+                        // Calculate per-unit values for FoodDetailModal
+                        const perUnitCalories = displayQuantity > 0 ? food.calories / displayQuantity : food.calories;
+                        const perUnitProtein = displayQuantity > 0 ? food.protein / displayQuantity : food.protein;
+                        const perUnitCarbs = displayQuantity > 0 ? food.carbs / displayQuantity : food.carbs;
+                        const perUnitFats = displayQuantity > 0 ? food.fats / displayQuantity : food.fats;
+                        
+                        handleFoodSelect({
+                          fdcId: food.fdcId,
+                          description: food.description,
+                          calories: perUnitCalories,
+                          protein: perUnitProtein,
+                          carbs: perUnitCarbs,
+                          fats: perUnitFats,
+                          isCustom: true,
+                          baseUnit: displayUnit,
+                        }, displayQuantity, displayUnit);
+                      }}
+                      className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {/* Macro gradient bar at top */}
+                      {(() => {
+                        const total = food.protein + food.carbs + food.fats;
+                        if (total === 0) return null;
+                        const pPct = (food.protein / total) * 100;
+                        const cPct = (food.carbs / total) * 100;
+                        return (
+                          <div 
+                            className="absolute left-0 right-0 top-0 h-1"
+                            style={{
+                              background: `linear-gradient(90deg, #3DD6C6 0%, #3DD6C6 ${pPct * 0.7}%, #5B8CFF ${pPct + cPct * 0.3}%, #5B8CFF ${pPct + cPct * 0.7}%, #B46BFF ${pPct + cPct + (100 - pPct - cPct) * 0.3}%, #B46BFF 100%)`,
+                            }}
+                          />
+                        );
+                      })()}
+                      <div className="flex items-center justify-between p-3 pt-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-primary">
+                              {displayQuantity}{displayUnit}
+                            </span>
+                            <span className="font-medium text-sm text-foreground">
+                              {food.description}
+                              {food.isSessionFood && (
+                                <span className="ml-2 text-xs text-primary">(just added)</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs text-foreground">{Math.round(food.calories)} cal</span>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span style={{ color: '#3DD6C6' }}>P: {Math.round(food.protein)}g</span>
+                              <span style={{ color: '#5B8CFF' }}>C: {Math.round(food.carbs)}g</span>
+                              <span style={{ color: '#B46BFF' }}>F: {Math.round(food.fats)}g</span>
+                            </div>
                           </div>
                         </div>
+                        <ChevronRight size={18} className="text-muted-foreground" />
                       </div>
-                      <ChevronRight size={18} className="text-muted-foreground" />
-                    </div>
-                  </motion.button>
-                ))}
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           );

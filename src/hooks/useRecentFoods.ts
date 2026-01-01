@@ -5,12 +5,15 @@ import { useAuth } from "./useAuth";
 interface RecentFood {
   fdcId: number;
   description: string;
+  // These are the TOTAL values for the logged portion (not per-unit)
   calories: number;
   protein: number;
   carbs: number;
   fats: number;
-  servings: number;
-  servingSize: string;
+  // The quantity logged (e.g., 50)
+  quantity: number;
+  // The unit used (e.g., "g", "oz", "cup")
+  unit: string;
   loggedAt: string;
 }
 
@@ -54,7 +57,7 @@ export const useRecentFoods = (limit: number = 10) => {
             calories: number;
             protein: number;
             carbs: number;
-            fats: number;
+            fat: number; // Note: meal_logs uses 'fat' not 'fats'
             servings?: number;
             servingSize?: string;
           }>;
@@ -62,32 +65,25 @@ export const useRecentFoods = (limit: number = 10) => {
           if (Array.isArray(foods)) {
             foods.forEach((food) => {
               const key = food.name.toLowerCase();
-              // Parse servingSize to extract quantity and unit (format: "50 ml" or "100 g")
+              
+              // Parse servingSize to extract quantity and unit (format: "50 g" or "100 ml")
               const servingSizeStr = food.servingSize || "1 g";
               const match = servingSizeStr.match(/^([\d.]+)\s*(.+)$/);
-              const baseQuantity = match ? parseFloat(match[1]) : 1;
-              const rawUnit = match ? match[2].trim() : "g";
-              
-              // Calculate total quantity: baseQuantity * servings
-              // e.g., "100 g" with servings: 2 = 200g total
-              const foodServings = food.servings ?? 1;
-              const totalQuantity = baseQuantity * foodServings;
+              const quantity = match ? parseFloat(match[1]) : 1;
+              const unit = match ? match[2].trim() : "g";
               
               // Only keep the most recent entry for each food
-              // Store per-1-unit values for proper recalculation when re-logging
               if (!foodsMap.has(key)) {
-                const divisor = totalQuantity > 0 ? totalQuantity : 1;
                 foodsMap.set(key, {
                   fdcId: -Math.abs(key.split('').reduce((a, b) => a + b.charCodeAt(0), 0)),
                   description: food.name,
-                  // Store per-1-unit values (e.g., calories per 1g)
-                  calories: (food.calories || 0) / divisor,
-                  protein: (food.protein || 0) / divisor,
-                  carbs: (food.carbs || 0) / divisor,
-                  fats: (food.fats || 0) / divisor,
-                  // Store the total quantity logged for display
-                  servings: totalQuantity,
-                  servingSize: rawUnit,
+                  // Store the TOTAL logged values (not normalized)
+                  calories: food.calories || 0,
+                  protein: food.protein || 0,
+                  carbs: food.carbs || 0,
+                  fats: food.fat || 0, // meal_logs uses 'fat'
+                  quantity,
+                  unit,
                   loggedAt: meal.created_at,
                 });
               }
