@@ -118,7 +118,7 @@ export const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
 
       <div className="grid grid-cols-2 gap-3">
         <OptionButton option={{ icon: <Dumbbell size={24} />, label: "Workout", description: "Log your exercise session", gradient: "from-primary to-accent", path: "/create/workout" }} />
-        <OptionButton option={{ icon: <Utensils size={24} />, label: "Meal", description: "Track your nutrition", gradient: "from-success to-emerald-400", path: "/create/meal" }} />
+        <OptionButton option={{ icon: <Utensils size={24} />, label: "Food", description: "Track your nutrition", gradient: "from-success to-emerald-400", path: "/create/meal" }} />
       </div>
     </div>
   );
