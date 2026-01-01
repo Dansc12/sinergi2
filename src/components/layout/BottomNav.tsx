@@ -47,7 +47,7 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
 
   const navItems = [
     { icon: <Home size={22} />, label: "Home", path: "/", showBadge: false },
-    { icon: <ListTodo size={22} />, label: "Log", path: "/daily-log", showBadge: false },
+    { icon: <ListTodo size={22} />, label: "Journal", path: "/daily-log", showBadge: false },
     { icon: <Users size={22} />, label: "Connect", path: "/discover", showBadge: false },
     { icon: <MessageCircle size={22} />, label: "Messages", path: "/messages", showBadge: totalUnreadCount > 0 },
   ];
