@@ -1256,16 +1256,19 @@ const CreateMealPage = () => {
                   <span className="font-semibold">{selectedFoods.length}</span>
                 </div>
                 
-                {/* Center: Macros (absolutely positioned for true centering) */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-sm">
-                  <span style={{ color: proteinColor }}>P {totalProtein.toFixed(0)}g</span>
-                  <span style={{ color: carbsColor }}>C {totalCarbs.toFixed(0)}g</span>
-                  <span style={{ color: fatsColor }}>F {totalFats.toFixed(0)}g</span>
+                {/* Center: Instructional text */}
+                <div className="absolute left-1/2 -translate-x-1/2 text-sm text-white/80">
+                  <span>click to view your foods</span>
                 </div>
                 
-                {/* Right: Calories */}
-                <div className="ml-auto text-sm text-white">
-                  <span>{totalCalories} cal</span>
+                {/* Right: Calories (top) + Macros (bottom) */}
+                <div className="ml-auto flex flex-col items-end gap-0.5">
+                  <span className="text-sm text-white font-medium">{totalCalories} cal</span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span style={{ color: proteinColor }}>P {totalProtein.toFixed(0)}g</span>
+                    <span style={{ color: carbsColor }}>C {totalCarbs.toFixed(0)}g</span>
+                    <span style={{ color: fatsColor }}>F {totalFats.toFixed(0)}g</span>
+                  </div>
                 </div>
               </div>
             </button>
