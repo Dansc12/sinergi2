@@ -28,6 +28,7 @@ import MyRecipesPage from "./pages/MyRecipesPage";
 import DiscoverMealsPage from "./pages/DiscoverMealsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
+import DiaryPage from "./pages/DiaryPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -117,6 +118,7 @@ const AppRoutes = () => {
               <Route path="/workout/discover" element={<DiscoverWorkoutsPage />} />
               <Route path="/meal/my-recipes" element={<MyRecipesPage />} />
               <Route path="/meal/discover" element={<DiscoverMealsPage />} />
+              <Route path="/diary" element={<DiaryPage />} />
               
               <Route path="*" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
