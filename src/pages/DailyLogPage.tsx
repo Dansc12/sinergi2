@@ -2,11 +2,12 @@ import { useState } from "react";
 import { NutritionView } from "@/components/daily-log/NutritionView";
 import { FitnessView } from "@/components/daily-log/FitnessView";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addDays, subDays, isToday, isYesterday, isTomorrow } from "date-fns";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useCalendarActivityDots } from "@/hooks/useCalendarActivityDots";
 
 type TabType = "nutrition" | "fitness";
 
@@ -16,6 +17,9 @@ const DailyLogPage = () => {
   const [direction, setDirection] = useState(0);
   const [tabDirection, setTabDirection] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [displayedMonth, setDisplayedMonth] = useState<Date>(new Date());
+  
+  const { activityData } = useCalendarActivityDots(displayedMonth);
 
   const goToPreviousDay = () => {
     setDirection(-1);
@@ -83,7 +87,7 @@ const DailyLogPage = () => {
           
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
-              <button className="flex items-center gap-2 hover:bg-muted/50 px-3 py-1 rounded-lg transition-colors">
+              <button className="hover:bg-muted/50 px-3 py-1 rounded-lg transition-colors">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.span
                     key={selectedDate.toISOString()}
@@ -98,7 +102,6 @@ const DailyLogPage = () => {
                     {getDateLabel(selectedDate)}
                   </motion.span>
                 </AnimatePresence>
-                <CalendarIcon size={18} className="text-muted-foreground" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -106,8 +109,33 @@ const DailyLogPage = () => {
                 mode="single"
                 selected={selectedDate}
                 onSelect={handleDateSelect}
+                month={displayedMonth}
+                onMonthChange={setDisplayedMonth}
                 initialFocus
                 className="p-3 pointer-events-auto"
+                classNames={{
+                  day_today: "",
+                  day_selected: "bg-primary text-primary-foreground rounded-full hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                }}
+                components={{
+                  DayContent: ({ date }) => {
+                    const dateStr = format(date, "yyyy-MM-dd");
+                    const activity = activityData[dateStr];
+                    return (
+                      <div className="flex flex-col items-center">
+                        <span>{date.getDate()}</span>
+                        <div className="flex gap-0.5 h-1.5 mt-0.5">
+                          {activity?.hasWorkout && (
+                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#3DD6C6" }} />
+                          )}
+                          {activity?.hasMeal && (
+                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#B46BFF" }} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  },
+                }}
               />
             </PopoverContent>
           </Popover>
