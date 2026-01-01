@@ -126,6 +126,9 @@ export interface CommunityMeal {
   images: string[];
   creator: Creator;
   created_at: string;
+  coverPhoto: string | null;
+  tags: string[];
+  description: string | null;
 }
 
 export const useSavedMeals = () => {
@@ -226,32 +229,62 @@ export const useSavedMeals = () => {
   }, [user]);
 
   const fetchCommunityContent = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      // Fetch all visible recipe posts (RLS handles visibility - public + friends posts)
+      // Fetch user's friends list for visibility filtering
+      const { data: friendships } = await supabase
+        .from("friendships")
+        .select("requester_id, addressee_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
+      const friendIds = new Set<string>(
+        (friendships || []).map((f) =>
+          f.requester_id === user.id ? f.addressee_id : f.requester_id
+        )
+      );
+
+      // Fetch all visible recipe posts (public + friends only from friends)
       const { data: recipePosts, error: recipeError } = await supabase
         .from("posts")
         .select("id, description, content_data, images, created_at, user_id, visibility")
         .eq("content_type", "recipe")
+        .neq("user_id", user.id)
+        .in("visibility", ["public", "friends"])
         .order("created_at", { ascending: false })
         .limit(100);
 
       if (recipeError) throw recipeError;
 
-      // Fetch all visible meal posts (RLS handles visibility)
-      const { data: mealPosts, error: mealError } = await supabase
+      // Fetch saved_meal posts (not regular meal logs) - public + friends only from friends
+      const { data: savedMealPosts, error: savedMealError } = await supabase
         .from("posts")
         .select("id, description, content_data, images, created_at, user_id, visibility")
-        .eq("content_type", "meal")
+        .eq("content_type", "saved_meal")
+        .neq("user_id", user.id)
+        .in("visibility", ["public", "friends"])
         .order("created_at", { ascending: false })
         .limit(100);
 
-      if (mealError) throw mealError;
+      if (savedMealError) throw savedMealError;
 
-      // Get unique user IDs (excluding current user)
+      // Filter by visibility: public posts + friends-only posts from actual friends
+      const filterByVisibility = (posts: typeof recipePosts) =>
+        (posts || []).filter((p) => {
+          if (p.visibility === "public") return true;
+          if (p.visibility === "friends" && friendIds.has(p.user_id)) return true;
+          return false;
+        });
+
+      const visibleRecipes = filterByVisibility(recipePosts);
+      const visibleSavedMeals = filterByVisibility(savedMealPosts);
+
+      // Get unique user IDs
       const userIds = [
         ...new Set([
-          ...(recipePosts || []).filter(p => p.user_id !== user?.id).map((p) => p.user_id),
-          ...(mealPosts || []).filter(p => p.user_id !== user?.id).map((p) => p.user_id),
+          ...visibleRecipes.map((p) => p.user_id),
+          ...visibleSavedMeals.map((p) => p.user_id),
         ]),
       ];
 
@@ -273,61 +306,70 @@ export const useSavedMeals = () => {
         ])
       );
 
-      // Map recipe posts to community recipes (exclude current user's posts)
-      const communityRcps: CommunityRecipe[] = (recipePosts || [])
-        .filter((p) => p.user_id !== user?.id)
-        .map((post) => {
-          const contentData = post.content_data as unknown as RecipeContentData;
-          return {
-            id: post.id,
-            title: contentData?.title || "Untitled Recipe",
-            description: contentData?.description || post.description || null,
-            prepTime: contentData?.prepTime || null,
-            cookTime: contentData?.cookTime || null,
-            servings: contentData?.servings || null,
-            ingredients: contentData?.ingredients || [],
-            totalNutrition: contentData?.totalNutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 },
-            coverPhoto: contentData?.coverPhoto || null,
-            images: post.images || [],
-            creator: profileMap.get(post.user_id) || {
-              id: post.user_id,
-              name: "Anonymous",
-              username: null,
-              avatar_url: null,
-            },
-            created_at: post.created_at,
-          };
-        });
+      // Map recipe posts to community recipes
+      const communityRcps: CommunityRecipe[] = visibleRecipes.map((post) => {
+        const contentData = post.content_data as unknown as RecipeContentData;
+        return {
+          id: post.id,
+          title: contentData?.title || "Untitled Recipe",
+          description: contentData?.description || post.description || null,
+          prepTime: contentData?.prepTime || null,
+          cookTime: contentData?.cookTime || null,
+          servings: contentData?.servings || null,
+          ingredients: contentData?.ingredients || [],
+          totalNutrition: contentData?.totalNutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 },
+          coverPhoto: contentData?.coverPhoto || null,
+          images: post.images || [],
+          creator: profileMap.get(post.user_id) || {
+            id: post.user_id,
+            name: "Anonymous",
+            username: null,
+            avatar_url: null,
+          },
+          created_at: post.created_at,
+        };
+      });
 
       setCommunityRecipes(communityRcps);
 
-      // Map meal posts to community meals (exclude current user's posts)
-      const communityMls: CommunityMeal[] = (mealPosts || [])
-        .filter((p) => p.user_id !== user?.id)
-        .map((post) => {
-          const contentData = post.content_data as unknown as MealContentData;
-          const mealType = contentData?.mealType || "meal";
-          const capitalizedMealType = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-          
-          return {
-            id: post.id,
-            title: `${capitalizedMealType}`,
-            mealType: contentData?.mealType || "meal",
-            foods: contentData?.foods || [],
-            totalCalories: contentData?.totalCalories || 0,
-            totalProtein: contentData?.totalProtein || 0,
-            totalCarbs: contentData?.totalCarbs || 0,
-            totalFats: contentData?.totalFats || 0,
-            images: post.images || [],
-            creator: profileMap.get(post.user_id) || {
-              id: post.user_id,
-              name: "Anonymous",
-              username: null,
-              avatar_url: null,
-            },
-            created_at: post.created_at,
-          };
-        });
+      // Map saved_meal posts to community meals
+      interface SavedMealContentData {
+        name?: string;
+        description?: string;
+        tags?: string[];
+        foods?: SelectedFood[];
+        totalCalories?: number;
+        totalProtein?: number;
+        totalCarbs?: number;
+        totalFats?: number;
+        coverPhoto?: string;
+      }
+
+      const communityMls: CommunityMeal[] = visibleSavedMeals.map((post) => {
+        const contentData = post.content_data as unknown as SavedMealContentData;
+        
+        return {
+          id: post.id,
+          title: contentData?.name || "Untitled Meal",
+          mealType: "saved",
+          foods: contentData?.foods || [],
+          totalCalories: contentData?.totalCalories || 0,
+          totalProtein: contentData?.totalProtein || 0,
+          totalCarbs: contentData?.totalCarbs || 0,
+          totalFats: contentData?.totalFats || 0,
+          coverPhoto: contentData?.coverPhoto || (post.images && post.images[0]) || null,
+          images: post.images || [],
+          creator: profileMap.get(post.user_id) || {
+            id: post.user_id,
+            name: "Anonymous",
+            username: null,
+            avatar_url: null,
+          },
+          created_at: post.created_at,
+          tags: contentData?.tags || [],
+          description: contentData?.description || null,
+        };
+      });
 
       setCommunityMeals(communityMls);
     } catch (err) {
