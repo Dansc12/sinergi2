@@ -1,25 +1,31 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, RotateCcw, Trash2, Camera, Plus, ChevronDown, ChevronUp, Dumbbell, Images, Loader2 } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2, Plus, ChevronDown, ChevronUp, Dumbbell, Loader2, MoreVertical, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import ExerciseSearchInput from "@/components/ExerciseSearchInput";
-import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
-import { usePhotoPicker } from "@/hooks/useCamera";
-import PhotoGallerySheet from "@/components/PhotoGallerySheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { usePosts } from "@/hooks/usePosts";
 import { TagInput } from "@/components/TagInput";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface RoutineSet {
   id: string;
@@ -39,7 +45,6 @@ interface RoutineExercise {
 
 interface DaySchedule {
   selected: boolean;
-  time: string;
 }
 
 interface RestoredState {
@@ -50,7 +55,6 @@ interface RestoredState {
     tags?: string[];
     selectedDays?: Record<string, DaySchedule>;
     exercises?: RoutineExercise[];
-    recurring?: string;
   };
   images?: string[];
 }
@@ -65,16 +69,6 @@ const daysOfWeek = [
   { short: "S", full: "Sunday" },
 ];
 
-const recurringOptions = [
-  { value: "none", label: "Currently not recurring" },
-  { value: "2-weeks", label: "Two weeks" },
-  { value: "1-month", label: "One month" },
-  { value: "2-months", label: "Two months" },
-  { value: "3-months", label: "Three months" },
-  { value: "6-months", label: "Six months" },
-  { value: "indefinitely", label: "Indefinitely" },
-];
-
 const CreateRoutinePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,21 +79,20 @@ const CreateRoutinePage = () => {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<Record<string, DaySchedule>>(
-    daysOfWeek.reduce((acc, day) => ({ ...acc, [day.full]: { selected: false, time: "" } }), {})
+    daysOfWeek.reduce((acc, day) => ({ ...acc, [day.full]: { selected: false } }), {})
   );
   const [exercises, setExercises] = useState<RoutineExercise[]>([]);
-  const [recurring, setRecurring] = useState("none");
   const [photos, setPhotos] = useState<string[]>([]);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
-  const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
-    setPhotos([...photos, ...urls]);
-    toast({ title: "Photos added!", description: `${urls.length} photo(s) added.` });
-  });
-  // Check if any day is selected
-  const hasSelectedDays = Object.values(selectedDays).some(d => d.selected);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [isHeaderSectionOpen, setIsHeaderSectionOpen] = useState(true);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [reorderingExerciseId, setReorderingExerciseId] = useState<string | null>(null);
+  const [pendingReorderIndex, setPendingReorderIndex] = useState<number | null>(null);
+
+  // Get the currently selected exercise
+  const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
 
   // Restore state if coming back from share screen
   useEffect(() => {
@@ -109,57 +102,58 @@ const CreateRoutinePage = () => {
       if (data.description) setDescription(data.description);
       if (data.tags) setTags(data.tags);
       if (data.selectedDays) setSelectedDays(data.selectedDays);
-      if (data.exercises) setExercises(data.exercises);
-      if (data.recurring) setRecurring(data.recurring);
+      if (data.exercises) {
+        setExercises(data.exercises);
+        if (data.exercises.length > 0) {
+          setSelectedExerciseId(data.exercises[0].id);
+        }
+      }
       if (restoredState.images) setPhotos(restoredState.images);
       window.history.replaceState({}, document.title);
     }
   }, []);
 
   const handleBack = () => {
+    if (exercises.length > 0 || name.trim()) {
+      setShowBackConfirm(true);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const confirmBack = () => {
+    setShowBackConfirm(false);
     navigate("/");
   };
 
   const toggleDay = (dayFull: string) => {
     setSelectedDays(prev => ({
       ...prev,
-      [dayFull]: { ...prev[dayFull], selected: !prev[dayFull].selected, time: !prev[dayFull].selected ? prev[dayFull].time : "" }
-    }));
-  };
-
-  const updateDayTime = (dayFull: string, time: string) => {
-    setSelectedDays(prev => ({
-      ...prev,
-      [dayFull]: { ...prev[dayFull], time }
+      [dayFull]: { selected: !prev[dayFull].selected }
     }));
   };
 
   const addExercise = (exercise: { id: string; name: string; category: string; muscleGroup: string }) => {
-    setExercises([...exercises, { 
-      id: Date.now().toString(), 
+    const newExerciseId = Date.now().toString();
+    const newExercise: RoutineExercise = {
+      id: newExerciseId,
       name: exercise.name,
       category: exercise.category,
       muscleGroup: exercise.muscleGroup,
       notes: "",
       sets: [{ id: Date.now().toString(), minReps: "", maxReps: "" }],
       isExpanded: true
-    }]);
+    };
+    setExercises([...exercises, newExercise]);
+    setSelectedExerciseId(newExerciseId);
   };
 
   const removeExercise = (id: string) => {
-    setExercises(exercises.filter(e => e.id !== id));
-  };
-
-  const removePhoto = (index: number) => {
-    setPhotos(photos.filter((_, i) => i !== index));
-  };
-
-  const toggleExerciseExpand = (exerciseId: string) => {
-    setExercises(
-      exercises.map((e) =>
-        e.id === exerciseId ? { ...e, isExpanded: !e.isExpanded } : e
-      )
-    );
+    const newExercises = exercises.filter(e => e.id !== id);
+    setExercises(newExercises);
+    if (selectedExerciseId === id) {
+      setSelectedExerciseId(newExercises.length > 0 ? newExercises[0].id : null);
+    }
   };
 
   const updateExerciseNotes = (exerciseId: string, notes: string) => {
@@ -194,13 +188,13 @@ const CreateRoutinePage = () => {
     ));
   };
 
-  const handleCapturePhoto = (imageUrl: string) => {
-    setPhotos(prev => [...prev, imageUrl]);
-    setIsCameraOpen(false);
-  };
-
-  const handleSelectFromGallery = (imageUrls: string[]) => {
-    setPhotos(prev => [...prev, ...imageUrls]);
+  const moveExercise = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= exercises.length) return;
+    const newExercises = [...exercises];
+    const [removed] = newExercises.splice(fromIndex, 1);
+    newExercises.splice(toIndex, 0, removed);
+    setExercises(newExercises);
+    setPendingReorderIndex(toIndex);
   };
 
   // Validation check
@@ -227,17 +221,16 @@ const CreateRoutinePage = () => {
     try {
       await createPost({
         content_type: "routine",
-        content_data: { routineName: name, description, tags, selectedDays, exercises, recurring },
+        content_data: { routineName: name, description, tags, selectedDays, exercises },
         images: photos,
         visibility: "private",
       });
 
-      // Navigate home and show congrats popup
       navigate("/", {
         state: {
           showCongrats: true,
           contentType: "routine",
-          contentData: { routineName: name, description, tags, selectedDays, exercises, recurring },
+          contentData: { routineName: name, description, tags, selectedDays, exercises },
           images: photos,
         },
       });
@@ -256,321 +249,355 @@ const CreateRoutinePage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="p-4"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleBack}>
-              <ArrowLeft size={24} />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center">
-                <RotateCcw size={20} className="text-primary-foreground" />
-              </div>
-              <h1 className="text-2xl font-bold">Build Routine</h1>
+        {/* Header - Matching Workout Page */}
+        <div className="flex items-center mb-6 relative">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="z-10">
+            <ArrowLeft size={24} />
+          </Button>
+          <div className="absolute left-0 right-0 flex flex-col items-center pointer-events-none">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center">
+              <RotateCcw size={20} className="text-primary-foreground" />
             </div>
+            <span className="text-sm font-medium mt-1">Build Routine</span>
           </div>
-          <Button 
-            onClick={handleSubmit}
-            disabled={!isValid() || isSubmitting}
-            className="rounded-full px-6"
-          >
+          <Button onClick={handleSubmit} disabled={!isValid() || isSubmitting} className="rounded-full px-6 ml-auto z-10">
             {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Finish
           </Button>
         </div>
 
-        {/* Form */}
-        <div className="space-y-6">
-          {/* Routine Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Routine Name</Label>
+        {/* Routine Name with Collapsible Toggle */}
+        <Collapsible open={isHeaderSectionOpen} onOpenChange={setIsHeaderSectionOpen} className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
             <Input
-              id="name"
-              placeholder="e.g., Push Day, Leg Day, etc."
+              placeholder="Routine name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              className="flex-1 text-2xl font-semibold bg-transparent border-0 rounded-none px-0 focus-visible:ring-0"
             />
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                {isHeaderSectionOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </Button>
+            </CollapsibleTrigger>
           </div>
 
-          {/* Description (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              placeholder="Describe your routine..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="min-h-[80px]"
-            />
-          </div>
-
-          {/* Tags (Optional) */}
-          <div className="space-y-2">
-            <Label>Tags (Optional)</Label>
+          <CollapsibleContent className="space-y-6">
+            {/* Tags Section */}
             <TagInput
               tags={tags}
               onTagsChange={setTags}
               placeholder="Add tag..."
               maxTags={5}
             />
-          </div>
 
-          {/* Schedule - Pill Style Days */}
-          <div className="space-y-3">
-            <Label>Schedule</Label>
-            <div className="flex gap-2 flex-wrap">
-              {daysOfWeek.map((day) => (
-                <button
-                  key={day.full}
-                  onClick={() => toggleDay(day.full)}
-                  className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
-                    selectedDays[day.full]?.selected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  {day.short}
-                </button>
-              ))}
+            {/* Description */}
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Description (optional)..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
+                rows={2}
+              />
             </div>
-            {/* Time inputs for selected days */}
-            {hasSelectedDays && (
-              <div className="space-y-2 mt-3">
-                {daysOfWeek.filter(d => selectedDays[d.full]?.selected).map((day) => (
-                  <div key={day.full} className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground w-24">{day.full}</span>
-                    <Input
-                      type="time"
-                      value={selectedDays[day.full]?.time || ""}
-                      onChange={(e) => updateDayTime(day.full, e.target.value)}
-                      className="w-32"
-                    />
-                  </div>
+
+            {/* Schedule - Pill Style Days */}
+            <div className="space-y-3">
+              <span className="text-sm text-muted-foreground">Schedule</span>
+              <div className="flex gap-2 flex-wrap">
+                {daysOfWeek.map((day) => (
+                  <button
+                    key={day.full}
+                    onClick={() => toggleDay(day.full)}
+                    className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                      selectedDays[day.full]?.selected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {day.short}
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Recurring Section - Only visible if days are selected */}
-          {hasSelectedDays && (
-            <div className="space-y-2">
-              <Label>Repeat For</Label>
-              <Select value={recurring} onValueChange={setRecurring}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {recurringOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
-          )}
 
-          {/* Exercise Search */}
-          <div className="space-y-3">
-            <Label>Add Exercises</Label>
-            <ExerciseSearchInput 
+            {/* Exercise Search */}
+            <ExerciseSearchInput
               onSelect={addExercise}
-              placeholder="Search for an exercise..."
+              placeholder="Add exercise..."
             />
-          </div>
+          </CollapsibleContent>
+        </Collapsible>
+        
+        {/* Divider */}
+        <div className="border-b border-border mb-6" />
 
-          {/* Exercises List - Workout Style */}
-          <div className="space-y-4">
-            <AnimatePresence>
-              {exercises.map((exercise) => (
+        {/* Selected Exercise Details */}
+        {selectedExercise && (
+          <motion.div
+            key={selectedExercise.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            {/* Exercise Title & Actions */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Dumbbell size={18} className="text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg text-foreground">{selectedExercise.name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {selectedExercise.category} • {selectedExercise.muscleGroup}
+                </p>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="mb-4">
+              <Textarea
+                placeholder="Add notes..."
+                value={selectedExercise.notes}
+                onChange={(e) => updateExerciseNotes(selectedExercise.id, e.target.value)}
+                className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
+                rows={2}
+              />
+            </div>
+
+            {/* Sets Header */}
+            <div className="mb-2">
+              <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
+                <div className="col-span-2 text-center">SET</div>
+                <div className="col-span-8 text-center">REP RANGE</div>
+                <div className="col-span-2"></div>
+              </div>
+            </div>
+
+            {/* Sets List */}
+            <div className="space-y-2 mb-4">
+              {selectedExercise.sets.map((set, index) => (
                 <motion.div
-                  key={exercise.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  className="rounded-2xl bg-card border border-border overflow-hidden"
+                  key={set.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-muted/30"
                 >
-                  {/* Exercise Header */}
-                  <div className="p-4 flex items-center justify-between">
-                    <button
-                      onClick={() => toggleExerciseExpand(exercise.id)}
-                      className="flex items-center gap-3 flex-1 text-left"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                        <Dumbbell size={18} className="text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground">{exercise.name}</h3>
-                        <p className="text-xs text-muted-foreground">
-                          {exercise.category} • {exercise.muscleGroup}
-                        </p>
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleExerciseExpand(exercise.id)}
-                      >
-                        {exercise.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeExercise(exercise.id)}
-                      >
-                        <Trash2 size={18} className="text-destructive" />
-                      </Button>
+                  <div className="col-span-2 flex justify-center">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm text-muted-foreground">
+                      {index + 1}
                     </div>
                   </div>
-
-                  {/* Exercise Content */}
-                  <AnimatePresence>
-                    {exercise.isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        {/* Notes */}
-                        <div className="px-4 pb-3">
-                          <Textarea
-                            placeholder="Add notes..."
-                            value={exercise.notes}
-                            onChange={(e) => updateExerciseNotes(exercise.id, e.target.value)}
-                            className="min-h-[60px] bg-muted/50 border-0 resize-none text-sm"
-                            rows={2}
-                          />
-                        </div>
-
-                        {/* Sets Header */}
-                        <div className="px-4 pb-2">
-                          <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium">
-                            <div className="col-span-2 text-center">SET</div>
-                            <div className="col-span-8 text-center">REP RANGE</div>
-                            <div className="col-span-2"></div>
-                          </div>
-                        </div>
-
-                        {/* Sets List */}
-                        <div className="px-4 pb-3 space-y-2">
-                          {exercise.sets.map((set, index) => (
-                            <motion.div
-                              key={set.id}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-muted/30"
-                            >
-                              <div className="col-span-2 flex justify-center">
-                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm text-muted-foreground">
-                                  {index + 1}
-                                </div>
-                              </div>
-                              <div className="col-span-8 flex items-center justify-center gap-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Min"
-                                  value={set.minReps}
-                                  onChange={(e) => updateSet(exercise.id, set.id, "minReps", e.target.value)}
-                                  className="w-16 text-center h-9 bg-background border-border"
-                                />
-                                <span className="text-muted-foreground font-medium">-</span>
-                                <Input
-                                  type="number"
-                                  placeholder="Max"
-                                  value={set.maxReps}
-                                  onChange={(e) => updateSet(exercise.id, set.id, "maxReps", e.target.value)}
-                                  className="w-16 text-center h-9 bg-background border-border"
-                                />
-                              </div>
-                              <div className="col-span-2 flex justify-center">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => removeSet(exercise.id, set.id)}
-                                  disabled={exercise.sets.length === 1}
-                                >
-                                  <Trash2 size={14} className={exercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
-                                </Button>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-
-                        {/* Add Set Button */}
-                        <div className="px-4 pb-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-primary hover:text-primary hover:bg-primary/10"
-                            onClick={() => addSet(exercise.id)}
-                          >
-                            <Plus size={16} className="mr-1" />
-                            Add Set
-                          </Button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <div className="col-span-8 flex items-center justify-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={set.minReps}
+                      onChange={(e) => updateSet(selectedExercise.id, set.id, "minReps", e.target.value)}
+                      className="w-16 text-center h-9 bg-background border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="text-muted-foreground font-medium">-</span>
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={set.maxReps}
+                      onChange={(e) => updateSet(selectedExercise.id, set.id, "maxReps", e.target.value)}
+                      className="w-16 text-center h-9 bg-background border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => removeSet(selectedExercise.id, set.id)}
+                      disabled={selectedExercise.sets.length === 1}
+                    >
+                      <Trash2 size={14} className={selectedExercise.sets.length === 1 ? "text-muted-foreground/30" : "text-destructive"} />
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
-            </AnimatePresence>
-          </div>
-
-          {/* Empty State */}
-          {exercises.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <RotateCcw size={48} className="mb-4 opacity-50" />
-              <p className="text-lg font-medium">No exercises yet</p>
-              <p className="text-sm">Search and add exercises above</p>
             </div>
-          )}
-        </div>
+
+            {/* Add Set Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => addSet(selectedExercise.id)}
+            >
+              <Plus size={16} className="mr-1" />
+              Add Set
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Empty State */}
+        {exercises.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <RotateCcw size={48} className="mb-4 opacity-50" />
+            <p className="text-lg font-medium">No exercises yet</p>
+            <p className="text-sm">Search and add exercises above</p>
+          </div>
+        )}
       </motion.div>
 
+      {/* Exercise Cards Row - Fixed at Bottom */}
+      {exercises.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3 pb-6">
+          <div className="relative">
+            {/* Fade effect on left */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
+            {/* Fade effect on right */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
+            
+            <div className="flex gap-3 overflow-x-auto no-scrollbar px-2">
+              {exercises.map((exercise, index) => {
+                const isSelected = selectedExerciseId === exercise.id;
+                const totalSets = exercise.sets.length;
+                const filledSets = exercise.sets.filter(s => s.minReps && s.maxReps).length;
+                
+                return (
+                  <div
+                    key={exercise.id}
+                    className={`flex-shrink-0 rounded-xl transition-colors relative overflow-hidden ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                        : "bg-card border border-border text-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedExerciseId(exercise.id)}
+                      className="px-4 py-3 pr-10 text-left"
+                    >
+                      <div className="flex flex-col items-start gap-1 min-w-[100px]">
+                        <span className={`text-xs ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {filledSets}/{totalSets} sets
+                        </span>
+                        <span className="font-medium text-sm truncate max-w-[120px]">{exercise.name}</span>
+                      </div>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="absolute top-2 right-2 p-1 rounded-md hover:bg-muted/50">
+                          <MoreVertical size={14} className={isSelected ? "text-primary-foreground" : "text-muted-foreground"} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-popover">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setReorderingExerciseId(exercise.id);
+                            setPendingReorderIndex(index);
+                            setShowReorderModal(true);
+                          }}
+                          disabled={exercises.length <= 1}
+                          className={exercises.length <= 1 ? "opacity-50 cursor-not-allowed" : ""}
+                        >
+                          <ArrowUpDown size={14} className="mr-2" />
+                          Reorder Exercise
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => removeExercise(exercise.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete Exercise
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Hidden file input for gallery */}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      {/* Back Confirmation Dialog */}
+      <AlertDialog open={showBackConfirm} onOpenChange={setShowBackConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard routine?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to go back? Your routine will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBack} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* Photo Choice Dialog */}
-      <PhotoChoiceDialog
-        isOpen={isChoiceDialogOpen}
-        onClose={() => setIsChoiceDialogOpen(false)}
-        onChooseCamera={() => {
-          setIsChoiceDialogOpen(false);
-          setIsCameraOpen(true);
-        }}
-        onChooseGallery={() => {
-          setIsChoiceDialogOpen(false);
-          openPicker();
-        }}
-      />
-
-      {/* Camera Modal */}
-      <CameraCapture
-        isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
-        onCapture={handleCapturePhoto}
-        onSelectFromGallery={handleSelectFromGallery}
-      />
-
-      {/* Photo Gallery Sheet */}
-      <PhotoGallerySheet
-        isOpen={isPhotoGalleryOpen}
-        onClose={() => setIsPhotoGalleryOpen(false)}
-        photos={photos}
-        onDeletePhoto={removePhoto}
-      />
-
+      {/* Reorder Modal */}
+      <AlertDialog open={showReorderModal} onOpenChange={setShowReorderModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reorder Exercise</AlertDialogTitle>
+            <AlertDialogDescription>
+              Move this exercise up or down in your routine.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-2">
+            {exercises.map((ex, idx) => {
+              const isReordering = ex.id === reorderingExerciseId;
+              const isAtPendingPosition = idx === pendingReorderIndex;
+              
+              return (
+                <div
+                  key={ex.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg ${
+                    isReordering && isAtPendingPosition
+                      ? "bg-primary/20 border border-primary"
+                      : isReordering
+                      ? "bg-muted/50"
+                      : "bg-muted/30"
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-semibold text-sm">
+                    {idx + 1}
+                  </div>
+                  <span className="flex-1 font-medium">{ex.name}</span>
+                  {isReordering && (
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => moveExercise(pendingReorderIndex!, pendingReorderIndex! - 1)}
+                        disabled={pendingReorderIndex === 0}
+                      >
+                        <ChevronUp size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => moveExercise(pendingReorderIndex!, pendingReorderIndex! + 1)}
+                        disabled={pendingReorderIndex === exercises.length - 1}
+                      >
+                        <ChevronDown size={16} />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowReorderModal(false);
+              setReorderingExerciseId(null);
+              setPendingReorderIndex(null);
+            }}>
+              Done
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
