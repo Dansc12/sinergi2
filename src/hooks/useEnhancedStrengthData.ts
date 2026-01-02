@@ -39,6 +39,38 @@ const PRIMARY_GROUP_SUBGROUPS: Record<PrimaryGroup, string[]> = {
   Core: ["Abs", "Obliques", "Lower Back"]
 };
 
+// Map muscleGroup to primaryGroup (for exercises that don't have primaryGroup stored)
+const MUSCLE_TO_PRIMARY: Record<string, PrimaryGroup> = {
+  // Push
+  "Chest": "Push",
+  "Shoulders": "Push",
+  "Triceps": "Push",
+  // Pull
+  "Lats": "Pull",
+  "Upper Back": "Pull",
+  "Back": "Pull", // Legacy mapping
+  "Rear Delts": "Pull",
+  "Biceps": "Pull",
+  // Legs
+  "Quads": "Legs",
+  "Hamstrings": "Legs",
+  "Glutes": "Legs",
+  "Calves": "Legs",
+  "Legs": "Legs", // Legacy mapping
+  // Core
+  "Abs": "Core",
+  "Obliques": "Core",
+  "Lower Back": "Core",
+  "Core": "Core", // Legacy mapping
+};
+
+// Get primary group from exercise (check stored primaryGroup first, then derive from muscleGroup)
+const getPrimaryGroup = (exercise: WorkoutExercise): PrimaryGroup | undefined => {
+  if (exercise.primaryGroup) return exercise.primaryGroup;
+  if (exercise.muscleGroup) return MUSCLE_TO_PRIMARY[exercise.muscleGroup];
+  return undefined;
+};
+
 // Check if an exercise is time-based (Core exercises that use time instead of weight)
 const isTimeBasedExercise = (exerciseName: string): boolean => {
   const timeBasedExercises = [
@@ -113,8 +145,8 @@ export const useEnhancedStrengthData = () => {
     workouts.forEach(workout => {
       const exercises = parseExercises(workout);
       exercises.forEach(exercise => {
-        if (exercise.primaryGroup === "Core" || 
-            (exercise.muscleGroup && ["Abs", "Obliques", "Lower Back"].includes(exercise.muscleGroup))) {
+        const exercisePrimaryGroup = getPrimaryGroup(exercise);
+        if (exercisePrimaryGroup === "Core") {
           if (isTimeBasedExercise(exercise.name)) {
             timeBasedCount++;
           } else {
@@ -133,7 +165,6 @@ export const useEnhancedStrengthData = () => {
     return timeBasedCount > weightBasedCount;
   }, [workouts, selectedPrimaryGroup, parseExercises]);
 
-  // Get exercise frequency for strength exercise selection
   const exerciseFrequency = useMemo(() => {
     const eightWeeksAgo = subWeeks(new Date(), 8);
     const frequencyMap: Record<string, ExerciseFrequency> = {};
@@ -147,8 +178,11 @@ export const useEnhancedStrengthData = () => {
         if (exercise.isCardio) return;
         if (isTimeBasedExercise(exercise.name)) return;
         
+        // Get the primary group (derived if not stored)
+        const exercisePrimaryGroup = getPrimaryGroup(exercise);
+        
         // Filter by selected group
-        const matchesPrimary = !selectedPrimaryGroup || exercise.primaryGroup === selectedPrimaryGroup;
+        const matchesPrimary = !selectedPrimaryGroup || exercisePrimaryGroup === selectedPrimaryGroup;
         const matchesSub = !selectedSubGroup || selectedSubGroup === "All" || exercise.muscleGroup === selectedSubGroup;
         
         if (!matchesPrimary || !matchesSub) return;
@@ -161,7 +195,7 @@ export const useEnhancedStrengthData = () => {
           frequencyMap[exercise.name] = {
             name: exercise.name,
             count: 0,
-            primaryGroup: exercise.primaryGroup,
+            primaryGroup: exercisePrimaryGroup,
             muscleGroup: exercise.muscleGroup
           };
         }
@@ -204,8 +238,11 @@ export const useEnhancedStrengthData = () => {
       exercises.forEach(exercise => {
         if (exercise.isCardio) return;
         
+        // Get the primary group (derived if not stored)
+        const exercisePrimaryGroup = getPrimaryGroup(exercise);
+        
         // Filter by selected group
-        const matchesPrimary = !selectedPrimaryGroup || exercise.primaryGroup === selectedPrimaryGroup;
+        const matchesPrimary = !selectedPrimaryGroup || exercisePrimaryGroup === selectedPrimaryGroup;
         const matchesSub = !selectedSubGroup || selectedSubGroup === "All" || exercise.muscleGroup === selectedSubGroup;
         
         if (!matchesPrimary || !matchesSub) return;
