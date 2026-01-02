@@ -226,7 +226,7 @@ export const StrengthDetailModal = ({
 
           {/* Legend for secondary lines */}
           {secondaryLineKeys.length > 0 && multiLineChartData.length > 0 && (
-            <div className="flex gap-3 justify-center overflow-x-auto">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center min-h-[40px]">
               <div className="flex items-center gap-1.5 text-xs whitespace-nowrap">
                 <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: "#B46BFF" }} />
                 <span className="text-muted-foreground">{getFilterLabel()} Avg</span>
