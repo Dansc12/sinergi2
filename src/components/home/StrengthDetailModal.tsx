@@ -245,7 +245,7 @@ export const StrengthDetailModal = ({
                     strokeWidth={2.5}
                     dot={{ fill: "hsl(142, 76%, 45%)", strokeWidth: 0, r: 4 }}
                     activeDot={{ r: 6 }}
-                    name={getFilterLabel()}
+                    name={`${getFilterLabel()} Average`}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -267,7 +267,7 @@ export const StrengthDetailModal = ({
             <div className="flex flex-wrap gap-3 justify-center">
               <div className="flex items-center gap-1.5 text-xs">
                 <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: "hsl(142, 76%, 45%)" }} />
-                <span className="text-muted-foreground">{getFilterLabel()}</span>
+                <span className="text-muted-foreground">{getFilterLabel()} Average</span>
               </div>
               {secondaryLineKeys.map((key) => (
                 <div key={key} className="flex items-center gap-1.5 text-xs">
