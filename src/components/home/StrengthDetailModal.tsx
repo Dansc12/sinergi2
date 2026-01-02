@@ -25,7 +25,6 @@ export const StrengthDetailModal = ({
     totalVolume,
     selectedPrimaryGroup,
     setSelectedPrimaryGroup,
-    selectedMuscle,
     setSelectedMuscle,
     availableMuscles,
     getMuscleDisplayName,
@@ -56,11 +55,6 @@ export const StrengthDetailModal = ({
       setSelectedPrimaryGroup(group);
       setSelectedMuscle(null);
     }
-  };
-
-  // Handle muscle selection
-  const handleMuscleSelect = (muscle: string | null) => {
-    setSelectedMuscle(muscle);
   };
 
   // Calculate trendline for multi-line data
@@ -156,31 +150,20 @@ export const StrengthDetailModal = ({
             })}
           </div>
 
-          {/* Muscle Filter Chips */}
+          {/* Muscle Filter Chips - All muscles auto-selected when primary group is chosen */}
           {selectedPrimaryGroup && availableMuscles.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleMuscleSelect(null)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  !selectedMuscle
-                    ? "bg-secondary text-secondary-foreground"
-                    : "bg-card/50 border border-border/50 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                All {selectedPrimaryGroup}
-              </button>
               {availableMuscles.map((muscle) => (
-                <button
+                <div
                   key={muscle}
-                  onClick={() => handleMuscleSelect(muscle)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                    selectedMuscle === muscle
-                      ? "bg-secondary text-secondary-foreground"
-                      : "bg-card/50 border border-border/50 text-muted-foreground hover:text-foreground"
-                  }`}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground flex items-center gap-1.5"
                 >
+                  <div 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: getLineColor(muscle) }} 
+                  />
                   {getMuscleDisplayName(muscle)}
-                </button>
+                </div>
               ))}
             </div>
           )}

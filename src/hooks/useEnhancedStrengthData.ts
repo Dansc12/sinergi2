@@ -102,6 +102,7 @@ export const useEnhancedStrengthData = () => {
   }, [selectedPrimaryGroup]);
 
   // Calculate daily volume data based on filters (single line for main value)
+  // For Overall and primary groups, show average; for individual muscles, show total
   const dailyVolumeData = useMemo((): DailyData[] => {
     const dailyVolumes: Record<string, number> = {};
 
@@ -113,16 +114,34 @@ export const useEnhancedStrengthData = () => {
       dailyVolumes[dateKey] = (dailyVolumes[dateKey] || 0) + Number(row.allocated_tonnage);
     });
 
-    return Object.entries(dailyVolumes)
-      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-      .map(([date, value]) => ({
-        date,
-        dateLabel: format(parseISO(date), "MMM d"),
-        value: Math.round(value)
-      }));
+    const sortedEntries = Object.entries(dailyVolumes)
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
+    
+    // Calculate running average for Overall and primary groups (not individual muscles)
+    const showAverage = !selectedMuscle;
+    
+    if (showAverage && sortedEntries.length > 0) {
+      let runningSum = 0;
+      return sortedEntries.map(([date, value], index) => {
+        runningSum += value;
+        const avg = runningSum / (index + 1);
+        return {
+          date,
+          dateLabel: format(parseISO(date), "MMM d"),
+          value: Math.round(avg)
+        };
+      });
+    }
+
+    return sortedEntries.map(([date, value]) => ({
+      date,
+      dateLabel: format(parseISO(date), "MMM d"),
+      value: Math.round(value)
+    }));
   }, [volumeData, selectedPrimaryGroup, selectedMuscle]);
 
   // Calculate multi-line chart data with secondary lines
+  // Main line shows running average for Overall and primary groups
   const multiLineChartData = useMemo((): MultiLineData[] => {
     // Aggregate by date
     const dailyAggregates: Record<string, Record<string, number>> = {};
@@ -144,15 +163,39 @@ export const useEnhancedStrengthData = () => {
       dailyAggregates[dateKey][row.muscle] = (dailyAggregates[dateKey][row.muscle] || 0) + tonnage;
     });
 
-    return Object.entries(dailyAggregates)
-      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-      .map(([date, values]) => ({
+    const sortedEntries = Object.entries(dailyAggregates)
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
+
+    // Calculate running averages for main lines (total and primary groups)
+    const runningTotals: Record<string, number> = { total: 0, Push: 0, Pull: 0, Legs: 0, Core: 0 };
+    
+    return sortedEntries.map(([date, values], index) => {
+      const count = index + 1;
+      
+      // Update running totals and calculate averages
+      runningTotals.total += values.total || 0;
+      runningTotals.Push += values.Push || 0;
+      runningTotals.Pull += values.Pull || 0;
+      runningTotals.Legs += values.Legs || 0;
+      runningTotals.Core += values.Core || 0;
+      
+      return {
         date,
         dateLabel: format(parseISO(date), "MMM d"),
+        // Main lines show running averages
+        total: Math.round(runningTotals.total / count),
+        Push: Math.round(runningTotals.Push / count),
+        Pull: Math.round(runningTotals.Pull / count),
+        Legs: Math.round(runningTotals.Legs / count),
+        Core: Math.round(runningTotals.Core / count),
+        // Individual muscles still show daily totals
         ...Object.fromEntries(
-          Object.entries(values).map(([key, val]) => [key, Math.round(val)])
+          Object.entries(values)
+            .filter(([key]) => !["total", "Push", "Pull", "Legs", "Core"].includes(key))
+            .map(([key, val]) => [key, Math.round(val)])
         )
-      }));
+      };
+    });
   }, [volumeData]);
 
   // Get secondary line keys based on current filter
