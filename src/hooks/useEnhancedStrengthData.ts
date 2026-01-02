@@ -141,7 +141,8 @@ export const useEnhancedStrengthData = () => {
   }, [volumeData, selectedPrimaryGroup, selectedMuscle]);
 
   // Calculate multi-line chart data with secondary lines
-  // Main line shows running average for Overall and primary groups
+  // Main line shows daily average (single day's total divided by number of muscle groups with data)
+  // For Overall and primary groups, we show the actual daily volume (not running average)
   const multiLineChartData = useMemo((): MultiLineData[] => {
     // Aggregate by date
     const dailyAggregates: Record<string, Record<string, number>> = {};
@@ -166,28 +167,38 @@ export const useEnhancedStrengthData = () => {
     const sortedEntries = Object.entries(dailyAggregates)
       .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
 
-    // Calculate running averages for main lines (total and primary groups)
-    const runningTotals: Record<string, number> = { total: 0, Push: 0, Pull: 0, Legs: 0, Core: 0 };
+    // For calculating averages: compute the average across all days at each point
+    // This means each data point shows the mean of all days up to and including that day
+    const allDailyTotals: number[] = [];
+    const allPushTotals: number[] = [];
+    const allPullTotals: number[] = [];
+    const allLegsTotals: number[] = [];
+    const allCoreTotals: number[] = [];
     
     return sortedEntries.map(([date, values], index) => {
-      const count = index + 1;
+      // Store this day's values
+      allDailyTotals.push(values.total || 0);
+      allPushTotals.push(values.Push || 0);
+      allPullTotals.push(values.Pull || 0);
+      allLegsTotals.push(values.Legs || 0);
+      allCoreTotals.push(values.Core || 0);
       
-      // Update running totals and calculate averages
-      runningTotals.total += values.total || 0;
-      runningTotals.Push += values.Push || 0;
-      runningTotals.Pull += values.Pull || 0;
-      runningTotals.Legs += values.Legs || 0;
-      runningTotals.Core += values.Core || 0;
+      // Calculate running average (mean of all days so far)
+      const avgTotal = allDailyTotals.reduce((a, b) => a + b, 0) / allDailyTotals.length;
+      const avgPush = allPushTotals.reduce((a, b) => a + b, 0) / allPushTotals.length;
+      const avgPull = allPullTotals.reduce((a, b) => a + b, 0) / allPullTotals.length;
+      const avgLegs = allLegsTotals.reduce((a, b) => a + b, 0) / allLegsTotals.length;
+      const avgCore = allCoreTotals.reduce((a, b) => a + b, 0) / allCoreTotals.length;
       
       return {
         date,
         dateLabel: format(parseISO(date), "MMM d"),
-        // Main lines show running averages
-        total: Math.round(runningTotals.total / count),
-        Push: Math.round(runningTotals.Push / count),
-        Pull: Math.round(runningTotals.Pull / count),
-        Legs: Math.round(runningTotals.Legs / count),
-        Core: Math.round(runningTotals.Core / count),
+        // Main lines show running averages (mean of all days up to this point)
+        total: Math.round(avgTotal),
+        Push: Math.round(avgPush),
+        Pull: Math.round(avgPull),
+        Legs: Math.round(avgLegs),
+        Core: Math.round(avgCore),
         // Individual muscles still show daily totals
         ...Object.fromEntries(
           Object.entries(values)
