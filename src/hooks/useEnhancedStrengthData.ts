@@ -102,109 +102,104 @@ export const useEnhancedStrengthData = () => {
   }, [selectedPrimaryGroup]);
 
   // Calculate daily volume data based on filters (single line for main value)
-  // For Overall and primary groups, show average; for individual muscles, show total
+  // For Overall and primary groups, show the per-day average across the visible secondary lines.
+  // For an individual muscle, show the per-day total.
   const dailyVolumeData = useMemo((): DailyData[] => {
-    const dailyVolumes: Record<string, number> = {};
+    const dailyTotals: Record<string, number> = {};
 
-    volumeData.forEach(row => {
+    volumeData.forEach((row) => {
       if (selectedPrimaryGroup && row.primary_group !== selectedPrimaryGroup) return;
       if (selectedMuscle && row.muscle !== selectedMuscle) return;
 
       const dateKey = row.log_date;
-      dailyVolumes[dateKey] = (dailyVolumes[dateKey] || 0) + Number(row.allocated_tonnage);
+      dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + Number(row.allocated_tonnage);
     });
 
-    const sortedEntries = Object.entries(dailyVolumes)
-      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
-    
-    // Calculate running average for Overall and primary groups (not individual muscles)
-    const showAverage = !selectedMuscle;
-    
-    if (showAverage && sortedEntries.length > 0) {
-      let runningSum = 0;
-      return sortedEntries.map(([date, value], index) => {
-        runningSum += value;
-        const avg = runningSum / (index + 1);
-        return {
-          date,
-          dateLabel: format(parseISO(date), "MMM d"),
-          value: Math.round(avg)
-        };
-      });
-    }
+    const sortedEntries = Object.entries(dailyTotals).sort(
+      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+    );
 
-    return sortedEntries.map(([date, value]) => ({
+    const showAverage = !selectedMuscle;
+    const divisor = showAverage
+      ? selectedPrimaryGroup
+        ? PRIMARY_GROUP_MUSCLES[selectedPrimaryGroup].length
+        : 4
+      : 1;
+
+    return sortedEntries.map(([date, total]) => ({
       date,
       dateLabel: format(parseISO(date), "MMM d"),
-      value: Math.round(value)
+      value: Math.round(total / divisor),
     }));
   }, [volumeData, selectedPrimaryGroup, selectedMuscle]);
 
-  // Calculate multi-line chart data with secondary lines
-  // Main line shows daily average (single day's total divided by number of muscle groups with data)
-  // For Overall and primary groups, we show the actual daily volume (not running average)
+  // Calculate multi-line chart data with secondary lines.
+  // - Secondary lines show per-day totals (groups or muscles)
+  // - Main line shows the per-day average across the visible secondary lines
   const multiLineChartData = useMemo((): MultiLineData[] => {
     // Aggregate by date
     const dailyAggregates: Record<string, Record<string, number>> = {};
-    
-    volumeData.forEach(row => {
+
+    volumeData.forEach((row) => {
       const dateKey = row.log_date;
       if (!dailyAggregates[dateKey]) {
         dailyAggregates[dateKey] = { total: 0 };
       }
-      
+
       const tonnage = Number(row.allocated_tonnage);
       dailyAggregates[dateKey].total = (dailyAggregates[dateKey].total || 0) + tonnage;
-      
-      // Track by primary group
+
+      // Track by primary group (daily totals)
       const group = row.primary_group;
       dailyAggregates[dateKey][group] = (dailyAggregates[dateKey][group] || 0) + tonnage;
-      
-      // Track by muscle
+
+      // Track by muscle (daily totals)
       dailyAggregates[dateKey][row.muscle] = (dailyAggregates[dateKey][row.muscle] || 0) + tonnage;
     });
 
-    const sortedEntries = Object.entries(dailyAggregates)
-      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
+    const sortedEntries = Object.entries(dailyAggregates).sort(
+      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+    );
 
-    // For calculating averages: compute the average across all days at each point
-    // This means each data point shows the mean of all days up to and including that day
-    const allDailyTotals: number[] = [];
-    const allPushTotals: number[] = [];
-    const allPullTotals: number[] = [];
-    const allLegsTotals: number[] = [];
-    const allCoreTotals: number[] = [];
-    
-    return sortedEntries.map(([date, values], index) => {
-      // Store this day's values
-      allDailyTotals.push(values.total || 0);
-      allPushTotals.push(values.Push || 0);
-      allPullTotals.push(values.Pull || 0);
-      allLegsTotals.push(values.Legs || 0);
-      allCoreTotals.push(values.Core || 0);
-      
-      // Calculate running average (mean of all days so far)
-      const avgTotal = allDailyTotals.reduce((a, b) => a + b, 0) / allDailyTotals.length;
-      const avgPush = allPushTotals.reduce((a, b) => a + b, 0) / allPushTotals.length;
-      const avgPull = allPullTotals.reduce((a, b) => a + b, 0) / allPullTotals.length;
-      const avgLegs = allLegsTotals.reduce((a, b) => a + b, 0) / allLegsTotals.length;
-      const avgCore = allCoreTotals.reduce((a, b) => a + b, 0) / allCoreTotals.length;
-      
+    const groupMuscleCounts: Record<PrimaryGroup, number> = {
+      Push: PRIMARY_GROUP_MUSCLES.Push.length,
+      Pull: PRIMARY_GROUP_MUSCLES.Pull.length,
+      Legs: PRIMARY_GROUP_MUSCLES.Legs.length,
+      Core: PRIMARY_GROUP_MUSCLES.Core.length,
+    };
+
+    return sortedEntries.map(([date, values]) => {
+      const pushTotal = values.Push || 0;
+      const pullTotal = values.Pull || 0;
+      const legsTotal = values.Legs || 0;
+      const coreTotal = values.Core || 0;
+
+      const totalAvg = (pushTotal + pullTotal + legsTotal + coreTotal) / 4;
+
       return {
         date,
         dateLabel: format(parseISO(date), "MMM d"),
-        // Main lines show running averages (mean of all days up to this point)
-        total: Math.round(avgTotal),
-        Push: Math.round(avgPush),
-        Pull: Math.round(avgPull),
-        Legs: Math.round(avgLegs),
-        Core: Math.round(avgCore),
-        // Individual muscles still show daily totals
+
+        // Daily totals
+        total: Math.round(values.total || 0),
+        Push: Math.round(pushTotal),
+        Pull: Math.round(pullTotal),
+        Legs: Math.round(legsTotal),
+        Core: Math.round(coreTotal),
+
+        // Daily averages (used for main line)
+        total_avg: Math.round(totalAvg),
+        Push_avg: Math.round(pushTotal / groupMuscleCounts.Push),
+        Pull_avg: Math.round(pullTotal / groupMuscleCounts.Pull),
+        Legs_avg: Math.round(legsTotal / groupMuscleCounts.Legs),
+        Core_avg: Math.round(coreTotal / groupMuscleCounts.Core),
+
+        // Individual muscles show daily totals
         ...Object.fromEntries(
           Object.entries(values)
             .filter(([key]) => !["total", "Push", "Pull", "Legs", "Core"].includes(key))
             .map(([key, val]) => [key, Math.round(val)])
-        )
+        ),
       };
     });
   }, [volumeData]);
@@ -233,16 +228,30 @@ export const useEnhancedStrengthData = () => {
 
   // Get display name for a line key
   const getLineDisplayName = useCallback((key: string): string => {
+    if (key === "total_avg") return "Overall Average";
+
+    if (key.endsWith("_avg")) {
+      const group = key.replace(/_avg$/, "");
+      if (["Push", "Pull", "Legs", "Core"].includes(group)) {
+        return `${group} Average`;
+      }
+    }
+
     if (["Push", "Pull", "Legs", "Core"].includes(key)) {
       return key;
     }
+
     return getMuscleDisplayName(key);
   }, []);
 
   // Calculate totals and trends
   const totalVolume = useMemo(() => {
-    return dailyVolumeData.reduce((sum, d) => sum + d.value, 0);
-  }, [dailyVolumeData]);
+    return volumeData.reduce((sum, row) => {
+      if (selectedPrimaryGroup && row.primary_group !== selectedPrimaryGroup) return sum;
+      if (selectedMuscle && row.muscle !== selectedMuscle) return sum;
+      return sum + Number(row.allocated_tonnage);
+    }, 0);
+  }, [volumeData, selectedPrimaryGroup, selectedMuscle]);
 
   const latestValue = dailyVolumeData.length > 0 ? dailyVolumeData[dailyVolumeData.length - 1].value : 0;
   
@@ -264,8 +273,8 @@ export const useEnhancedStrengthData = () => {
   // Get the main data key for the chart
   const mainDataKey = useMemo(() => {
     if (selectedMuscle) return selectedMuscle;
-    if (selectedPrimaryGroup) return selectedPrimaryGroup;
-    return "total";
+    if (selectedPrimaryGroup) return `${selectedPrimaryGroup}_avg`;
+    return "total_avg";
   }, [selectedPrimaryGroup, selectedMuscle]);
 
   return {
