@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Dumbbell, TrendingUp, TrendingDown, Calendar } from "lucide-react";
@@ -21,8 +22,16 @@ export const StrengthDetailModal = ({
     setSelectedPrimaryGroup,
     selectedSubGroup,
     setSelectedSubGroup,
-    availableSubGroups
+    availableSubGroups,
+    refetch
   } = useEnhancedStrengthData();
+
+  // Refetch data when modal opens
+  useEffect(() => {
+    if (open) {
+      refetch();
+    }
+  }, [open, refetch]);
 
   const chartData = weeklyVolumeData;
   const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
