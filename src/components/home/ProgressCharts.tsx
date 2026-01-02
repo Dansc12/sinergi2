@@ -236,10 +236,6 @@ export const ProgressCharts = () => {
       <StrengthDetailModal
         open={strengthDetailOpen}
         onOpenChange={setStrengthDetailOpen}
-        chartData={strengthChartData}
-        totalLifted={totalLifted}
-        latestValue={latestStrength}
-        trend={strengthTrend}
       />
     </section>
   );
