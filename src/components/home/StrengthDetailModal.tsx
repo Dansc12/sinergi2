@@ -1,9 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Dumbbell, TrendingUp, TrendingDown, Calendar, Info } from "lucide-react";
-import { format } from "date-fns";
-import { useEnhancedStrengthData, PrimaryGroup, MetricType } from "@/hooks/useEnhancedStrengthData";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dumbbell, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { useEnhancedStrengthData, PrimaryGroup } from "@/hooks/useEnhancedStrengthData";
 
 interface StrengthDetailModalProps {
   open: boolean;
@@ -17,24 +15,20 @@ export const StrengthDetailModal = ({
   onOpenChange
 }: StrengthDetailModalProps) => {
   const {
-    chartData,
+    weeklyVolumeData,
     totalVolume,
-    latestValue,
-    trend,
-    isLoading,
     selectedPrimaryGroup,
     setSelectedPrimaryGroup,
     selectedSubGroup,
     setSelectedSubGroup,
-    availableSubGroups,
-    metricType,
-    setMetricType,
-    selectedExercise,
-    setSelectedExercise,
-    exerciseFrequency,
-    isCoreTimeBasedOnly
+    availableSubGroups
   } = useEnhancedStrengthData();
 
+  const chartData = weeklyVolumeData;
+  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
+  const trend = chartData.length >= 2
+    ? chartData[chartData.length - 1].value - chartData[chartData.length - 2].value
+    : 0;
   const isTrendingUp = trend > 0;
 
   // Handle primary group selection
@@ -51,13 +45,6 @@ export const StrengthDetailModal = ({
   // Handle subgroup selection
   const handleSubGroupSelect = (subGroup: string) => {
     setSelectedSubGroup(subGroup);
-  };
-
-  // Handle metric toggle
-  const handleMetricToggle = (metric: MetricType) => {
-    // If Core is time-based only, don't allow switching to strength
-    if (metric === "strength" && isCoreTimeBasedOnly) return;
-    setMetricType(metric);
   };
 
   // Calculate trendline
@@ -90,15 +77,11 @@ export const StrengthDetailModal = ({
   const getTitle = () => {
     if (selectedPrimaryGroup) {
       if (selectedSubGroup && selectedSubGroup !== "All") {
-        return `${selectedSubGroup} Strength`;
+        return `${selectedSubGroup} Volume`;
       }
-      return `${selectedPrimaryGroup} Strength`;
+      return `${selectedPrimaryGroup} Volume`;
     }
-    return "Overall Strength";
-  };
-
-  const getMetricLabel = () => {
-    return metricType === "volume" ? "Volume" : `Strength (e1RM)`;
+    return "Overall Volume";
   };
 
   return (
@@ -163,73 +146,12 @@ export const StrengthDetailModal = ({
             </div>
           )}
 
-          {/* Volume / Strength Toggle */}
-          <div className="space-y-2">
-            <div className="flex bg-card border border-border rounded-lg p-1">
-              <button
-                onClick={() => handleMetricToggle("volume")}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  metricType === "volume"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Volume
-              </button>
-              <button
-                onClick={() => handleMetricToggle("strength")}
-                disabled={isCoreTimeBasedOnly}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  metricType === "strength"
-                    ? "bg-primary text-primary-foreground"
-                    : isCoreTimeBasedOnly
-                      ? "text-muted-foreground/50 cursor-not-allowed"
-                      : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Strength
-              </button>
-            </div>
-
-            {/* Core time-based message */}
-            {isCoreTimeBasedOnly && selectedPrimaryGroup === "Core" && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-card/50 rounded-lg px-3 py-2">
-                <Info size={14} />
-                <span>Core strength tracked by volume/time only</span>
-              </div>
-            )}
-          </div>
-
-          {/* Strength Exercise Dropdown */}
-          {metricType === "strength" && exerciseFrequency.length > 0 && (
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Strength exercise</label>
-              <Select
-                value={selectedExercise || ""}
-                onValueChange={setSelectedExercise}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select exercise" />
-                </SelectTrigger>
-                <SelectContent>
-                  {exerciseFrequency.map((ex) => (
-                    <SelectItem key={ex.name} value={ex.name}>
-                      {ex.name} ({ex.count}x)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-card border border-border rounded-xl p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">
-                {metricType === "volume" ? "Total Volume" : "Latest e1RM"}
-              </p>
+              <p className="text-xs text-muted-foreground mb-1">Total Volume</p>
               <p className="text-xl font-bold">
-                {formatVolume(metricType === "volume" ? totalVolume : latestValue)}
+                {formatVolume(totalVolume)}
               </p>
               <p className="text-xs text-muted-foreground">lbs</p>
             </div>
@@ -262,13 +184,11 @@ export const StrengthDetailModal = ({
               </div>
               <div>
                 <p className="font-semibold">
-                  {isTrendingUp ? "Getting stronger!" : metricType === "volume" ? "Volume decreased" : "Strength plateaued"}
+                  {isTrendingUp ? "Getting stronger!" : "Volume decreased"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isTrendingUp 
-                    ? metricType === "volume" 
-                      ? "Your weekly volume is trending upward" 
-                      : "Your estimated 1RM is improving"
+                    ? "Your weekly volume is trending upward" 
                     : "Focus on progressive overload to increase strength"}
                 </p>
               </div>
@@ -300,7 +220,7 @@ export const StrengthDetailModal = ({
                     labelFormatter={(label) => `Week of ${label}`}
                     formatter={(value: number) => [
                       `${Math.round(value).toLocaleString()} lbs`,
-                      getMetricLabel()
+                      "Volume"
                     ]}
                   />
                   <Line
@@ -326,15 +246,9 @@ export const StrengthDetailModal = ({
             <div className="h-64 flex items-center justify-center bg-card border border-border rounded-xl">
               <div className="text-center">
                 <Dumbbell size={32} className="mx-auto mb-2 text-muted-foreground/50" />
-                <p className="text-muted-foreground">
-                  {metricType === "strength" && !selectedExercise
-                    ? "Select an exercise to view strength data"
-                    : "No workouts logged yet"}
-                </p>
+                <p className="text-muted-foreground">No workouts logged yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {metricType === "strength" && !selectedExercise
-                    ? "Choose from the dropdown above"
-                    : "Log your first workout to see strength data"}
+                  Log your first workout to see volume data
                 </p>
               </div>
             </div>
