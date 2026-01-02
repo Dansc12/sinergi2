@@ -211,28 +211,6 @@ export const StrengthDetailModal = ({
             </div>
           </div>
 
-          {/* Trend Indicator */}
-          {chartData.length >= 2 && (
-            <div className={`${isTrendingUp ? 'bg-success/10 border-success/20' : 'bg-card border-border'} border rounded-xl p-4 flex items-center gap-3`}>
-              <div className={`w-10 h-10 rounded-full ${isTrendingUp ? 'bg-success/20' : 'bg-muted'} flex items-center justify-center`}>
-                {isTrendingUp ? (
-                  <TrendingUp size={20} className="text-success" />
-                ) : (
-                  <TrendingDown size={20} className="text-muted-foreground" />
-                )}
-              </div>
-              <div>
-                <p className="font-semibold">
-                  {isTrendingUp ? "Getting stronger!" : "Volume decreased"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {isTrendingUp 
-                    ? "Your daily volume is trending upward" 
-                    : "Focus on progressive overload to increase strength"}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Chart */}
           {multiLineChartData.length > 0 ? (
@@ -320,25 +298,6 @@ export const StrengthDetailModal = ({
             </div>
           )}
 
-          {/* Recent Days */}
-          {chartData.length > 0 && (
-            <div>
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                <Calendar size={16} />
-                Recent Days
-              </h4>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {[...chartData].reverse().slice(0, 5).map((entry, i) => (
-                  <div key={i} className="flex justify-between items-center text-sm bg-card/50 rounded-lg px-3 py-2">
-                    <span className="text-muted-foreground">
-                      {entry.dateLabel}
-                    </span>
-                    <span className="font-medium">{Math.round(entry.value).toLocaleString()} lbs</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>
