@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Dumbbell, TrendingUp, TrendingDown, Calendar } from "lucide-react";
 import { useEnhancedStrengthData, PrimaryGroup } from "@/hooks/useEnhancedStrengthData";
 
@@ -17,6 +17,11 @@ export const StrengthDetailModal = ({
 }: StrengthDetailModalProps) => {
   const {
     dailyVolumeData,
+    multiLineChartData,
+    secondaryLineKeys,
+    mainDataKey,
+    getLineColor,
+    getLineDisplayName,
     totalVolume,
     selectedPrimaryGroup,
     setSelectedPrimaryGroup,
@@ -58,22 +63,25 @@ export const StrengthDetailModal = ({
     setSelectedMuscle(muscle);
   };
 
-  // Calculate trendline
-  const trendlineData = chartData.length >= 2 ? (() => {
-    const n = chartData.length;
-    const sumX = chartData.reduce((acc, _, i) => acc + i, 0);
-    const sumY = chartData.reduce((acc, d) => acc + d.value, 0);
-    const sumXY = chartData.reduce((acc, d, i) => acc + i * d.value, 0);
-    const sumX2 = chartData.reduce((acc, _, i) => acc + i * i, 0);
+  // Calculate trendline for multi-line data
+  const trendlineData = useMemo(() => {
+    if (multiLineChartData.length < 2) return multiLineChartData;
+    
+    const n = multiLineChartData.length;
+    const values = multiLineChartData.map(d => Number(d[mainDataKey]) || 0);
+    const sumX = multiLineChartData.reduce((acc, _, i) => acc + i, 0);
+    const sumY = values.reduce((acc, v) => acc + v, 0);
+    const sumXY = values.reduce((acc, v, i) => acc + i * v, 0);
+    const sumX2 = multiLineChartData.reduce((acc, _, i) => acc + i * i, 0);
     
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
     
-    return chartData.map((d, i) => ({
+    return multiLineChartData.map((d, i) => ({
       ...d,
       trend: Math.round(intercept + slope * i)
     }));
-  })() : chartData;
+  }, [multiLineChartData, mainDataKey]);
 
   const formatVolume = (value: number) => {
     if (value >= 1000000) {
@@ -87,6 +95,32 @@ export const StrengthDetailModal = ({
 
   const getTitle = () => {
     return `${getFilterLabel()} Volume`;
+  };
+
+  // Custom tooltip formatter
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    // Sort by value descending, filter out trend line
+    const sortedPayload = [...payload]
+      .filter((p: any) => p.dataKey !== "trend")
+      .sort((a: any, b: any) => (b.value || 0) - (a.value || 0));
+    
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
+        <p className="font-medium text-sm mb-2">{label}</p>
+        {sortedPayload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-2 text-xs">
+            <div 
+              className="w-2 h-2 rounded-full" 
+              style={{ backgroundColor: entry.stroke }}
+            />
+            <span className="text-muted-foreground">{getLineDisplayName(entry.dataKey)}:</span>
+            <span className="font-medium">{Math.round(entry.value || 0).toLocaleString()} lbs</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -201,7 +235,7 @@ export const StrengthDetailModal = ({
           )}
 
           {/* Chart */}
-          {chartData.length > 0 ? (
+          {multiLineChartData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendlineData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -215,19 +249,9 @@ export const StrengthDetailModal = ({
                     tick={{ fontSize: 11 }}
                     stroke="hsl(var(--muted-foreground))"
                   />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'hsl(var(--popover))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}
-                    labelFormatter={(label) => `${label}`}
-                    formatter={(value: number) => [
-                      `${Math.round(value).toLocaleString()} lbs`,
-                      getFilterLabel()
-                    ]}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  
+                  {/* Trendline */}
                   <Line
                     type="monotone"
                     dataKey="trend"
@@ -235,14 +259,32 @@ export const StrengthDetailModal = ({
                     strokeWidth={1}
                     strokeDasharray="3 3"
                     dot={false}
+                    name="Trend"
                   />
+                  
+                  {/* Secondary lines (behind main line) */}
+                  {secondaryLineKeys.map((key) => (
+                    <Line
+                      key={key}
+                      type="monotone"
+                      dataKey={key}
+                      stroke={getLineColor(key)}
+                      strokeWidth={1.5}
+                      strokeOpacity={0.6}
+                      dot={false}
+                      name={getLineDisplayName(key)}
+                    />
+                  ))}
+                  
+                  {/* Main line */}
                   <Line
                     type="monotone"
-                    dataKey="value"
+                    dataKey={mainDataKey}
                     stroke="hsl(142, 76%, 45%)"
                     strokeWidth={2.5}
                     dot={{ fill: "hsl(142, 76%, 45%)", strokeWidth: 0, r: 4 }}
                     activeDot={{ r: 6 }}
+                    name={getFilterLabel()}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -256,6 +298,25 @@ export const StrengthDetailModal = ({
                   Log your first workout to see volume data
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Legend for secondary lines */}
+          {secondaryLineKeys.length > 0 && multiLineChartData.length > 0 && (
+            <div className="flex flex-wrap gap-3 justify-center">
+              <div className="flex items-center gap-1.5 text-xs">
+                <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: "hsl(142, 76%, 45%)" }} />
+                <span className="text-muted-foreground">{getFilterLabel()}</span>
+              </div>
+              {secondaryLineKeys.map((key) => (
+                <div key={key} className="flex items-center gap-1.5 text-xs">
+                  <div 
+                    className="w-3 h-0.5 rounded-full opacity-60" 
+                    style={{ backgroundColor: getLineColor(key) }} 
+                  />
+                  <span className="text-muted-foreground">{getLineDisplayName(key)}</span>
+                </div>
+              ))}
             </div>
           )}
 
