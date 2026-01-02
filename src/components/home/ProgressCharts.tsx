@@ -194,7 +194,7 @@ export const ProgressCharts = () => {
           change={hasWeightData ? weightChangeDisplay : ""}
           isPositive={weightChange < 0}
           data={hasWeightData ? weightChartData : []}
-          color="hsl(270, 91%, 65%)"
+          color="#3DD6C6"
           onClick={() => setWeightDetailOpen(true)}
           subtitle={weightSubtitle}
         />
@@ -204,7 +204,7 @@ export const ProgressCharts = () => {
           change={hasStrengthData ? strengthChangeDisplay : ""}
           isPositive={strengthTrend > 0}
           data={hasStrengthData ? strengthChartData : []}
-          color="hsl(142, 76%, 45%)"
+          color="#B46BFF"
           onClick={() => setStrengthDetailOpen(true)}
           subtitle={strengthSubtitle}
         />

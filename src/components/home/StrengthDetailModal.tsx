@@ -128,27 +128,6 @@ export const StrengthDetailModal = ({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Primary Group Filter Chips */}
-          <div className="flex flex-wrap gap-2">
-            {PRIMARY_GROUPS.map((group) => {
-              const isSelected = group === "Overall" 
-                ? !selectedPrimaryGroup 
-                : selectedPrimaryGroup === group;
-              return (
-                <button
-                  key={group}
-                  onClick={() => handlePrimaryGroupSelect(group)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
-                  }`}
-                >
-                  {group}
-                </button>
-              );
-            })}
-          </div>
 
           {/* Muscle Filter Chips - All muscles auto-selected when primary group is chosen */}
           {selectedPrimaryGroup && availableMuscles.length > 0 && (
@@ -223,7 +202,7 @@ export const StrengthDetailModal = ({
                     name="Trend"
                   />
                   
-                  {/* Secondary lines (behind main line) */}
+                  {/* Secondary lines (behind main line) - dashed for subtlety */}
                   {secondaryLineKeys.map((key) => (
                     <Line
                       key={key}
@@ -231,7 +210,8 @@ export const StrengthDetailModal = ({
                       dataKey={key}
                       stroke={getLineColor(key)}
                       strokeWidth={1.5}
-                      strokeOpacity={0.6}
+                      strokeOpacity={0.5}
+                      strokeDasharray="4 4"
                       dot={false}
                       name={getLineDisplayName(key)}
                     />
@@ -241,9 +221,9 @@ export const StrengthDetailModal = ({
                   <Line
                     type="monotone"
                     dataKey={mainDataKey}
-                    stroke="hsl(142, 76%, 45%)"
+                    stroke="#B46BFF"
                     strokeWidth={2.5}
-                    dot={{ fill: "hsl(142, 76%, 45%)", strokeWidth: 0, r: 4 }}
+                    dot={{ fill: "#B46BFF", strokeWidth: 0, r: 4 }}
                     activeDot={{ r: 6 }}
                     name={`${getFilterLabel()} Average`}
                   />
@@ -266,20 +246,42 @@ export const StrengthDetailModal = ({
           {secondaryLineKeys.length > 0 && multiLineChartData.length > 0 && (
             <div className="flex flex-wrap gap-3 justify-center">
               <div className="flex items-center gap-1.5 text-xs">
-                <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: "hsl(142, 76%, 45%)" }} />
+                <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: "#B46BFF" }} />
                 <span className="text-muted-foreground">{getFilterLabel()} Average</span>
               </div>
               {secondaryLineKeys.map((key) => (
                 <div key={key} className="flex items-center gap-1.5 text-xs">
                   <div 
-                    className="w-3 h-0.5 rounded-full opacity-60" 
-                    style={{ backgroundColor: getLineColor(key) }} 
+                    className="w-3 h-0.5 rounded-full opacity-50" 
+                    style={{ backgroundColor: getLineColor(key), borderStyle: "dashed" }} 
                   />
                   <span className="text-muted-foreground">{getLineDisplayName(key)}</span>
                 </div>
               ))}
             </div>
           )}
+
+          {/* Primary Group Filter Buttons - moved to bottom */}
+          <div className="flex flex-wrap gap-2 justify-center pt-2 border-t border-border">
+            {PRIMARY_GROUPS.map((group) => {
+              const isSelected = group === "Overall" 
+                ? !selectedPrimaryGroup 
+                : selectedPrimaryGroup === group;
+              return (
+                <button
+                  key={group}
+                  onClick={() => handlePrimaryGroupSelect(group)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {group}
+                </button>
+              );
+            })}
+          </div>
 
         </div>
       </DialogContent>
