@@ -14,7 +14,7 @@ const FILTER_CHIPS = ["Beginner", "Full Body", "Upper", "Lower", "Push", "Pull",
 const DiscoverWorkoutsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const returnState = location.state as { returnTo?: string; currentExercises?: any[]; title?: string; photos?: string[]; routineInstanceId?: string } | null;
+  const returnState = location.state as { returnTo?: string; currentExercises?: any[]; title?: string; photos?: string[]; routineInstanceId?: string; logDate?: string } | null;
   
   const { communityRoutines, communityWorkouts, isLoading } = useSavedWorkouts();
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,6 +67,7 @@ const DiscoverWorkoutsPage = () => {
         },
         images: returnState?.photos || [],
         routineInstanceId: returnState?.routineInstanceId,
+        logDate: returnState?.logDate,
       },
     });
   };
@@ -81,6 +82,7 @@ const DiscoverWorkoutsPage = () => {
         },
         images: returnState?.photos || [],
         routineInstanceId: returnState?.routineInstanceId,
+        logDate: returnState?.logDate,
         selectedCommunityRoutine: routine,
       },
     });
@@ -96,6 +98,7 @@ const DiscoverWorkoutsPage = () => {
         },
         images: returnState?.photos || [],
         routineInstanceId: returnState?.routineInstanceId,
+        logDate: returnState?.logDate,
         selectedCommunityWorkout: workout,
       },
     });

@@ -175,6 +175,7 @@ const CreateWorkoutPage = () => {
       if (restoredState.contentData?.exercises) setExercises(restoredState.contentData.exercises);
       if (restoredState.images) setPhotos(restoredState.images);
       if (restoredState.routineInstanceId) setRoutineInstanceId(restoredState.routineInstanceId);
+      if (restoredState.logDate) setLogDate(restoredState.logDate);
       
       // Handle selections from MySavedPage
       if (restoredState.selectedRoutine) {
@@ -613,6 +614,7 @@ const CreateWorkoutPage = () => {
         title,
         photos,
         routineInstanceId,
+        logDate,
       },
     });
   };
@@ -625,6 +627,7 @@ const CreateWorkoutPage = () => {
         title,
         photos,
         routineInstanceId,
+        logDate,
       },
     });
   };

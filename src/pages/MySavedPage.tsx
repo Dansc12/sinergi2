@@ -12,7 +12,7 @@ import WorkoutRoutineCard from "@/components/workout/WorkoutRoutineCard";
 const MySavedPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const returnState = location.state as { returnTo?: string; currentExercises?: any[]; title?: string; photos?: string[]; routineInstanceId?: string } | null;
+  const returnState = location.state as { returnTo?: string; currentExercises?: any[]; title?: string; photos?: string[]; routineInstanceId?: string; logDate?: string } | null;
   
   const { savedRoutines, pastWorkouts, isLoading } = useSavedWorkouts();
   const { profile } = useUserData();
@@ -53,6 +53,7 @@ const MySavedPage = () => {
         },
         images: returnState?.photos || [],
         routineInstanceId: returnState?.routineInstanceId,
+        logDate: returnState?.logDate,
       },
     });
   };
@@ -67,6 +68,7 @@ const MySavedPage = () => {
         },
         images: returnState?.photos || [],
         routineInstanceId: returnState?.routineInstanceId,
+        logDate: returnState?.logDate,
         selectedRoutine: routine,
       },
     });
@@ -82,6 +84,7 @@ const MySavedPage = () => {
         },
         images: returnState?.photos || [],
         routineInstanceId: returnState?.routineInstanceId,
+        logDate: returnState?.logDate,
         selectedPastWorkout: workout,
       },
     });
