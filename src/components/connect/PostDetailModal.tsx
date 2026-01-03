@@ -688,7 +688,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             onDragEnd={handleDragEnd}
           >
             <motion.div
-              className="flex w-full h-full"
+              className="flex w-full"
               onTouchStart={handleCarouselTouchStart}
               onTouchMove={handleCarouselTouchMove}
               onTouchEnd={handleCarouselTouchEnd}
@@ -702,11 +702,11 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               }}
             >
               {post.images?.map((img, idx) => (
-                <div key={idx} className="w-full h-full flex-shrink-0 flex items-center justify-center">
+                <div key={idx} className="w-full flex-shrink-0 aspect-[4/5]">
                   <img
                     src={img}
                     alt={`Post image ${idx + 1}`}
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-cover"
                     draggable={false}
                   />
                 </div>
