@@ -677,6 +677,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
   const hasImages = post.images && post.images.length > 0;
   const collapsedHeight = '25vh'; // 25% viewport height
+  const collapsedImageHeight = 360; // keep image size; container crops middle portion
 
   // Expanded view - fullscreen overlay
   if (imageExpanded && hasImages) {
@@ -800,27 +801,28 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               onDrag={handleVerticalDrag}
               onDragEnd={handleDragEnd}
             >
-              {/* Image carousel - full height of container */}
+              {/* Image carousel - fixed image height, center-cropped by container */}
               <motion.div
-                className="flex w-full h-full"
+                className="flex w-full absolute top-1/2 -translate-y-1/2"
+                style={{ height: collapsedImageHeight }}
                 onTouchStart={handleCarouselTouchStart}
                 onTouchMove={handleCarouselTouchMove}
                 onTouchEnd={handleCarouselTouchEnd}
-                animate={{ 
+                animate={{
                   x: `calc(-${currentImageIndex * 100}% + ${isDragging ? carouselDrag : 0}px)`,
                 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 300, 
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
                   damping: 30,
                 }}
               >
                 {post.images?.map((img, idx) => (
-                  <div key={idx} className="w-full h-full flex-shrink-0 relative">
+                  <div key={idx} className="w-full h-full flex-shrink-0">
                     <img
                       src={img}
                       alt={`Post image ${idx + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover object-center"
+                      className="w-full h-full object-cover object-center"
                       draggable={false}
                     />
                   </div>
