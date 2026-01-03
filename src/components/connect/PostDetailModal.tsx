@@ -122,10 +122,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   const [dragOffset, setDragOffset] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync open state with context to hide bottom nav
+  // Sync open state with context to hide bottom nav and lock scroll
   useEffect(() => {
     setIsPostDetailOpen(open);
-    return () => setIsPostDetailOpen(false);
+    
+    // Lock body scroll when modal is open
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      setIsPostDetailOpen(false);
+    };
   }, [open, setIsPostDetailOpen]);
 
   const handleSubmitComment = async () => {
