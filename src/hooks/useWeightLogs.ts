@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 
 interface WeightLog {
   id: string;
@@ -173,7 +173,8 @@ export const useWeightLogs = () => {
 
     // Add onboarding weight as starting point if we have it and it's not already in logs
     if (onboardingWeight && onboardingDate) {
-      const onboardingDateStr = onboardingDate.split('T')[0];
+      // Convert to local date to avoid timezone issues
+      const onboardingDateStr = format(new Date(onboardingDate), 'yyyy-MM-dd');
       const hasOnboardingDateInLogs = weightLogs.some(log => log.log_date === onboardingDateStr);
       
       if (!hasOnboardingDateInLogs) {
