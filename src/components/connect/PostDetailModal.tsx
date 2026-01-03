@@ -665,11 +665,106 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   if (!open) return null;
 
   const hasImages = post.images && post.images.length > 0;
-  const collapsedHeight = 200; // 50% collapsed view
-  const expandedHeight = 400; // Full view
-  const currentHeight = imageExpanded 
-    ? expandedHeight + Math.min(0, dragOffset)
-    : collapsedHeight + Math.max(0, dragOffset);
+  const collapsedHeight = 180; // Cropped view
+
+  // Expanded view - fullscreen overlay
+  if (imageExpanded && hasImages) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+          ref={containerRef}
+        >
+          {/* Fullscreen image carousel */}
+          <motion.div
+            className="relative w-full h-full flex items-center justify-center"
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.2}
+            onDrag={handleVerticalDrag}
+            onDragEnd={handleDragEnd}
+          >
+            <motion.div
+              className="flex w-full h-full"
+              onTouchStart={handleCarouselTouchStart}
+              onTouchMove={handleCarouselTouchMove}
+              onTouchEnd={handleCarouselTouchEnd}
+              animate={{ 
+                x: `calc(-${currentImageIndex * 100}% + ${isDragging ? carouselDrag : 0}px)`,
+              }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 30,
+              }}
+            >
+              {post.images?.map((img, idx) => (
+                <div key={idx} className="w-full h-full flex-shrink-0 flex items-center justify-center">
+                  <img
+                    src={img}
+                    alt={`Post image ${idx + 1}`}
+                    className="max-w-full max-h-full object-contain"
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </motion.div>
+
+            {/* Gradient overlay for text legibility */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
+
+            {/* Top overlay - Profile info and Creation type/name */}
+            <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between">
+              {/* Profile info */}
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10 border-2 border-white/30">
+                  <AvatarImage src={post.user.avatar} />
+                  <AvatarFallback className="bg-muted">
+                    {post.user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-sm text-white drop-shadow-md">{post.user.name}</p>
+                    <span className="text-sm text-white/80 drop-shadow-md">{post.user.handle}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {TypeIcon && <TypeIcon size={14} className="text-white/80" />}
+                    <span className="text-sm text-white/90 drop-shadow-md">{getContentTitle()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Close button */}
+              <button 
+                onClick={() => setImageExpanded(false)}
+                className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors"
+              >
+                <X size={20} className="text-white" />
+              </button>
+            </div>
+
+            {/* Pagination dots */}
+            {post.images && post.images.length > 1 && (
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5">
+                {post.images.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      idx === currentImageIndex ? "bg-white" : "bg-white/40"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -681,22 +776,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           className="fixed inset-0 z-50 bg-background"
           ref={containerRef}
         >
-          {/* Image Header */}
+          {/* Image Header - Collapsed/Cropped view */}
           {hasImages && (
             <motion.div
-              className="relative w-full overflow-hidden"
-              style={{ height: currentHeight }}
-              animate={{ height: imageExpanded ? expandedHeight : collapsedHeight }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing"
+              style={{ height: collapsedHeight }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.2}
+              onDrag={handleVerticalDrag}
+              onDragEnd={handleDragEnd}
             >
-              {/* Image carousel */}
+              {/* Image carousel - images are cropped via object-cover and container height */}
               <motion.div
-                className="flex h-full cursor-grab active:cursor-grabbing"
-                drag="y"
-                dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.2}
-                onDrag={handleVerticalDrag}
-                onDragEnd={handleDragEnd}
+                className="flex w-full absolute top-1/2 -translate-y-1/2"
+                style={{ height: 360 }} // Full image height, container crops it
                 onTouchStart={handleCarouselTouchStart}
                 onTouchMove={handleCarouselTouchMove}
                 onTouchEnd={handleCarouselTouchEnd}
@@ -722,7 +816,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </motion.div>
 
               {/* Gradient overlay for text legibility */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
 
               {/* Top overlay - Profile and Close button */}
               <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between">
@@ -765,13 +859,6 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   ))}
                 </div>
               )}
-
-              {/* Drag hint */}
-              {!imageExpanded && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-                  <div className="w-10 h-1 bg-white/50 rounded-full" />
-                </div>
-              )}
             </motion.div>
           )}
 
@@ -805,7 +892,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           {/* Scrollable content */}
           <ScrollArea 
             className="flex-1" 
-            style={{ height: hasImages ? `calc(100vh - ${imageExpanded ? expandedHeight : collapsedHeight}px)` : 'calc(100vh - 72px)' }}
+            style={{ height: hasImages ? `calc(100vh - ${collapsedHeight}px)` : 'calc(100vh - 72px)' }}
           >
             <div className="p-4 space-y-4 pb-safe">
               {/* Title row with icon and action buttons */}
