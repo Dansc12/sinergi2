@@ -787,45 +787,85 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background flex flex-col"
+          className="fixed inset-0 z-50 bg-background"
           ref={containerRef}
         >
-          {/* Image Header - Collapsed/Cropped view */}
-          {hasImages && (
-            <motion.div
-              className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing shrink-0"
-              style={{ height: collapsedHeight }}
-              drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.2}
-              onDrag={handleVerticalDrag}
-              onDragEnd={handleDragEnd}
-            >
-              {/* Image - fixed height, top-aligned and cropped by container, no swiping in collapsed view */}
-              <div
-                className="flex w-full absolute top-0 left-0"
-                style={{ height: collapsedImageHeight }}
+          <ScrollArea className="h-full">
+            {/* Image Header - Collapsed/Cropped view */}
+            {hasImages && (
+              <motion.div
+                className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing"
+                style={{ height: collapsedHeight }}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.2}
+                onDrag={handleVerticalDrag}
+                onDragEnd={handleDragEnd}
               >
-                {post.images?.[0] && (
-                  <div className="w-full h-full flex-shrink-0">
-                    <img
-                      src={post.images[0]}
-                      alt="Post image"
-                      className="w-full h-full object-cover object-center"
-                      draggable={false}
-                    />
+                {/* Image - fixed height, top-aligned and cropped by container, no swiping in collapsed view */}
+                <div
+                  className="flex w-full absolute top-0 left-0"
+                  style={{ height: collapsedImageHeight }}
+                >
+                  {post.images?.[0] && (
+                    <div className="w-full h-full flex-shrink-0">
+                      <img
+                        src={post.images[0]}
+                        alt="Post image"
+                        className="w-full h-full object-cover object-center"
+                        draggable={false}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Gradient overlay for text legibility */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
+
+                {/* Top overlay - Profile and Close button with safe area */}
+                <div
+                  className="absolute top-0 left-0 right-0 pt-safe px-4 pb-4 flex items-start justify-between z-20"
+                  style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
+                >
+                  {/* Profile info */}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 border-2 border-white/30">
+                      <AvatarImage src={post.user.avatar} />
+                      <AvatarFallback className="bg-muted">
+                        {post.user.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-sm text-white drop-shadow-md">
+                          {post.user.name}
+                        </p>
+                        <span className="text-sm text-white/80 drop-shadow-md">
+                          {post.user.handle}
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/70 drop-shadow-md">
+                        {formattedDate}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Gradient overlay for text legibility */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
+                  {/* Close button */}
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors z-10"
+                  >
+                    <X size={20} className="text-white" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
-              {/* Top overlay - Profile and Close button with safe area */}
-              <div className="absolute top-0 left-0 right-0 pt-safe px-4 pb-4 flex items-start justify-between z-20" style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)' }}>
-                {/* Profile info */}
+            {/* No images header - show profile info differently */}
+            {!hasImages && (
+              <div className="p-4 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10 border-2 border-white/30">
+                  <Avatar className="w-10 h-10 border border-border">
                     <AvatarImage src={post.user.avatar} />
                     <AvatarFallback className="bg-muted">
                       {post.user.name.charAt(0)}
@@ -833,53 +873,23 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <p className="font-semibold text-sm text-white drop-shadow-md">{post.user.name}</p>
-                      <span className="text-sm text-white/80 drop-shadow-md">{post.user.handle}</span>
+                      <p className="font-semibold text-sm">{post.user.name}</p>
+                      <span className="text-sm text-muted-foreground">
+                        {post.user.handle}
+                      </span>
                     </div>
-                    <p className="text-xs text-white/70 drop-shadow-md">{formattedDate}</p>
+                    <p className="text-xs text-muted-foreground">{formattedDate}</p>
                   </div>
                 </div>
-
-                {/* Close button */}
-                <button 
+                <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors z-10"
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
                 >
-                  <X size={20} className="text-white" />
+                  <X size={20} />
                 </button>
               </div>
-            </motion.div>
-          )}
+            )}
 
-          {/* No images header - show profile info differently */}
-          {!hasImages && (
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10 border border-border">
-                  <AvatarImage src={post.user.avatar} />
-                  <AvatarFallback className="bg-muted">
-                    {post.user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-semibold text-sm">{post.user.name}</p>
-                    <span className="text-sm text-muted-foreground">{post.user.handle}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{formattedDate}</p>
-                </div>
-              </div>
-              <button 
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          )}
-
-          {/* Scrollable content */}
-          <ScrollArea className="flex-1 min-h-0">
             <div className="p-4 space-y-4 pb-safe">
               {/* Title row with icon and action buttons */}
               <div className="flex items-start justify-between gap-3">
