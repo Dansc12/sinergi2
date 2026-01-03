@@ -1,8 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Scale, TrendingDown, TrendingUp, Target, Calendar, Plus } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { Scale, TrendingDown, TrendingUp, Target, Plus } from "lucide-react";
+import { format, differenceInDays, parseISO } from "date-fns";
 
 interface WeightDetailModalProps {
   open: boolean;
@@ -26,16 +26,16 @@ export const WeightDetailModal = ({
   // Calculate estimated days to goal
   const calculateDaysToGoal = () => {
     if (!latestWeight || !goalWeight || chartData.length < 2) return null;
-    
+
     const firstEntry = chartData[0];
     const lastEntry = chartData[chartData.length - 1];
-    const daysBetween = differenceInDays(new Date(lastEntry.date), new Date(firstEntry.date));
-    
+    const daysBetween = differenceInDays(parseISO(lastEntry.date), parseISO(firstEntry.date));
+
     if (daysBetween <= 0) return null;
-    
+
     const weightChangeTotal = lastEntry.value - firstEntry.value;
     const ratePerDay = weightChangeTotal / daysBetween;
-    
+
     if (ratePerDay >= 0 && goalWeight < latestWeight) {
       // Trying to lose weight but gaining - can't estimate
       return null;
@@ -44,10 +44,10 @@ export const WeightDetailModal = ({
       // Trying to gain weight but losing - can't estimate
       return null;
     }
-    
+
     const weightToGo = goalWeight - latestWeight;
     const daysToGoal = Math.abs(weightToGo / ratePerDay);
-    
+
     return Math.round(daysToGoal);
   };
 
@@ -61,10 +61,10 @@ export const WeightDetailModal = ({
     const sumY = chartData.reduce((acc, d) => acc + d.value, 0);
     const sumXY = chartData.reduce((acc, d, i) => acc + i * d.value, 0);
     const sumX2 = chartData.reduce((acc, _, i) => acc + i * i, 0);
-    
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    
+
     return chartData.map((d, i) => ({
       ...d,
       trend: intercept + slope * i
@@ -136,7 +136,7 @@ export const WeightDetailModal = ({
                 <LineChart data={trendlineData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <XAxis 
                     dataKey="date" 
-                    tickFormatter={(date) => format(new Date(date), "M/d")}
+                    tickFormatter={(date) => format(parseISO(String(date)), "M/d")}
                     tick={{ fontSize: 11 }}
                     stroke="hsl(var(--muted-foreground))"
                   />
@@ -152,7 +152,7 @@ export const WeightDetailModal = ({
                       borderRadius: '8px',
                       fontSize: '12px'
                     }}
-                    labelFormatter={(date) => format(new Date(date as string), "MMM d, yyyy")}
+                    labelFormatter={(date) => format(parseISO(String(date)), "MMM d, yyyy")}
                     formatter={(value: number) => [`${value.toFixed(1)} lbs`, "Weight"]}
                   />
                   {goalWeight && (
