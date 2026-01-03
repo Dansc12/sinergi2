@@ -714,10 +714,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </motion.div>
 
             {/* Gradient overlay for text legibility */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/70 pointer-events-none" />
 
-            {/* Top overlay - Profile info and Creation type/name */}
-            <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between">
+            {/* Top overlay - Profile info */}
+            <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-10">
               {/* Profile info */}
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 border-2 border-white/30">
@@ -731,10 +731,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <p className="font-semibold text-sm text-white drop-shadow-md">{post.user.name}</p>
                     <span className="text-sm text-white/80 drop-shadow-md">{post.user.handle}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    {TypeIcon && <TypeIcon size={14} className="text-white/80" />}
-                    <span className="text-sm text-white/90 drop-shadow-md">{getContentTitle()}</span>
-                  </div>
+                  <p className="text-xs text-white/70 drop-shadow-md">{formattedDate}</p>
                 </div>
               </div>
 
@@ -747,19 +744,27 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </button>
             </div>
 
-            {/* Pagination dots */}
-            {post.images && post.images.length > 1 && (
-              <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5">
-                {post.images.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                      idx === currentImageIndex ? "bg-white" : "bg-white/40"
-                    }`}
-                  />
-                ))}
+            {/* Bottom overlay - Creation type/name */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+              <div className="flex items-center gap-2">
+                {TypeIcon && <TypeIcon size={18} className="text-white/90" />}
+                <span className="text-base font-semibold text-white drop-shadow-md">{getContentTitle()}</span>
               </div>
-            )}
+              
+              {/* Pagination dots */}
+              {post.images && post.images.length > 1 && (
+                <div className="flex justify-center gap-1.5 mt-3">
+                  {post.images.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        idx === currentImageIndex ? "bg-white" : "bg-white/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </motion.div>
         </motion.div>
       </AnimatePresence>
@@ -819,7 +824,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
 
               {/* Top overlay - Profile and Close button */}
-              <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between">
+              <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-10">
                 {/* Profile info */}
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10 border-2 border-white/30">
@@ -840,7 +845,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 {/* Close button */}
                 <button 
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors"
+                  className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors z-10"
                 >
                   <X size={20} className="text-white" />
                 </button>
