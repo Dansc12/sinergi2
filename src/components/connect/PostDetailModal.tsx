@@ -745,14 +745,14 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </div>
 
             {/* Bottom overlay - Creation type/name */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 pb-6 z-10">
-              <div className="flex items-center gap-2">
+            <div className="absolute left-0 right-0 p-4 z-20 bottom-[env(safe-area-inset-bottom)]">
+              <div className="inline-flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-sm px-3 py-1.5 shadow-lg">
                 {TypeIcon && <TypeIcon size={18} className="text-white/90 drop-shadow-md" />}
-                <span className="text-base font-semibold text-white drop-shadow-md">
+                <span className="max-w-[70vw] truncate text-base font-semibold text-white drop-shadow-md">
                   {getContentTitle() || post.type.charAt(0).toUpperCase() + post.type.slice(1)}
                 </span>
               </div>
-              
+
               {/* Pagination dots */}
               {post.images && post.images.length > 1 && (
                 <div className="flex justify-center gap-1.5 mt-3">
