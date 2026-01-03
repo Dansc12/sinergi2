@@ -676,7 +676,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   if (!open) return null;
 
   const hasImages = post.images && post.images.length > 0;
-  const collapsedHeight = '50vh'; // 50% viewport height, extends to top
+  const collapsedHeight = '25vh'; // 25% viewport height
 
   // Expanded view - fullscreen overlay
   if (imageExpanded && hasImages) {
