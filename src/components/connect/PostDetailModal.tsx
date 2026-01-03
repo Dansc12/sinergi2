@@ -860,11 +860,6 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 </button>
               </div>
 
-              {/* Bottom-left - Creation type/name */}
-              <div className="absolute bottom-3 left-3 z-20">
-                <ContentTypePill type={post.type} title={contentTitle} />
-              </div>
-
               {/* Pagination dots */}
               {post.images && post.images.length > 1 && (
                 <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
