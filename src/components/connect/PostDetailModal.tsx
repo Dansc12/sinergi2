@@ -671,7 +671,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           ref={containerRef}
         >
           {/* Centered content block: Header + Image + Content Type */}
-          <div className="flex flex-col w-full">
+          <div className="flex flex-col w-full items-center justify-center">
             {/* Top row - Profile and Close button (directly touching image) */}
             <div className="px-4 py-2 flex items-center justify-between bg-background">
               {/* Profile info */}
@@ -750,25 +750,9 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               )}
             </motion.div>
 
-            {/* Bottom row - Content type/name and actions (directly touching image) */}
-            <div className="px-4 py-2 bg-background flex items-center justify-between">
+            {/* Bottom row - Content type/name (directly touching image) */}
+            <div className="px-4 py-2 bg-background">
               <ContentTypePill type={post.type} title={contentTitle} noPill className="[&>span]:text-foreground [&>svg]:text-foreground/80" />
-              
-              {/* Like/Comment buttons */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => toggleLike()}
-                  className="flex items-center gap-1.5 transition-all duration-150"
-                >
-                  <Heart
-                    size={22}
-                    className={isLiked ? "fill-[#B46BFF] text-[#B46BFF]" : "text-foreground"}
-                  />
-                </button>
-                <button className="flex items-center gap-1.5">
-                  <MessageCircle size={22} className="text-foreground" />
-                </button>
-              </div>
             </div>
           </div>
         </motion.div>
