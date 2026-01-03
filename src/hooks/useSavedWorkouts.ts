@@ -159,12 +159,18 @@ export const useSavedWorkouts = () => {
         
         const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
         
-        // Use saved title if available, otherwise generate from exercises
+        // Use saved title if available, otherwise generate time-of-day based name
         let title = savedTitle;
         if (!title) {
-          title = exercises.length > 0 
-            ? `${exercises[0].name}${exercises.length > 1 ? ` + ${exercises.length - 1} more` : ''}`
-            : `Workout on ${new Date(w.log_date).toLocaleDateString()}`;
+          const createdDate = new Date(w.created_at);
+          const hour = createdDate.getHours();
+          if (hour < 12) {
+            title = "Morning Workout";
+          } else if (hour < 17) {
+            title = "Afternoon Workout";
+          } else {
+            title = "Evening Workout";
+          }
         }
 
         return {
