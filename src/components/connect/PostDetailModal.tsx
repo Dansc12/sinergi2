@@ -218,18 +218,22 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
   // Vertical drag to expand image
   const handleVerticalDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    // Allow drag in either direction based on current state
     if (info.offset.y > 0 && !imageExpanded) {
-      setDragOffset(info.offset.y);
+      setDragOffset(Math.min(info.offset.y, 200)); // Cap the offset
     } else if (info.offset.y < 0 && imageExpanded) {
-      setDragOffset(info.offset.y);
+      setDragOffset(Math.max(info.offset.y, -200)); // Cap the offset
     }
   };
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 50;
-    if (info.offset.y > threshold && !imageExpanded) {
+    const threshold = 40;
+    const velocity = info.velocity.y;
+    
+    // Use velocity to make swipe feel more responsive
+    if ((info.offset.y > threshold || velocity > 300) && !imageExpanded) {
       setImageExpanded(true);
-    } else if (info.offset.y < -threshold && imageExpanded) {
+    } else if ((info.offset.y < -threshold || velocity < -300) && imageExpanded) {
       setImageExpanded(false);
     }
     setDragOffset(0);
@@ -682,11 +686,18 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   // Expanded view - fullscreen overlay
   if (imageExpanded && hasImages) {
     return (
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          key="expanded-view"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 400, 
+            damping: 35,
+            mass: 0.8
+          }}
           className="fixed inset-0 z-50 bg-background"
           ref={containerRef}
         >
@@ -795,17 +806,24 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             {hasImages && (
               <motion.div
                 className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing"
-                style={{ height: collapsedHeight }}
+                style={{ 
+                  height: collapsedHeight,
+                }}
                 drag="y"
                 dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.2}
+                dragElastic={0.3}
                 onDrag={handleVerticalDrag}
                 onDragEnd={handleDragEnd}
               >
-                {/* Image - fixed height, top-aligned and cropped by container, no swiping in collapsed view */}
-                <div
+                {/* Image - fixed height, scales slightly during drag for visual feedback */}
+                <motion.div
                   className="flex w-full absolute top-0 left-0"
                   style={{ height: collapsedImageHeight }}
+                  animate={{
+                    scale: 1 + (dragOffset / 800),
+                    y: dragOffset * 0.15,
+                  }}
+                  transition={{ type: "tween", duration: 0 }}
                 >
                   {post.images?.[0] && (
                     <div className="w-full h-full flex-shrink-0">
@@ -817,7 +835,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                       />
                     </div>
                   )}
-                </div>
+                </motion.div>
 
                 {/* Gradient overlay for text legibility */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
