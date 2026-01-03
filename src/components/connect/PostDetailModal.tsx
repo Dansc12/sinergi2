@@ -691,12 +691,12 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 </div>
               </div>
 
-              {/* Close button */}
+              {/* Close button - no circle */}
               <button 
                 onClick={() => setImageExpanded(false)}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                className="p-1 hover:opacity-70 transition-opacity"
               >
-                <X size={20} />
+                <X size={22} />
               </button>
             </div>
 
@@ -750,9 +750,25 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               )}
             </motion.div>
 
-            {/* Bottom row - Content type/name (directly touching image) */}
-            <div className="px-4 py-2 bg-background">
-              <ContentTypePill type={post.type} title={contentTitle} className="bg-muted [&>span]:text-foreground [&>svg]:text-foreground/80" />
+            {/* Bottom row - Content type/name and actions (directly touching image) */}
+            <div className="px-4 py-2 bg-background flex items-center justify-between">
+              <ContentTypePill type={post.type} title={contentTitle} noPill className="[&>span]:text-foreground [&>svg]:text-foreground/80" />
+              
+              {/* Like/Comment buttons */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => toggleLike()}
+                  className="flex items-center gap-1.5 transition-all duration-150"
+                >
+                  <Heart
+                    size={22}
+                    className={isLiked ? "fill-[#B46BFF] text-[#B46BFF]" : "text-foreground"}
+                  />
+                </button>
+                <button className="flex items-center gap-1.5">
+                  <MessageCircle size={22} className="text-foreground" />
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>

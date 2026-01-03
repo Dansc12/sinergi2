@@ -34,12 +34,25 @@ export function ContentTypePill({
   type,
   title,
   className,
+  noPill = false,
 }: {
   type: string;
   title: string;
   className?: string;
+  noPill?: boolean;
 }) {
   const Icon = getContentTypeIcon(type);
+
+  if (noPill) {
+    return (
+      <div className={cn("inline-flex items-center gap-2", className)}>
+        {Icon ? <Icon size={18} className="text-foreground/80" /> : null}
+        <span className="max-w-[70vw] truncate text-base font-semibold text-foreground">
+          {title}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div
