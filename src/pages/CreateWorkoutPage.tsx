@@ -15,6 +15,7 @@ import { SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@
 import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseHistory } from "@/hooks/useExerciseHistory";
+import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -764,7 +765,14 @@ const CreateWorkoutPage = () => {
               <div>
                 <h3 className="font-semibold text-lg text-foreground">{selectedExercise.name}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {selectedExercise.category} • {selectedExercise.muscleGroup}
+                  {selectedExercise.category} • {(() => {
+                    if (selectedExercise.isCardio) return "Cardio";
+                    const config = getMuscleContributions(selectedExercise.name, selectedExercise.muscleGroup);
+                    const sortedMuscles = Object.entries(config.muscleContributions)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([muscle]) => getMuscleDisplayName(muscle));
+                    return sortedMuscles.join(", ");
+                  })()}
                 </p>
               </div>
             </div>

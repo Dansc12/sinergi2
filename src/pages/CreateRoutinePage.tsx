@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import ExerciseSearchInput from "@/components/ExerciseSearchInput";
 import { usePosts } from "@/hooks/usePosts";
 import { TagInput } from "@/components/TagInput";
+import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -439,7 +440,13 @@ const CreateRoutinePage = () => {
               <div>
                 <h3 className="font-semibold text-lg text-foreground">{selectedExercise.name}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {selectedExercise.category} • {selectedExercise.muscleGroup}
+                  {selectedExercise.category} • {(() => {
+                    const config = getMuscleContributions(selectedExercise.name, selectedExercise.muscleGroup);
+                    const sortedMuscles = Object.entries(config.muscleContributions)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([muscle]) => getMuscleDisplayName(muscle));
+                    return sortedMuscles.join(", ");
+                  })()}
                 </p>
               </div>
             </div>
