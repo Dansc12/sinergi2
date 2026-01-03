@@ -4,11 +4,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, format } from "date-fns";
-import { X, Dumbbell, UtensilsCrossed, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, ChefHat, ClipboardList, FileText } from "lucide-react";
+import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send } from "lucide-react";
 import { useGroupJoin } from "@/hooks/useGroupJoin";
 import { usePostReactions } from "@/hooks/usePostReactions";
 import { usePostComments } from "@/hooks/usePostComments";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { ContentTypePill, getContentTypeIcon, getContentTypeLabel } from "@/components/connect/ContentTypePill";
 
 interface Exercise {
   name: string;
@@ -88,16 +89,6 @@ interface PostDetailModalProps {
   };
 }
 
-// Map content types to their icons
-const typeIcons = {
-  workout: Dumbbell,
-  meal: UtensilsCrossed,
-  recipe: ChefHat,
-  routine: ClipboardList,
-  post: FileText,
-  group: Users,
-} as const;
-
 // Superset colors for workout display
 const supersetColors = [
   "bg-blue-500",
@@ -172,7 +163,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   };
 
   const tags = post.tags || (contentData?.tags as string[] | undefined);
-  const TypeIcon = typeIcons[post.type];
+  const TypeIcon = getContentTypeIcon(post.type);
+  const contentTitle = getContentTitle() || getContentTypeLabel(post.type);
 
   // Image carousel touch handling
   const touchStartX = useRef<number>(0);
@@ -745,13 +737,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </div>
 
             {/* Bottom overlay - Creation type/name */}
-            <div className="absolute left-0 right-0 p-4 z-20 bottom-[env(safe-area-inset-bottom)]">
-              <div className="inline-flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-sm px-3 py-1.5 shadow-lg">
-                {TypeIcon && <TypeIcon size={18} className="text-white/90 drop-shadow-md" />}
-                <span className="max-w-[70vw] truncate text-base font-semibold text-white drop-shadow-md">
-                  {getContentTitle() || post.type.charAt(0).toUpperCase() + post.type.slice(1)}
-                </span>
-              </div>
+            <div className="absolute bottom-0 left-0 right-0 p-4 pb-6 z-20">
+              <ContentTypePill type={post.type} title={contentTitle} />
 
               {/* Pagination dots */}
               {post.images && post.images.length > 1 && (
@@ -826,7 +813,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
 
               {/* Top overlay - Profile and Close button */}
-              <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-10">
+              <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between z-20">
                 {/* Profile info */}
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10 border-2 border-white/30">
@@ -851,6 +838,11 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 >
                   <X size={20} className="text-white" />
                 </button>
+              </div>
+
+              {/* Bottom-left - Creation type/name */}
+              <div className="absolute bottom-3 left-3 z-20">
+                <ContentTypePill type={post.type} title={contentTitle} />
               </div>
 
               {/* Pagination dots */}
