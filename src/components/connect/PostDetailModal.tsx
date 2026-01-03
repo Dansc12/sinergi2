@@ -243,72 +243,138 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     const exercises = (contentData?.exercises as Exercise[]) || [];
     const notes = contentData?.notes as string;
 
-    // Group exercises by superset
-    const exercisesWithSuperset = exercises.map((ex, idx) => ({
-      ...ex,
-      originalIndex: idx,
-    }));
+    // Helper to get set label matching Log Workout style
+    const getSetLabel = (setType: string | undefined, normalSetNumber: number): string => {
+      switch (setType) {
+        case "warmup": return "W";
+        case "failure": return "F";
+        case "drop": case "dropset": return "D";
+        default: return String(normalSetNumber);
+      }
+    };
+
+    // Get styling for set type badge matching Log Workout
+    const getSetBadgeStyle = (setType: string | undefined): string => {
+      switch (setType) {
+        case "warmup": return "bg-yellow-500/20 text-yellow-600";
+        case "failure": return "bg-red-500/20 text-red-600";
+        case "drop": case "dropset": return "bg-blue-500/20 text-blue-600";
+        default: return "bg-muted text-muted-foreground";
+      }
+    };
+
+    // Calculate normal set number (only counts normal sets)
+    const getNormalSetNumber = (sets: Exercise["sets"], currentIndex: number): number => {
+      if (!sets) return currentIndex + 1;
+      let count = 0;
+      for (let i = 0; i <= currentIndex; i++) {
+        const setType = sets[i]?.type;
+        if (!setType || setType === "normal") {
+          count++;
+        }
+      }
+      return count;
+    };
+
+    // Group exercises by superset for coloring
+    const supersetGroups = new Map<number, number>();
+    let groupIndex = 0;
+    exercises.forEach(ex => {
+      if (ex.supersetGroup !== undefined && !supersetGroups.has(ex.supersetGroup)) {
+        supersetGroups.set(ex.supersetGroup, groupIndex++);
+      }
+    });
 
     return (
       <div className="space-y-3">
-        {exercisesWithSuperset.map((exercise, idx) => {
-          const supersetGroup = exercise.supersetGroup;
-          const supersetColor = supersetGroup !== undefined 
-            ? supersetColors[supersetGroup % supersetColors.length]
+        {exercises.map((exercise, idx) => {
+          const supersetGroupIndex = exercise.supersetGroup !== undefined 
+            ? supersetGroups.get(exercise.supersetGroup) 
+            : undefined;
+          const supersetColor = supersetGroupIndex !== undefined 
+            ? supersetColors[supersetGroupIndex % supersetColors.length]
             : null;
 
           return (
             <div 
               key={idx} 
-              className={`relative bg-muted/50 rounded-xl p-4 ${supersetColor ? 'pl-6' : ''}`}
+              className="rounded-xl bg-card border border-border overflow-hidden"
             >
-              {/* Superset indicator bar */}
-              {supersetColor && (
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${supersetColor} rounded-l-xl`} />
-              )}
-              
-              <h5 className="font-medium mb-1">{exercise.name}</h5>
-              {exercise.notes && (
-                <p className="text-xs text-muted-foreground italic mb-2">"{exercise.notes}"</p>
-              )}
-              {exercise.sets && exercise.sets.length > 0 && (
-                <div className="space-y-2">
-                  {exercise.sets.map((set, setIdx) => {
-                    const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : set.weight || 0;
-                    const reps = typeof set.reps === 'string' ? parseFloat(set.reps) || 0 : set.reps || 0;
-                    const distance = typeof set.distance === 'string' ? parseFloat(set.distance) || 0 : set.distance || 0;
-                    const setType = set.type as string | undefined;
-                    const typeBadge = setType && setTypeBadges[setType];
-
-                    return (
-                      <div key={setIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {typeBadge ? (
-                          <span className={`w-6 h-6 rounded-full ${typeBadge.color} text-xs flex items-center justify-center font-medium`}>
-                            {typeBadge.label}
-                          </span>
-                        ) : (
-                          <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">
-                            {setIdx + 1}
-                          </span>
-                        )}
-                        <div className="flex gap-2">
-                          {exercise.isCardio ? (
-                            <>
-                              <span className="px-2 py-0.5 rounded bg-muted text-foreground text-xs">{distance} mi</span>
-                              {set.time && <span className="px-2 py-0.5 rounded bg-muted text-foreground text-xs">{set.time}</span>}
-                            </>
-                          ) : (
-                            <>
-                              <span className="px-2 py-0.5 rounded bg-muted text-foreground text-xs">{weight} lbs</span>
-                              <span className="px-2 py-0.5 rounded bg-muted text-foreground text-xs">{reps} reps</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+              <div className="flex">
+                {/* Left color bar for superset exercises */}
+                {supersetColor && (
+                  <div className={`w-1 ${supersetColor}`} />
+                )}
+                
+                <div className="flex-1 p-4 space-y-3">
+                  {/* Exercise name and type */}
+                  <div>
+                    <h4 className="font-semibold text-foreground">{exercise.name}</h4>
+                    {exercise.isCardio && (
+                      <span className="text-xs text-muted-foreground">Cardio</span>
+                    )}
+                    {/* Notes - directly below exercise name */}
+                    {exercise.notes && (
+                      <p className="text-sm text-foreground italic mt-1">
+                        {exercise.notes}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Sets - row format */}
+                  {exercise.sets && exercise.sets.length > 0 && (
+                    <div className="space-y-1.5">
+                      {exercise.sets.map((set, setIdx) => {
+                        const normalSetNumber = getNormalSetNumber(exercise.sets, setIdx);
+                        const setLabel = getSetLabel(set.type, normalSetNumber);
+                        const badgeStyle = getSetBadgeStyle(set.type);
+                        const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : set.weight || 0;
+                        const reps = typeof set.reps === 'string' ? parseFloat(set.reps) || 0 : set.reps || 0;
+                        const distance = typeof set.distance === 'string' ? parseFloat(set.distance) || 0 : set.distance || 0;
+                        
+                        return (
+                          <div 
+                            key={setIdx}
+                            className="flex items-center gap-3 py-1"
+                          >
+                            {/* Set type/# badge - circular matching Log Workout style */}
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                              {setLabel}
+                            </div>
+                            
+                            {/* Weight/Distance and Reps/Time in boxes */}
+                            {exercise.isCardio ? (
+                              <>
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                  <span className="text-sm font-medium text-foreground">{distance}</span>
+                                  <span className="text-xs text-muted-foreground">mi</span>
+                                </div>
+                                {set.time && (
+                                  <div className="bg-muted/30 rounded-md px-3 py-1.5">
+                                    <span className="text-sm font-medium text-foreground">{set.time}</span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                  <span className="text-sm font-medium text-foreground">{weight}</span>
+                                  <span className="text-xs text-muted-foreground">lbs</span>
+                                </div>
+                                <span className="text-muted-foreground">×</span>
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                  <span className="text-sm font-medium text-foreground">{reps}</span>
+                                  <span className="text-xs text-muted-foreground">reps</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
