@@ -801,33 +801,22 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               onDrag={handleVerticalDrag}
               onDragEnd={handleDragEnd}
             >
-              {/* Image carousel - fixed image height, top-aligned and cropped by container */}
-              <motion.div
+              {/* Image - fixed height, top-aligned and cropped by container, no swiping in collapsed view */}
+              <div
                 className="flex w-full absolute top-0 left-0"
                 style={{ height: collapsedImageHeight }}
-                onTouchStart={handleCarouselTouchStart}
-                onTouchMove={handleCarouselTouchMove}
-                onTouchEnd={handleCarouselTouchEnd}
-                animate={{
-                  x: `calc(-${currentImageIndex * 100}% + ${isDragging ? carouselDrag : 0}px)`,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 30,
-                }}
               >
-                {post.images?.map((img, idx) => (
-                  <div key={idx} className="w-full h-full flex-shrink-0">
+                {post.images?.[0] && (
+                  <div className="w-full h-full flex-shrink-0">
                     <img
-                      src={img}
-                      alt={`Post image ${idx + 1}`}
+                      src={post.images[0]}
+                      alt="Post image"
                       className="w-full h-full object-cover object-center"
                       draggable={false}
                     />
                   </div>
-                ))}
-              </motion.div>
+                )}
+              </div>
 
               {/* Gradient overlay for text legibility */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
@@ -859,20 +848,6 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   <X size={20} className="text-white" />
                 </button>
               </div>
-
-              {/* Pagination dots */}
-              {post.images && post.images.length > 1 && (
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-                  {post.images.map((_, idx) => (
-                    <div
-                      key={idx}
-                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                        idx === currentImageIndex ? "bg-white" : "bg-white/40"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
             </motion.div>
           )}
 
