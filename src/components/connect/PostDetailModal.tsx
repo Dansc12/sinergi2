@@ -21,9 +21,11 @@ interface Exercise {
     distance?: number | string;
     time?: string;
     type?: string;
+    setType?: string; // Alternative field name from CreateWorkoutPage
   }>;
   isCardio?: boolean;
   supersetGroup?: number;
+  supersetGroupId?: string; // Alternative field name from CreateWorkoutPage
 }
 
 interface MealFood {
@@ -268,7 +270,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
       if (!sets) return currentIndex + 1;
       let count = 0;
       for (let i = 0; i <= currentIndex; i++) {
-        const setType = sets[i]?.type;
+        // Check both 'type' and 'setType' field names
+        const setType = sets[i]?.type || sets[i]?.setType;
         if (!setType || setType === "normal") {
           count++;
         }
@@ -276,20 +279,24 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
       return count;
     };
 
-    // Group exercises by superset for coloring
-    const supersetGroups = new Map<number, number>();
+    // Group exercises by superset for coloring - handle both supersetGroup (number) and supersetGroupId (string)
+    const supersetGroups = new Map<string, number>();
     let groupIndex = 0;
     exercises.forEach(ex => {
-      if (ex.supersetGroup !== undefined && !supersetGroups.has(ex.supersetGroup)) {
-        supersetGroups.set(ex.supersetGroup, groupIndex++);
+      // Use supersetGroupId (string) or supersetGroup (number) - convert to string for consistent Map key
+      const ssGroup = ex.supersetGroupId ?? (ex.supersetGroup !== undefined ? String(ex.supersetGroup) : undefined);
+      if (ssGroup !== undefined && !supersetGroups.has(ssGroup)) {
+        supersetGroups.set(ssGroup, groupIndex++);
       }
     });
 
     return (
       <div className="space-y-3">
         {exercises.map((exercise, idx) => {
-          const supersetGroupIndex = exercise.supersetGroup !== undefined 
-            ? supersetGroups.get(exercise.supersetGroup) 
+          // Get superset group key (handle both supersetGroupId and supersetGroup)
+          const ssGroupKey = exercise.supersetGroupId ?? (exercise.supersetGroup !== undefined ? String(exercise.supersetGroup) : undefined);
+          const supersetGroupIndex = ssGroupKey !== undefined 
+            ? supersetGroups.get(ssGroupKey) 
             : undefined;
           const supersetColor = supersetGroupIndex !== undefined 
             ? supersetColors[supersetGroupIndex % supersetColors.length]
@@ -326,8 +333,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <div className="space-y-1.5">
                       {exercise.sets.map((set, setIdx) => {
                         const normalSetNumber = getNormalSetNumber(exercise.sets, setIdx);
-                        const setLabel = getSetLabel(set.type, normalSetNumber);
-                        const badgeStyle = getSetBadgeStyle(set.type);
+                        // Check both 'type' and 'setType' field names
+                        const setType = set.type || set.setType;
+                        const setLabel = getSetLabel(setType, normalSetNumber);
+                        const badgeStyle = getSetBadgeStyle(setType);
                         const weight = typeof set.weight === 'string' ? parseFloat(set.weight) || 0 : set.weight || 0;
                         const reps = typeof set.reps === 'string' ? parseFloat(set.reps) || 0 : set.reps || 0;
                         const distance = typeof set.distance === 'string' ? parseFloat(set.distance) || 0 : set.distance || 0;
