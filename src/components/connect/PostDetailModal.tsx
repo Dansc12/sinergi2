@@ -667,13 +667,13 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-background"
           ref={containerRef}
         >
           {/* Centered content block: Header + Image + Content Type */}
-          <div className="flex flex-col w-full items-center justify-center">
+          <div className="h-full w-full flex flex-col items-stretch justify-center">
             {/* Top row - Profile and Close button (directly touching image) */}
-            <div className="px-4 py-2 flex items-center justify-between bg-background">
+            <div className="px-4 py-2 flex items-center justify-between bg-background w-full">
               {/* Profile info */}
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 border border-border">
@@ -751,7 +751,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </motion.div>
 
             {/* Bottom row - Content type/name (directly touching image) */}
-            <div className="px-4 py-2 bg-background">
+            <div className="px-4 py-2 bg-background w-full">
               <ContentTypePill type={post.type} title={contentTitle} noPill className="[&>span]:text-foreground [&>svg]:text-foreground/80" />
             </div>
           </div>
