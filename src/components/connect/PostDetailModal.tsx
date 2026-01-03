@@ -667,41 +667,42 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background flex flex-col"
+          className="fixed inset-0 z-50 bg-background flex items-center justify-center"
           ref={containerRef}
         >
-          {/* Top row - Profile and Close button (above the image) */}
-          <div className="px-4 py-3 flex items-center justify-between bg-background shrink-0">
-            {/* Profile info */}
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10 border border-border">
-                <AvatarImage src={post.user.avatar} />
-                <AvatarFallback className="bg-muted">
-                  {post.user.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="font-semibold text-sm">{post.user.name}</p>
-                  <span className="text-sm text-muted-foreground">{post.user.handle}</span>
+          {/* Centered content block: Header + Image + Content Type */}
+          <div className="flex flex-col w-full">
+            {/* Top row - Profile and Close button (directly touching image) */}
+            <div className="px-4 py-2 flex items-center justify-between bg-background">
+              {/* Profile info */}
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10 border border-border">
+                  <AvatarImage src={post.user.avatar} />
+                  <AvatarFallback className="bg-muted">
+                    {post.user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-sm">{post.user.name}</p>
+                    <span className="text-sm text-muted-foreground">{post.user.handle}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{formattedDate}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{formattedDate}</p>
               </div>
+
+              {/* Close button */}
+              <button 
+                onClick={() => setImageExpanded(false)}
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            {/* Close button */}
-            <button 
-              onClick={() => setImageExpanded(false)}
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Image container */}
-          <div className="flex-1 flex items-center justify-center bg-black overflow-hidden">
+            {/* Image container - no extra padding, directly touching header and footer */}
             <motion.div
-              className="relative w-full"
+              className="relative w-full bg-black"
               drag="y"
               dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={0.2}
@@ -748,11 +749,11 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 </div>
               )}
             </motion.div>
-          </div>
 
-          {/* Bottom row - Content type/name (below the image) */}
-          <div className="px-4 py-3 bg-background shrink-0">
-            <ContentTypePill type={post.type} title={contentTitle} className="bg-muted [&>span]:text-foreground [&>svg]:text-foreground/80" />
+            {/* Bottom row - Content type/name (directly touching image) */}
+            <div className="px-4 py-2 bg-background">
+              <ContentTypePill type={post.type} title={contentTitle} className="bg-muted [&>span]:text-foreground [&>svg]:text-foreground/80" />
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>
