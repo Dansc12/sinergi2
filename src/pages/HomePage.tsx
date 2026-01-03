@@ -145,11 +145,11 @@ const HomePage = () => {
       />
 
       <main className="flex-1 overflow-y-auto overscroll-contain pb-24 animate-fade-in">
-        <section aria-label="Your Progress">
-          <ProgressCharts />
-        </section>
         <section aria-label="Today's Tasks">
           <TasksSection completedTasks={completedTasks} />
+        </section>
+        <section aria-label="Your Progress">
+          <ProgressCharts />
         </section>
       </main>
 
