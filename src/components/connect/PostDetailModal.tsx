@@ -4,7 +4,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, format } from "date-fns";
-import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send } from "lucide-react";
+import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell } from "lucide-react";
+import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import { useGroupJoin } from "@/hooks/useGroupJoin";
 import { usePostReactions } from "@/hooks/usePostReactions";
 import { usePostComments } from "@/hooks/usePostComments";
@@ -15,6 +16,8 @@ import { ContentTypePill, getContentTypeIcon, getContentTypeLabel } from "@/comp
 interface Exercise {
   name: string;
   notes?: string;
+  category?: string;
+  muscleGroup?: string;
   sets?: Array<{
     weight?: number | string;
     reps?: number | string;
@@ -314,19 +317,32 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 )}
                 
                 <div className="flex-1 p-4 space-y-3">
-                  {/* Exercise name and type */}
-                  <div>
-                    <h4 className="font-semibold text-foreground">{exercise.name}</h4>
-                    {exercise.isCardio && (
-                      <span className="text-xs text-muted-foreground">Cardio</span>
-                    )}
-                    {/* Notes - directly below exercise name */}
-                    {exercise.notes && (
-                      <p className="text-sm text-foreground italic mt-1">
-                        {exercise.notes}
+                  {/* Exercise header - icon, name, category, muscles */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                      <Dumbbell size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground">{exercise.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {exercise.category || "Exercise"} • {(() => {
+                          if (exercise.isCardio) return "Cardio";
+                          const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
+                          const sortedMuscles = Object.entries(config.muscleContributions)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([muscle]) => getMuscleDisplayName(muscle));
+                          return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
+                        })()}
                       </p>
-                    )}
+                    </div>
                   </div>
+                  
+                  {/* Notes - directly below exercise header */}
+                  {exercise.notes && (
+                    <p className="text-sm text-foreground italic">
+                      {exercise.notes}
+                    </p>
+                  )}
                   
                   {/* Sets - row format */}
                   {exercise.sets && exercise.sets.length > 0 && (
