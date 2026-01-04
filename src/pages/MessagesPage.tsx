@@ -234,8 +234,8 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="sticky bottom-0 glass-elevated p-4 safe-area-bottom">
-        <div className="flex gap-2">
+      <div className="sticky bottom-0 bg-background px-4 py-3 safe-area-bottom">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={newMessage}
@@ -246,11 +246,11 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
           />
           <Button 
             size="icon" 
-            className="rounded-full w-12 h-12 shrink-0"
+            className="rounded-full w-10 h-10 shrink-0"
             onClick={handleSend}
             disabled={!newMessage.trim()}
           >
-            <Send size={20} />
+            <Send size={18} />
           </Button>
         </div>
       </div>
@@ -347,8 +347,8 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="sticky bottom-0 glass-elevated p-4 safe-area-bottom">
-        <div className="flex gap-2">
+      <div className="sticky bottom-0 bg-background px-4 py-3 safe-area-bottom">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={newMessage}
@@ -359,11 +359,11 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
           />
           <Button 
             size="icon" 
-            className="rounded-full w-12 h-12 shrink-0"
+            className="rounded-full w-10 h-10 shrink-0"
             onClick={handleSend}
             disabled={!newMessage.trim()}
           >
-            <Send size={20} />
+            <Send size={18} />
           </Button>
         </div>
       </div>
