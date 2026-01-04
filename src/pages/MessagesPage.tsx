@@ -234,7 +234,7 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="sticky bottom-0 bg-background px-4 pt-3 pb-3 safe-area-bottom">
+      <div className="sticky bottom-0 bg-background px-4 pt-4 pb-3 safe-area-bottom">
         <div className="flex items-center justify-center gap-2">
           <input
             type="text"
@@ -347,7 +347,7 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="sticky bottom-0 bg-background px-4 pt-3 pb-3 safe-area-bottom">
+      <div className="sticky bottom-0 bg-background px-4 pt-4 pb-3 safe-area-bottom">
         <div className="flex items-center justify-center gap-2">
           <input
             type="text"
