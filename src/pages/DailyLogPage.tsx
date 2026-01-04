@@ -167,14 +167,14 @@ const DailyLogPage = () => {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <span className={cn(
-              "relative z-10",
-              activeTab === "nutrition" && "drop-shadow-[0_4px_12px_hsl(var(--primary)/0.6)]"
-            )}>
+            <span className="relative z-10">
               Nutrition
             </span>
             {activeTab === "nutrition" && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
+              <>
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-primary/40 blur-md rounded-full" />
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
+              </>
             )}
           </button>
           <button
@@ -191,14 +191,14 @@ const DailyLogPage = () => {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <span className={cn(
-              "relative z-10",
-              activeTab === "fitness" && "drop-shadow-[0_4px_12px_hsl(var(--primary)/0.6)]"
-            )}>
+            <span className="relative z-10">
               Fitness
             </span>
             {activeTab === "fitness" && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
+              <>
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-primary/40 blur-md rounded-full" />
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
+              </>
             )}
           </button>
         </div>
