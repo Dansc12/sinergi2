@@ -167,9 +167,14 @@ const DailyLogPage = () => {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Nutrition
+            <span className={cn(
+              "relative z-10",
+              activeTab === "nutrition" && "drop-shadow-[0_4px_12px_hsl(var(--primary)/0.6)]"
+            )}>
+              Nutrition
+            </span>
             {activeTab === "nutrition" && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full shadow-[0_0_8px_2px_hsl(var(--primary)/0.5)]" />
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
             )}
           </button>
           <button
@@ -186,9 +191,14 @@ const DailyLogPage = () => {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Fitness
+            <span className={cn(
+              "relative z-10",
+              activeTab === "fitness" && "drop-shadow-[0_4px_12px_hsl(var(--primary)/0.6)]"
+            )}>
+              Fitness
+            </span>
             {activeTab === "fitness" && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full shadow-[0_0_8px_2px_hsl(var(--primary)/0.5)]" />
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
             )}
           </button>
         </div>
