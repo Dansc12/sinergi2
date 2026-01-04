@@ -252,6 +252,78 @@ const SharePostScreen = () => {
         contentData = { ...contentData, routineName: routineTitle, tags: routineTags };
       }
 
+      // Update the original creation with the modified name/tags
+      const originalId = state?.contentData?.id as string | undefined;
+      if (originalId) {
+        if (isWorkout) {
+          // Update workout_logs with the new title (stored in exercises JSON or notes)
+          const { data: existingWorkout } = await supabase
+            .from("workout_logs")
+            .select("exercises")
+            .eq("id", originalId)
+            .single();
+          
+          if (existingWorkout) {
+            // Store title and tags in the exercises JSON structure
+            const updatedExercises = {
+              ...(typeof existingWorkout.exercises === 'object' ? existingWorkout.exercises : {}),
+              _metadata: { title: workoutTitle, tags: workoutTags }
+            };
+            await supabase
+              .from("workout_logs")
+              .update({ exercises: updatedExercises })
+              .eq("id", originalId);
+          }
+        } else if (isSavedMeal || isRecipe) {
+          // Update the saved_meal post with new name/tags
+          const postId = state?.contentData?.postId as string | undefined;
+          if (postId) {
+            const { data: existingPost } = await supabase
+              .from("posts")
+              .select("content_data")
+              .eq("id", postId)
+              .single();
+            
+            if (existingPost) {
+              const existingData = existingPost.content_data as Record<string, unknown>;
+              const updatedData = isSavedMeal 
+                ? { ...existingData, name: mealTitle, tags: mealTags }
+                : { ...existingData, title: recipeTitle, tags: recipeTags };
+              await supabase
+                .from("posts")
+                .update({ content_data: updatedData })
+                .eq("id", postId);
+            }
+          }
+        } else if (isRoutine) {
+          // Update scheduled_routines with the new name/tags
+          const routineIds = state?.contentData?.routineIds as string[] | undefined;
+          if (routineIds && routineIds.length > 0) {
+            const { data: existingRoutine } = await supabase
+              .from("scheduled_routines")
+              .select("routine_data")
+              .eq("id", routineIds[0])
+              .single();
+            
+            if (existingRoutine) {
+              const existingData = existingRoutine.routine_data as Record<string, unknown>;
+              const updatedData = { ...existingData, tags: routineTags };
+              
+              // Update all routine entries with the new name and tags
+              for (const routineId of routineIds) {
+                await supabase
+                  .from("scheduled_routines")
+                  .update({ 
+                    routine_name: routineTitle,
+                    routine_data: updatedData 
+                  })
+                  .eq("id", routineId);
+              }
+            }
+          }
+        }
+      }
+
       await createPost({
         content_type: state?.contentType || "post",
         content_data: contentData,
