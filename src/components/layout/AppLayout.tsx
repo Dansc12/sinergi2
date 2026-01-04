@@ -1,8 +1,21 @@
-import { useState } from "react";
+import { useState, createContext, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { CreateModal } from "./CreateModal";
 import { usePostDetail } from "@/contexts/PostDetailContext";
+
+// Context to allow child components to hide nav
+interface NavVisibilityContextType {
+  hideNav: boolean;
+  setHideNav: (hide: boolean) => void;
+}
+
+const NavVisibilityContext = createContext<NavVisibilityContextType>({
+  hideNav: false,
+  setHideNav: () => {},
+});
+
+export const useNavVisibility = () => useContext(NavVisibilityContext);
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,28 +42,31 @@ const HIDDEN_NAV_ROUTES = [
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [dynamicHideNav, setDynamicHideNav] = useState(false);
   const location = useLocation();
   const { isPostDetailOpen } = usePostDetail();
   
   const hideNavByRoute = HIDDEN_NAV_ROUTES.some(route => location.pathname.startsWith(route));
-  const hideNav = hideNavByRoute || isPostDetailOpen;
+  const hideNav = hideNavByRoute || isPostDetailOpen || dynamicHideNav;
 
   const isHome = location.pathname === "/";
 
   return (
-    <div className={isHome ? "h-[100svh] overflow-hidden bg-background" : "min-h-screen bg-background"}>
-      <main className={hideNav ? "" : isHome ? "h-full" : "pb-24"}>
-        {children}
-      </main>
-      {!hideNav && (
-        <>
-          <BottomNav onCreateClick={() => setIsCreateModalOpen(true)} />
-          <CreateModal 
-            isOpen={isCreateModalOpen} 
-            onClose={() => setIsCreateModalOpen(false)} 
-          />
-        </>
-      )}
-    </div>
+    <NavVisibilityContext.Provider value={{ hideNav: dynamicHideNav, setHideNav: setDynamicHideNav }}>
+      <div className={isHome ? "h-[100svh] overflow-hidden bg-background" : "min-h-screen bg-background"}>
+        <main className={hideNav ? "" : isHome ? "h-full" : "pb-24"}>
+          {children}
+        </main>
+        {!hideNav && (
+          <>
+            <BottomNav onCreateClick={() => setIsCreateModalOpen(true)} />
+            <CreateModal 
+              isOpen={isCreateModalOpen} 
+              onClose={() => setIsCreateModalOpen(false)} 
+            />
+          </>
+        )}
+      </div>
+    </NavVisibilityContext.Provider>
   );
 };

@@ -9,6 +9,7 @@ import { useDirectMessages, useDMChat } from "@/hooks/useDirectMessages";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavVisibility } from "@/components/layout/AppLayout";
 
 interface ConversationProps {
   id: string;
@@ -129,7 +130,7 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
+    <div className="flex flex-col h-[100svh]">
       {/* Chat Header */}
       <header className="sticky top-0 z-40 glass-elevated px-4 py-3">
         <div className="flex items-center gap-3">
@@ -282,7 +283,7 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
+    <div className="flex flex-col h-[100svh]">
       {/* Chat Header */}
       <header className="sticky top-0 z-40 glass-elevated px-4 py-3">
         <div className="flex items-center gap-3">
@@ -377,6 +378,14 @@ const MessagesPage = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedDMUserId, setSelectedDMUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { setHideNav } = useNavVisibility();
+
+  // Hide nav when in a chat view
+  useEffect(() => {
+    const isInChat = !!selectedGroupId || !!selectedDMUserId;
+    setHideNav(isInChat);
+    return () => setHideNav(false);
+  }, [selectedGroupId, selectedDMUserId, setHideNav]);
 
   // Handle DM from URL parameter
   useEffect(() => {
@@ -433,19 +442,21 @@ const MessagesPage = () => {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 glass-elevated px-4 py-4">
-        <h1 className="text-2xl font-bold mb-4">Messages</h1>
-        
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search conversations..."
-            className="w-full bg-muted border-0 rounded-xl py-3 pl-12 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+      <header className="sticky top-0 z-40 glass-elevated px-4 py-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold shrink-0">Messages</h1>
+          
+          {/* Search Bar */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="w-full bg-muted border-0 rounded-full py-2 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
         </div>
       </header>
 
