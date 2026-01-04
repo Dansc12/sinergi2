@@ -176,7 +176,7 @@ const DirectShareSelectionPage = () => {
                 <Users size={16} className="text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Groups</span>
               </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {filteredGroups.map((group) => {
                   const isSelected = selectedGroups.includes(group.id);
                   return (
@@ -187,12 +187,21 @@ const DirectShareSelectionPage = () => {
                       className="flex flex-col items-center gap-2 flex-shrink-0"
                     >
                       <div className="relative">
-                        <Avatar className={`w-16 h-16 border-2 transition-colors ${isSelected ? "border-primary" : "border-transparent"}`}>
-                          <AvatarImage src={group.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/20 text-primary">
-                            {group.name.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className={`w-20 h-24 rounded-xl overflow-hidden border-2 transition-colors ${isSelected ? "border-primary" : "border-border"}`}>
+                          {group.avatar_url ? (
+                            <img 
+                              src={group.avatar_url} 
+                              alt={group.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+                              <span className="text-lg font-semibold text-primary">
+                                {group.name.slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                         {isSelected && (
                           <motion.div
                             initial={{ scale: 0 }}
@@ -203,7 +212,7 @@ const DirectShareSelectionPage = () => {
                           </motion.div>
                         )}
                       </div>
-                      <span className="text-xs text-center max-w-[64px] truncate">
+                      <span className="text-xs text-center max-w-[80px] truncate font-medium">
                         {group.name}
                       </span>
                     </motion.button>
@@ -225,22 +234,20 @@ const DirectShareSelectionPage = () => {
                 <User size={16} className="text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Friends</span>
               </div>
-              <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-4">
                 {filteredFriends.map((friend) => {
                   const isSelected = selectedUsers.includes(friend.user_id);
                   return (
                     <motion.button
                       key={friend.user_id}
                       onClick={() => toggleUser(friend.user_id)}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                        isSelected ? "bg-primary/10 border border-primary/30" : "bg-card border border-border"
-                      }`}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center gap-2"
                     >
                       <div className="relative">
-                        <Avatar className="w-12 h-12">
+                        <Avatar className={`w-16 h-16 border-2 transition-colors ${isSelected ? "border-primary" : "border-transparent"}`}>
                           <AvatarImage src={friend.avatar_url || undefined} />
-                          <AvatarFallback className="bg-muted">
+                          <AvatarFallback className="bg-muted text-lg">
                             {(friend.first_name || "U").slice(0, 1).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -254,16 +261,15 @@ const DirectShareSelectionPage = () => {
                           </motion.div>
                         )}
                       </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">{friend.first_name || "User"}</p>
+                      <div className="text-center">
+                        <p className="text-sm font-medium truncate max-w-[80px]">
+                          {friend.first_name || "User"}
+                        </p>
                         {friend.username && (
-                          <p className="text-sm text-muted-foreground">@{friend.username}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[80px]">
+                            @{friend.username}
+                          </p>
                         )}
-                      </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        isSelected ? "bg-primary border-primary" : "border-border"
-                      }`}>
-                        {isSelected && <Check size={14} className="text-primary-foreground" />}
                       </div>
                     </motion.button>
                   );
