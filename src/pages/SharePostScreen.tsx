@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Image, X, Globe, Users, Camera, ChevronDown, ChevronUp, Sparkles, Loader2, Tag, Plus, HelpCircle, Utensils } from "lucide-react";
+import { ArrowLeft, Image, X, Globe, Users, Camera, ChevronDown, ChevronUp, Sparkles, Loader2, Tag, Plus, HelpCircle, Utensils, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-type Visibility = "public" | "friends" | "private";
+type Visibility = "public" | "friends" | "private" | "direct";
 
 interface LocationState {
   contentType: string;
@@ -33,11 +33,16 @@ interface LocationState {
   images?: string[];
   returnTo?: string;
   routineInstanceId?: string;
+  directShareGroups?: string[];
+  directShareUsers?: string[];
+  directShareGroupNames?: string[];
+  directShareUserNames?: string[];
 }
 
 const visibilityOptions = [
   { value: "public" as Visibility, label: "Public", icon: Globe, description: "Share with everyone" },
   { value: "friends" as Visibility, label: "Friends Only", icon: Users, description: "Share with friends" },
+  { value: "direct" as Visibility, label: "Send Directly", icon: Send, description: "Send to specific people or groups" },
 ];
 
 const SharePostScreen = () => {
@@ -55,6 +60,20 @@ const SharePostScreen = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Direct share state
+  const [directShareGroups, setDirectShareGroups] = useState<string[]>(state?.directShareGroups || []);
+  const [directShareUsers, setDirectShareUsers] = useState<string[]>(state?.directShareUsers || []);
+  const [directShareGroupNames, setDirectShareGroupNames] = useState<string[]>(state?.directShareGroupNames || []);
+  const [directShareUserNames, setDirectShareUserNames] = useState<string[]>(state?.directShareUserNames || []);
+  
+  // Update direct share state when returning from selection screen
+  useEffect(() => {
+    if (state?.directShareGroups) setDirectShareGroups(state.directShareGroups);
+    if (state?.directShareUsers) setDirectShareUsers(state.directShareUsers);
+    if (state?.directShareGroupNames) setDirectShareGroupNames(state.directShareGroupNames);
+    if (state?.directShareUserNames) setDirectShareUserNames(state.directShareUserNames);
+  }, [state?.directShareGroups, state?.directShareUsers, state?.directShareGroupNames, state?.directShareUserNames]);
   
   // Workout-specific state
   const isWorkout = state?.contentType === "workout";
@@ -324,13 +343,44 @@ const SharePostScreen = () => {
         }
       }
 
-      await createPost({
-        content_type: state?.contentType || "post",
-        content_data: contentData,
-        description: description || undefined,
-        images: images,
-        visibility: visibility,
-      });
+      // Create post if sharing publicly or with friends
+      let postId: string | undefined;
+      if (visibility === "public" || visibility === "friends" || (directShareGroups.length > 0 || directShareUsers.length > 0)) {
+        const post = await createPost({
+          content_type: state?.contentType || "post",
+          content_data: contentData,
+          description: description || undefined,
+          images: images,
+          visibility: visibility === "direct" ? "private" : visibility,
+        });
+        postId = post?.id;
+      }
+
+      // Handle direct sharing to groups and users
+      if ((directShareGroups.length > 0 || directShareUsers.length > 0) && postId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Create shared_posts entries for each group
+          for (const groupId of directShareGroups) {
+            await supabase.from("shared_posts").insert({
+              post_id: postId,
+              sender_id: user.id,
+              recipient_group_id: groupId,
+              message: description || null,
+            });
+          }
+          
+          // Create shared_posts entries for each user
+          for (const userId of directShareUsers) {
+            await supabase.from("shared_posts").insert({
+              post_id: postId,
+              sender_id: user.id,
+              recipient_user_id: userId,
+              message: description || null,
+            });
+          }
+        }
+      }
 
       // If this workout was from a routine, mark the instance as completed
       if (state?.routineInstanceId && state?.contentType === "workout") {
@@ -343,11 +393,24 @@ const SharePostScreen = () => {
           .eq("id", state.routineInstanceId);
       }
 
+      // Show appropriate toast message
+      const hasDirectShare = directShareGroups.length > 0 || directShareUsers.length > 0;
+      const hasFeedShare = visibility === "public" || visibility === "friends";
+      
+      let toastMessage = "";
+      if (hasDirectShare && hasFeedShare) {
+        toastMessage = `Shared to feed and sent directly!`;
+      } else if (hasDirectShare) {
+        toastMessage = `Sent to ${directShareGroups.length + directShareUsers.length} recipient(s)!`;
+      } else if (visibility === "private") {
+        toastMessage = `Your ${label.toLowerCase()} has been saved privately.`;
+      } else {
+        toastMessage = `Your ${label.toLowerCase()} is now live.`;
+      }
+
       toast({ 
         title: `${label} shared!`, 
-        description: visibility === "private" 
-          ? `Your ${label.toLowerCase()} has been saved privately.`
-          : `Your ${label.toLowerCase()} is now live.` 
+        description: toastMessage
       });
       navigate("/");
     } catch (error) {
@@ -390,7 +453,8 @@ const SharePostScreen = () => {
     return visibilityOptions.find((opt) => opt.value === visibility) || visibilityOptions[0];
   };
 
-  const showDescription = visibility === "public" || visibility === "friends";
+  const showDescription = visibility === "public" || visibility === "friends" || (directShareGroups.length > 0 || directShareUsers.length > 0);
+  const hasDirectRecipients = directShareGroups.length > 0 || directShareUsers.length > 0;
 
   // Render content details based on content type
   const renderContentDetails = () => {
@@ -1497,8 +1561,35 @@ const SharePostScreen = () => {
         })()}
       </motion.div>
 
+      {/* Direct Share Recipients Indicator */}
+      {hasDirectRecipients && (
+        <div className="fixed bottom-24 left-0 right-0 px-4 z-40">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Send size={16} className="text-blue-500" />
+              <span className="text-sm">
+                Sending to {[...directShareGroupNames, ...directShareUserNames].slice(0, 2).join(", ")}
+                {(directShareGroups.length + directShareUsers.length) > 2 && ` +${(directShareGroups.length + directShareUsers.length) - 2} more`}
+              </span>
+            </div>
+            <button 
+              onClick={() => navigate("/direct-share", {
+                state: {
+                  shareState: { ...state, images, description },
+                  selectedGroups: directShareGroups,
+                  selectedUsers: directShareUsers,
+                },
+              })}
+              className="text-xs text-blue-500 font-medium"
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
+      <div className={`fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent ${hasDirectRecipients ? 'pt-2' : ''}`}>
         <div className="flex gap-3">
           {/* Save Button - Takes 2/3 of space */}
           <Button 
@@ -1522,9 +1613,19 @@ const SharePostScreen = () => {
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
-                className="flex-1 h-14 gap-2 border-border"
+                className={`flex-1 h-14 gap-2 border-border ${hasDirectRecipients ? "border-blue-500/50" : ""}`}
               >
                 {(() => {
+                  if (hasDirectRecipients) {
+                    return (
+                      <>
+                        <Send size={18} className="text-blue-500" />
+                        <span className="hidden sm:inline text-blue-500">
+                          {directShareGroups.length + directShareUsers.length}
+                        </span>
+                      </>
+                    );
+                  }
                   const opt = getCurrentVisibilityOption();
                   const Icon = opt.icon;
                   return (
@@ -1547,39 +1648,72 @@ const SharePostScreen = () => {
                   const Icon = option.icon;
                   const isSelected = visibility === option.value;
                   const isSocial = option.value === "public" || option.value === "friends";
+                  const isDirect = option.value === "direct";
                   
                   const descriptions: Record<Visibility, string> = {
                     public: "Anyone can see this post in the public feed",
                     friends: "Only your friends will see this in their feed",
                     private: "Only you can see this - saved to your library",
+                    direct: "Send directly to specific people or groups",
+                  };
+                  
+                  const handleVisibilityClick = () => {
+                    if (isDirect) {
+                      // Navigate to direct share selection
+                      navigate("/direct-share", {
+                        state: {
+                          shareState: {
+                            ...state,
+                            images,
+                            description,
+                          },
+                          selectedGroups: directShareGroups,
+                          selectedUsers: directShareUsers,
+                        },
+                      });
+                    } else {
+                      setVisibility(option.value);
+                    }
                   };
                   
                   return (
                     <DropdownMenuItem
                       key={option.value}
-                      onClick={() => setVisibility(option.value)}
+                      onClick={handleVisibilityClick}
                       className={`p-3 rounded-xl cursor-pointer transition-all mb-1 last:mb-0 ${
                         isSocial 
                           ? "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border border-primary/20" 
-                          : "hover:bg-muted"
+                          : isDirect
+                            ? "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20 border border-blue-500/20"
+                            : "hover:bg-muted"
                       } ${isSelected ? "ring-2 ring-primary" : ""}`}
                     >
                       <div className="flex items-center gap-3 w-full">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                           isSocial 
                             ? "bg-gradient-to-br from-primary to-accent text-primary-foreground" 
-                            : "bg-muted text-muted-foreground"
+                            : isDirect
+                              ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white"
+                              : "bg-muted text-muted-foreground"
                         }`}>
                           <Icon size={18} />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium">{option.label}</p>
-                            {isSocial && (
-                              <Sparkles size={14} className="text-primary" />
+                            {(isSocial || isDirect) && (
+                              <Sparkles size={14} className={isDirect ? "text-blue-500" : "text-primary"} />
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{descriptions[option.value]}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {descriptions[option.value]}
+                          </p>
+                          {isDirect && (directShareGroups.length > 0 || directShareUsers.length > 0) && (
+                            <p className="text-xs text-blue-500 mt-1">
+                              {[...directShareGroupNames, ...directShareUserNames].slice(0, 3).join(", ")}
+                              {(directShareGroups.length + directShareUsers.length) > 3 && ` +${(directShareGroups.length + directShareUsers.length) - 3} more`}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </DropdownMenuItem>

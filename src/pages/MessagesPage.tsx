@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, MessageCircle, Users, ChevronLeft, Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useGroupChats, useGroupChatMessages } from "@/hooks/useGroupChats";
 import { useDirectMessages, useDMChat } from "@/hooks/useDirectMessages";
+import { useSharedPostsForDM, useSharedPostsForGroup } from "@/hooks/useSharedPosts";
+import { SharedPostBubble } from "@/components/messaging/SharedPostBubble";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,6 +100,7 @@ interface GroupChatViewProps {
 
 const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
   const { messages, members, groupInfo, isLoading, sendMessage } = useGroupChatMessages(groupId);
+  const { sharedPosts } = useSharedPostsForGroup(groupId);
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showMembers, setShowMembers] = useState(false);
@@ -108,6 +111,30 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
       setCurrentUserId(data.user?.id || null);
     });
   });
+
+  // Combine messages and shared posts, sorted by time
+  const combinedItems = useMemo(() => {
+    const items: Array<{
+      type: 'message' | 'shared_post';
+      id: string;
+      created_at: string;
+      data: unknown;
+    }> = [
+      ...messages.map(msg => ({
+        type: 'message' as const,
+        id: msg.id,
+        created_at: msg.created_at,
+        data: msg
+      })),
+      ...sharedPosts.map(sp => ({
+        type: 'shared_post' as const,
+        id: sp.id,
+        created_at: sp.created_at,
+        data: sp
+      }))
+    ];
+    return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [messages, sharedPosts]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -173,14 +200,48 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
         )}
       </header>
 
-      {/* Messages */}
+      {/* Messages and Shared Posts */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {messages.length === 0 ? (
+        {combinedItems.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             No messages yet. Be the first to say hi!
           </div>
         ) : (
-          messages.map((msg) => {
+          combinedItems.map((item) => {
+            if (item.type === 'shared_post') {
+              const sp = item.data as {
+                sender_id: string;
+                message: string | null;
+                created_at: string;
+                post_data?: {
+                  content_type: string;
+                  content_data: unknown;
+                  images: string[] | null;
+                  description: string | null;
+                };
+                sender_profile?: { first_name: string | null; avatar_url: string | null };
+              };
+              return (
+                <SharedPostBubble
+                  key={item.id}
+                  senderName={sp.sender_profile?.first_name || "User"}
+                  senderAvatar={sp.sender_profile?.avatar_url || null}
+                  postData={sp.post_data}
+                  message={sp.message}
+                  createdAt={sp.created_at}
+                  isOwnMessage={sp.sender_id === currentUserId}
+                />
+              );
+            }
+
+            const msg = item.data as {
+              id: string;
+              sender_id: string;
+              content: string;
+              message_type: string;
+              created_at: string;
+              sender?: { first_name: string | null; avatar_url: string | null };
+            };
             const isOwn = msg.sender_id === currentUserId;
             const isSystem = msg.message_type === 'system';
 
@@ -267,8 +328,33 @@ interface DMChatViewProps {
 
 const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
   const { messages, otherUser, currentUserId, isLoading, sendMessage } = useDMChat(otherUserId);
+  const { sharedPosts } = useSharedPostsForDM(otherUserId);
   const [newMessage, setNewMessage] = useState("");
   const navigate = useNavigate();
+
+  // Combine messages and shared posts, sorted by time
+  const combinedItems = useMemo(() => {
+    const items: Array<{
+      type: 'message' | 'shared_post';
+      id: string;
+      created_at: string;
+      data: unknown;
+    }> = [
+      ...messages.map(msg => ({
+        type: 'message' as const,
+        id: msg.id,
+        created_at: msg.created_at,
+        data: msg
+      })),
+      ...sharedPosts.map(sp => ({
+        type: 'shared_post' as const,
+        id: sp.id,
+        created_at: sp.created_at,
+        data: sp
+      }))
+    ];
+    return items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [messages, sharedPosts]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -310,14 +396,47 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
         </div>
       </header>
 
-      {/* Messages */}
+      {/* Messages and Shared Posts */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {messages.length === 0 ? (
+        {combinedItems.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             No messages yet. Say hi! 👋
           </div>
         ) : (
-          messages.map((msg) => {
+          combinedItems.map((item) => {
+            if (item.type === 'shared_post') {
+              const sp = item.data as {
+                sender_id: string;
+                message: string | null;
+                created_at: string;
+                post_data?: {
+                  content_type: string;
+                  content_data: unknown;
+                  images: string[] | null;
+                  description: string | null;
+                };
+                sender_profile?: { first_name: string | null; avatar_url: string | null };
+              };
+              return (
+                <SharedPostBubble
+                  key={item.id}
+                  senderName={sp.sender_profile?.first_name || "User"}
+                  senderAvatar={sp.sender_profile?.avatar_url || null}
+                  postData={sp.post_data}
+                  message={sp.message}
+                  createdAt={sp.created_at}
+                  isOwnMessage={sp.sender_id === currentUserId}
+                />
+              );
+            }
+
+            const msg = item.data as {
+              id: string;
+              sender_id: string;
+              content: string;
+              created_at: string;
+              sender_profile?: { first_name: string | null; avatar_url: string | null };
+            };
             const isOwn = msg.sender_id === currentUserId;
 
             return (

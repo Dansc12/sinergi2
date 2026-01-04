@@ -791,6 +791,51 @@ export type Database = {
           },
         ]
       }
+      shared_posts: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          post_id: string | null
+          recipient_group_id: string | null
+          recipient_user_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          post_id?: string | null
+          recipient_group_id?: string | null
+          recipient_user_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          post_id?: string | null
+          recipient_group_id?: string | null
+          recipient_user_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_posts_recipient_group_id_fkey"
+            columns: ["recipient_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_streaks: {
         Row: {
           created_at: string
