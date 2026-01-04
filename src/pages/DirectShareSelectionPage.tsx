@@ -245,7 +245,7 @@ const DirectShareSelectionPage = () => {
                       className="flex flex-col items-center gap-2"
                     >
                       <div className="relative w-full flex justify-center">
-                        <Avatar className={`w-[calc(100%-8px)] aspect-square h-auto border-2 transition-colors ${isSelected ? "border-primary" : "border-transparent"}`}>
+                        <Avatar className={`w-full aspect-square h-auto border-2 transition-colors ${isSelected ? "border-primary" : "border-transparent"}`}>
                           <AvatarImage src={friend.avatar_url || undefined} />
                           <AvatarFallback className="bg-muted text-2xl">
                             {(friend.first_name || "U").slice(0, 1).toUpperCase()}
