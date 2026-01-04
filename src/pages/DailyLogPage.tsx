@@ -75,14 +75,14 @@ const DailyLogPage = () => {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 glass-elevated px-4 py-4">
+      <header className="sticky top-0 z-40 bg-background border-b border-border/30 px-4 py-2">
         {/* Date Navigation */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <button
             onClick={goToPreviousDay}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} />
           </button>
           
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -97,7 +97,7 @@ const DailyLogPage = () => {
                     animate="center"
                     exit="exit"
                     transition={{ duration: 0.2 }}
-                    className="text-xl font-bold"
+                    className="text-lg font-bold"
                   >
                     {getDateLabel(selectedDate)}
                   </motion.span>
@@ -145,14 +145,14 @@ const DailyLogPage = () => {
           
           <button
             onClick={goToNextDay}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition-colors"
           >
-            <ChevronRight size={24} />
+            <ChevronRight size={20} />
           </button>
         </div>
         
         {/* Segmented Control */}
-        <div className="bg-muted rounded-xl p-1 flex">
+        <div className="bg-muted rounded-lg p-0.5 flex">
           <button
             onClick={() => {
               if (activeTab !== "nutrition") {
@@ -161,9 +161,9 @@ const DailyLogPage = () => {
               }
             }}
             className={cn(
-              "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200",
+              "flex-1 py-1.5 px-4 rounded-md text-sm font-medium transition-all duration-200",
               activeTab === "nutrition"
-                ? "bg-card text-foreground shadow-md"
+                ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -177,9 +177,9 @@ const DailyLogPage = () => {
               }
             }}
             className={cn(
-              "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200",
+              "flex-1 py-1.5 px-4 rounded-md text-sm font-medium transition-all duration-200",
               activeTab === "fitness"
-                ? "bg-card text-foreground shadow-md"
+                ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
