@@ -17,7 +17,7 @@ const NavItem = ({ icon, label, isActive, onClick, showBadge }: NavItemProps) =>
   <button
     onClick={onClick}
     className={cn(
-      "flex flex-col items-center justify-center gap-1 py-2 px-3 transition-all duration-200 min-w-[60px]",
+      "flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 transition-all duration-200 min-w-[60px]",
       isActive 
         ? "text-primary" 
         : "text-muted-foreground hover:text-foreground"
@@ -54,7 +54,7 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/30 safe-area-bottom">
-      <div className="grid grid-cols-5 items-center pt-1 max-w-md mx-auto">
+      <div className="grid grid-cols-5 items-center max-w-md mx-auto">
         {/* First two nav items */}
         {navItems.slice(0, 2).map((item) => (
           <NavItem
