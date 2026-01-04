@@ -132,7 +132,7 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
   return (
     <div className="flex flex-col h-[100svh]">
       {/* Chat Header */}
-      <header className="sticky top-0 z-40 glass-elevated px-4 py-3">
+      <header className="sticky top-0 z-40 bg-background border-b border-border/30 px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 -ml-2 hover:bg-muted rounded-lg">
             <ChevronLeft size={24} />
@@ -234,7 +234,7 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/30 safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background safe-area-bottom">
         <div className="flex items-center gap-2 px-4 py-2">
           <input
             type="text"
@@ -287,7 +287,7 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
   return (
     <div className="flex flex-col h-[100svh]">
       {/* Chat Header */}
-      <header className="sticky top-0 z-40 glass-elevated px-4 py-3">
+      <header className="sticky top-0 z-40 bg-background border-b border-border/30 px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 -ml-2 hover:bg-muted rounded-lg">
             <ChevronLeft size={24} />
@@ -349,7 +349,7 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/30 safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background safe-area-bottom">
         <div className="flex items-center gap-2 px-4 py-2">
           <input
             type="text"
