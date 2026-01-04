@@ -53,7 +53,7 @@ export const BottomNav = ({ onCreateClick }: BottomNavProps) => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/30 safe-area-bottom">
       <div className="grid grid-cols-5 items-center pt-1 max-w-md mx-auto">
         {/* First two nav items */}
         {navItems.slice(0, 2).map((item) => (
