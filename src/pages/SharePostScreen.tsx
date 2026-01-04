@@ -1590,10 +1590,10 @@ const SharePostScreen = () => {
 
       {/* Fixed Bottom Action Bar */}
       <div className={`fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent ${hasDirectRecipients ? 'pt-2' : ''}`}>
-        <div className="flex gap-3">
-          {/* Save Button - Takes 2/3 of space */}
+        <div className="flex gap-3 items-center">
+          {/* Send Button - Small circle on left */}
           <Button 
-            className="flex-[2] glow-primary h-14 text-lg" 
+            className="w-14 h-14 rounded-full p-0 glow-primary flex-shrink-0" 
             onClick={handleSubmit}
             disabled={
               isSubmitting || 
@@ -1603,12 +1603,13 @@ const SharePostScreen = () => {
             }
           >
             {isSubmitting ? (
-              <Loader2 className="animate-spin mr-2" size={20} />
-            ) : null}
-            {visibility === "private" ? "Save" : "Share"}
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <Send size={20} />
+            )}
           </Button>
           
-          {/* Visibility Dropdown - Takes 1/3 of space */}
+          {/* Visibility Dropdown - Fills remaining space */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -1620,8 +1621,8 @@ const SharePostScreen = () => {
                     return (
                       <>
                         <Send size={18} className="text-blue-500" />
-                        <span className="hidden sm:inline text-blue-500">
-                          {directShareGroups.length + directShareUsers.length}
+                        <span className="text-blue-500">
+                          Sending to {directShareGroups.length + directShareUsers.length}
                         </span>
                       </>
                     );
@@ -1631,7 +1632,7 @@ const SharePostScreen = () => {
                   return (
                     <>
                       <Icon size={18} />
-                      <span className="hidden sm:inline">{opt.label}</span>
+                      <span>{opt.label}</span>
                     </>
                   );
                 })()}
