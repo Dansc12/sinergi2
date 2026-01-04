@@ -150,9 +150,9 @@ const DailyLogPage = () => {
             <ChevronRight size={20} />
           </button>
         </div>
-        
+
         {/* Segmented Control */}
-        <div className="flex">
+        <div className="flex -mt-1">
           <button
             onClick={() => {
               if (activeTab !== "nutrition") {
@@ -172,7 +172,8 @@ const DailyLogPage = () => {
             </span>
             {activeTab === "nutrition" && (
               <>
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-primary/40 blur-md rounded-full" />
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-20 h-5 bg-primary/50 blur-lg rounded-full" />
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-14 h-2 bg-primary/60 blur-sm rounded-full" />
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
               </>
             )}
@@ -196,7 +197,8 @@ const DailyLogPage = () => {
             </span>
             {activeTab === "fitness" && (
               <>
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-3 bg-primary/40 blur-md rounded-full" />
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-20 h-5 bg-primary/50 blur-lg rounded-full" />
+                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-14 h-2 bg-primary/60 blur-sm rounded-full" />
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-px bg-border/60 rounded-full" />
               </>
             )}
