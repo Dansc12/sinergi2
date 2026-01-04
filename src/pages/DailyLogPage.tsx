@@ -97,7 +97,7 @@ const DailyLogPage = () => {
                     animate="center"
                     exit="exit"
                     transition={{ duration: 0.2 }}
-                    className="text-lg font-bold"
+                    className="text-sm font-medium"
                   >
                     {getDateLabel(selectedDate)}
                   </motion.span>
