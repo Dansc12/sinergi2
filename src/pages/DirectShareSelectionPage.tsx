@@ -187,7 +187,7 @@ const DirectShareSelectionPage = () => {
                       className="flex flex-col items-center gap-2 flex-shrink-0"
                     >
                       <div className="relative">
-                        <div className={`w-[4.5rem] h-[4.5rem] rounded-xl overflow-hidden border-2 transition-colors ${isSelected ? "border-primary" : "border-border"}`}>
+                        <div className={`w-28 h-28 rounded-xl overflow-hidden border-2 transition-colors ${isSelected ? "border-primary" : "border-border"}`}>
                           {group.avatar_url ? (
                             <img 
                               src={group.avatar_url} 
@@ -212,7 +212,7 @@ const DirectShareSelectionPage = () => {
                           </motion.div>
                         )}
                       </div>
-                      <span className="text-xs text-center max-w-[80px] truncate font-medium">
+                      <span className="text-xs text-center max-w-28 truncate font-medium">
                         {group.name}
                       </span>
                     </motion.button>
@@ -261,15 +261,13 @@ const DirectShareSelectionPage = () => {
                           </motion.div>
                         )}
                       </div>
-                      <div className="text-center w-full">
-                        <p className="text-sm font-medium truncate px-1">
-                          {friend.first_name || "User"}
+                      <div className="w-full overflow-hidden">
+                        <p className="text-xs text-center whitespace-nowrap overflow-hidden" style={{ maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' }}>
+                          <span className="font-medium">{friend.first_name || "User"}</span>
+                          {friend.username && (
+                            <span className="text-muted-foreground"> • @{friend.username}</span>
+                          )}
                         </p>
-                        {friend.username && (
-                          <p className="text-xs text-muted-foreground truncate px-1">
-                            @{friend.username}
-                          </p>
-                        )}
                       </div>
                     </motion.button>
                   );
