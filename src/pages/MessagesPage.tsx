@@ -234,8 +234,8 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="sticky bottom-0 bg-background px-4 py-3 safe-area-bottom">
-        <div className="flex items-center gap-2">
+      <div className="sticky bottom-0 bg-background px-4 pt-3 pb-3 safe-area-bottom">
+        <div className="flex items-center justify-center gap-2">
           <input
             type="text"
             value={newMessage}
@@ -246,7 +246,7 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
           />
           <Button 
             size="icon" 
-            className="rounded-full w-10 h-10 shrink-0"
+            className="rounded-full w-10 h-10 shrink-0 flex items-center justify-center"
             onClick={handleSend}
             disabled={!newMessage.trim()}
           >
@@ -347,8 +347,8 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
       </div>
 
       {/* Message Input */}
-      <div className="sticky bottom-0 bg-background px-4 py-3 safe-area-bottom">
-        <div className="flex items-center gap-2">
+      <div className="sticky bottom-0 bg-background px-4 pt-3 pb-3 safe-area-bottom">
+        <div className="flex items-center justify-center gap-2">
           <input
             type="text"
             value={newMessage}
@@ -359,7 +359,7 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
           />
           <Button 
             size="icon" 
-            className="rounded-full w-10 h-10 shrink-0"
+            className="rounded-full w-10 h-10 shrink-0 flex items-center justify-center"
             onClick={handleSend}
             disabled={!newMessage.trim()}
           >
