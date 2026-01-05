@@ -140,7 +140,7 @@ const DirectShareSelectionPage = () => {
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-background">
         {/* Title Row */}
-        <div className="flex items-center justify-between p-4 border-b border-border/30">
+        <div className="flex items-center justify-between p-4 pb-2">
           <button onClick={handleBack} className="p-2 -ml-2">
             <ArrowLeft size={24} />
           </button>
@@ -156,7 +156,7 @@ const DirectShareSelectionPage = () => {
         </div>
 
         {/* Search */}
-        <div className="p-4 pb-2">
+        <div className="px-4 pb-4">
           <Input
             placeholder="Search groups and friends..."
             value={searchQuery}
@@ -164,6 +164,7 @@ const DirectShareSelectionPage = () => {
             className="bg-card"
           />
         </div>
+        <div className="h-px bg-border/30" />
       </div>
 
       {isLoading ? (
@@ -190,7 +191,7 @@ const DirectShareSelectionPage = () => {
                       className="flex flex-col items-center gap-2 flex-shrink-0"
                     >
                       <div className="relative">
-                        <div className={`w-28 h-28 rounded-xl overflow-hidden border-2 transition-colors ${isSelected ? "border-primary" : "border-border"}`}>
+                        <div className={`w-40 h-40 rounded-xl overflow-hidden border-2 transition-colors ${isSelected ? "border-primary" : "border-border"}`}>
                           {group.avatar_url ? (
                             <img 
                               src={group.avatar_url} 
@@ -215,7 +216,7 @@ const DirectShareSelectionPage = () => {
                           </motion.div>
                         )}
                       </div>
-                      <span className="text-xs text-center max-w-28 truncate font-medium">
+                      <span className="text-xs text-center max-w-40 truncate font-medium">
                         {group.name}
                       </span>
                     </motion.button>
