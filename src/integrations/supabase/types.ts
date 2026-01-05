@@ -562,20 +562,30 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           biological_sex: string | null
+          birth_month: number | null
+          birth_year: number | null
           birthdate: string | null
+          bring_you_here: string[] | null
           created_at: string
           current_weight: number | null
           daily_calorie_target: number | null
+          display_name: string | null
           exercise_frequency: string | null
           first_name: string | null
           goal_weight: number | null
+          goals_setup_completed: boolean | null
           height_feet: number | null
           height_inches: number | null
+          height_value: number | null
           hobbies: string[] | null
           id: string
           last_name: string | null
+          macro_targets: Json | null
           onboarding_completed: boolean | null
+          pace: string | null
           primary_goal: string | null
+          tdee_targets_enabled: boolean | null
+          units_system: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -587,20 +597,30 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           biological_sex?: string | null
+          birth_month?: number | null
+          birth_year?: number | null
           birthdate?: string | null
+          bring_you_here?: string[] | null
           created_at?: string
           current_weight?: number | null
           daily_calorie_target?: number | null
+          display_name?: string | null
           exercise_frequency?: string | null
           first_name?: string | null
           goal_weight?: number | null
+          goals_setup_completed?: boolean | null
           height_feet?: number | null
           height_inches?: number | null
+          height_value?: number | null
           hobbies?: string[] | null
           id?: string
           last_name?: string | null
+          macro_targets?: Json | null
           onboarding_completed?: boolean | null
+          pace?: string | null
           primary_goal?: string | null
+          tdee_targets_enabled?: boolean | null
+          units_system?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -612,20 +632,30 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           biological_sex?: string | null
+          birth_month?: number | null
+          birth_year?: number | null
           birthdate?: string | null
+          bring_you_here?: string[] | null
           created_at?: string
           current_weight?: number | null
           daily_calorie_target?: number | null
+          display_name?: string | null
           exercise_frequency?: string | null
           first_name?: string | null
           goal_weight?: number | null
+          goals_setup_completed?: boolean | null
           height_feet?: number | null
           height_inches?: number | null
+          height_value?: number | null
           hobbies?: string[] | null
           id?: string
           last_name?: string | null
+          macro_targets?: Json | null
           onboarding_completed?: boolean | null
+          pace?: string | null
           primary_goal?: string | null
+          tdee_targets_enabled?: boolean | null
+          units_system?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null

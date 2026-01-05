@@ -6,6 +6,7 @@ import { format, isToday, subDays } from "date-fns";
 interface UserProfile {
   first_name: string | null;
   last_name: string | null;
+  display_name: string | null;
   avatar_url: string | null;
   onboarding_completed: boolean | null;
 }
@@ -57,7 +58,7 @@ export const useUserData = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("first_name, last_name, avatar_url, onboarding_completed")
+        .select("first_name, last_name, display_name, avatar_url, onboarding_completed")
         .eq("user_id", user.id)
         .maybeSingle();
 
