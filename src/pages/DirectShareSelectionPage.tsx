@@ -157,7 +157,6 @@ const DirectShareSelectionPage = () => {
           <h1 className="text-lg font-semibold">Share With</h1>
           <Button 
             onClick={handleFinish}
-            disabled={totalSelected === 0}
             size="sm"
             className="glow-primary"
           >
