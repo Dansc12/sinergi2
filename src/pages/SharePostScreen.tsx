@@ -1655,16 +1655,16 @@ const SharePostScreen = () => {
                       friends: "Only your friends will see this",
                     };
                     return (
-                      <div className="flex flex-col items-start text-left w-full">
-                        <div className="flex items-center gap-2">
-                          <Icon size={18} />
+                      <div className="flex items-center gap-2 w-full">
+                        <Icon size={18} className="flex-shrink-0" />
+                        <div className="flex flex-col items-start text-left">
                           <span>{opt.label}</span>
+                          {(opt.value === "public" || opt.value === "friends") && (
+                            <span className="text-xs text-muted-foreground">
+                              {descriptions[opt.value]}
+                            </span>
+                          )}
                         </div>
-                        {(opt.value === "public" || opt.value === "friends") && (
-                          <span className="text-xs text-muted-foreground ml-6">
-                            {descriptions[opt.value]}
-                          </span>
-                        )}
                       </div>
                     );
                   }
