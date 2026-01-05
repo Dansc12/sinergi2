@@ -38,6 +38,7 @@ const HIDDEN_NAV_ROUTES = [
   "/profile",
   "/user",
   "/diary",
+  "/direct-share",
 ];
 
 export const AppLayout = ({ children }: AppLayoutProps) => {

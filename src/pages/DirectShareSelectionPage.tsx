@@ -137,30 +137,33 @@ const DirectShareSelectionPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border/30 bg-background">
-        <button onClick={handleBack} className="p-2 -ml-2">
-          <ArrowLeft size={24} />
-        </button>
-        <h1 className="text-lg font-semibold">Share With</h1>
-        <Button 
-          onClick={handleFinish}
-          disabled={totalSelected === 0}
-          size="sm"
-          className="glow-primary"
-        >
-          Done {totalSelected > 0 && `(${totalSelected})`}
-        </Button>
-      </div>
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background">
+        {/* Title Row */}
+        <div className="flex items-center justify-between p-4 border-b border-border/30">
+          <button onClick={handleBack} className="p-2 -ml-2">
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-lg font-semibold">Share With</h1>
+          <Button 
+            onClick={handleFinish}
+            disabled={totalSelected === 0}
+            size="sm"
+            className="glow-primary"
+          >
+            Done {totalSelected > 0 && `(${totalSelected})`}
+          </Button>
+        </div>
 
-      {/* Search */}
-      <div className="p-4">
-        <Input
-          placeholder="Search groups and friends..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-card"
-        />
+        {/* Search */}
+        <div className="p-4 pb-2">
+          <Input
+            placeholder="Search groups and friends..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-card"
+          />
+        </div>
       </div>
 
       {isLoading ? (
