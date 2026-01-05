@@ -1704,7 +1704,8 @@ const SharePostScreen = () => {
                         },
                       });
                     } else {
-                      setVisibility(option.value);
+                      // Toggle visibility - deselect if already selected
+                      setVisibility(visibility === option.value ? null : option.value);
                     }
                   };
                   

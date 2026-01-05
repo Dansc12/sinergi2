@@ -119,14 +119,14 @@ const DirectShareSelectionPage = () => {
   };
 
   const handleBack = () => {
-    // Save current selections when going back (same as Done)
+    // Discard changes and go back with original selections
     navigate("/share", {
       state: {
         ...state?.shareState,
-        directShareGroups: selectedGroups,
-        directShareUsers: selectedUsers,
-        directShareGroupNames: groups.filter(g => selectedGroups.includes(g.id)).map(g => g.name),
-        directShareUserNames: friends.filter(f => selectedUsers.includes(f.user_id)).map(f => f.first_name || "User"),
+        directShareGroups: state?.selectedGroups || [],
+        directShareUsers: state?.selectedUsers || [],
+        directShareGroupNames: groups.filter(g => (state?.selectedGroups || []).includes(g.id)).map(g => g.name),
+        directShareUserNames: friends.filter(f => (state?.selectedUsers || []).includes(f.user_id)).map(f => f.first_name || "User"),
       },
     });
   };
