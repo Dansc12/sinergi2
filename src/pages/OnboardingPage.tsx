@@ -5,6 +5,7 @@ import { WhatBringsYouHereScreen } from '@/components/onboarding/WhatBringsYouHe
 import { NameUsernameScreen } from '@/components/onboarding/NameUsernameScreen';
 import { ProfilePhotoBioScreen } from '@/components/onboarding/ProfilePhotoBioScreen';
 import { UnitsAgeScreen } from '@/components/onboarding/UnitsAgeScreen';
+import { HobbiesScreen } from '@/components/onboarding/HobbiesScreen';
 import { JoinGroupsScreen } from '@/components/onboarding/JoinGroupsScreen';
 import { FollowPeopleScreen } from '@/components/onboarding/FollowPeopleScreen';
 import { ChooseSetupPathScreen } from '@/components/onboarding/ChooseSetupPathScreen';
@@ -78,6 +79,8 @@ function OnboardingFlow() {
         return <ProfilePhotoBioScreen />;
       case 'units_age':
         return <UnitsAgeScreen />;
+      case 'hobbies':
+        return <HobbiesScreen />;
       case 'join_groups':
         return <JoinGroupsScreen />;
       case 'follow_people':

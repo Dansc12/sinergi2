@@ -71,7 +71,7 @@ export function UnitsAgeScreen() {
         })
         .eq('user_id', user.id);
     }
-    setCurrentStep('join_groups');
+    setCurrentStep('hobbies');
   };
 
   const isValid = data.birthMonth > 0 && data.birthYear > 0;

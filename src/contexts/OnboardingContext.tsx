@@ -52,6 +52,7 @@ export type OnboardingStep =
   | 'name_username'
   | 'profile_photo_bio'
   | 'units_age'
+  | 'hobbies'
   | 'join_groups'
   | 'follow_people'
   | 'choose_setup_path'
@@ -108,6 +109,7 @@ const CORE_STEPS: OnboardingStep[] = [
   'name_username',
   'profile_photo_bio',
   'units_age',
+  'hobbies',
   'join_groups',
   'follow_people',
   'choose_setup_path',

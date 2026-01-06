@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingProgress } from './OnboardingProgress';
@@ -16,12 +16,25 @@ interface SuggestedUser {
   bio: string | null;
 }
 
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export function FollowPeopleScreen() {
   const { goBack, setCurrentStep } = useOnboarding();
   const [users, setUsers] = useState<SuggestedUser[]>([]);
   const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [followingUser, setFollowingUser] = useState<string | null>(null);
+
+  // Randomize users order once on mount
+  const shuffledUsers = useMemo(() => shuffleArray(users), [users]);
 
   useEffect(() => {
     fetchSuggestedUsers();
@@ -32,13 +45,12 @@ export function FollowPeopleScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch other users (excluding current user)
+      // Fetch ALL other users (no limit)
       const { data: usersData, error } = await supabase
         .from('profiles')
         .select('user_id, display_name, username, avatar_url, bio')
         .neq('user_id', user.id)
-        .eq('onboarding_completed', true)
-        .limit(10);
+        .eq('onboarding_completed', true);
 
       if (error) throw error;
       setUsers(usersData || []);
@@ -129,11 +141,11 @@ export function FollowPeopleScreen() {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex flex-col min-h-screen"
+      className="flex flex-col h-screen"
     >
       <OnboardingProgress />
       
-      <div className="flex-1 px-6 py-8">
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-36">
         <button 
           onClick={goBack}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
@@ -153,14 +165,14 @@ export function FollowPeopleScreen() {
               <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
             ))}
           </div>
-        ) : users.length === 0 ? (
+        ) : shuffledUsers.length === 0 ? (
           <div className="text-center py-12">
             <User size={48} className="mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No users to suggest yet. Be one of the first!</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {users.map((user, index) => {
+            {shuffledUsers.map((user, index) => {
               const isFollowed = followedUsers.has(user.user_id);
               const isFollowing = followingUser === user.user_id;
               const displayName = user.display_name || user.username || 'User';
@@ -170,7 +182,7 @@ export function FollowPeopleScreen() {
                   key={user.user_id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
                   className="p-3 rounded-xl bg-card border border-border flex items-center gap-3"
                 >
                   <div className="w-12 h-12 rounded-full bg-muted overflow-hidden shrink-0">
@@ -221,22 +233,25 @@ export function FollowPeopleScreen() {
         )}
       </div>
 
-      <div className="px-6 pb-8 space-y-3">
-        <Button 
-          size="xl" 
-          className="w-full"
-          onClick={handleContinue}
-        >
-          Continue
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="lg" 
-          className="w-full"
-          onClick={handleSkip}
-        >
-          Skip for now
-        </Button>
+      {/* Sticky buttons */}
+      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background to-transparent">
+        <div className="space-y-3">
+          <Button 
+            size="xl" 
+            className="w-full"
+            onClick={handleContinue}
+          >
+            Continue
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="lg" 
+            className="w-full"
+            onClick={handleSkip}
+          >
+            Skip for now
+          </Button>
+        </div>
       </div>
     </motion.div>
   );

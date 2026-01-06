@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingProgress } from './OnboardingProgress';
@@ -15,6 +15,16 @@ interface SystemGroup {
   avatar_url: string | null;
 }
 
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export function JoinGroupsScreen() {
   const { data, updateData, goBack, setCurrentStep } = useOnboarding();
   const [groups, setGroups] = useState<SystemGroup[]>([]);
@@ -22,19 +32,21 @@ export function JoinGroupsScreen() {
   const [loading, setLoading] = useState(true);
   const [joiningGroup, setJoiningGroup] = useState<string | null>(null);
 
+  // Randomize groups order once on mount
+  const shuffledGroups = useMemo(() => shuffleArray(groups), [groups]);
+
   useEffect(() => {
     fetchGroups();
   }, []);
 
   const fetchGroups = async () => {
     try {
-      // Fetch the 3 default system groups
+      // Fetch ALL public system groups (no limit)
       const { data: groupsData, error } = await supabase
         .from('groups')
         .select('id, name, description, avatar_url')
         .eq('is_system', true)
-        .eq('visibility', 'public')
-        .limit(3);
+        .eq('visibility', 'public');
 
       if (error) throw error;
       setGroups(groupsData || []);
@@ -110,11 +122,11 @@ export function JoinGroupsScreen() {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex flex-col min-h-screen"
+      className="flex flex-col h-screen"
     >
       <OnboardingProgress />
       
-      <div className="flex-1 px-6 py-8">
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-36">
         <button 
           onClick={goBack}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
@@ -136,7 +148,7 @@ export function JoinGroupsScreen() {
           </div>
         ) : (
           <div className="space-y-4">
-            {groups.map((group, index) => {
+            {shuffledGroups.map((group, index) => {
               const isJoined = joinedGroups.has(group.id);
               const isJoining = joiningGroup === group.id;
               
@@ -145,7 +157,7 @@ export function JoinGroupsScreen() {
                   key={group.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.05 }}
                   className={cn(
                     "p-4 rounded-2xl border-2 transition-all",
                     isJoined ? "border-primary bg-primary/5" : "border-border bg-card"
@@ -193,22 +205,25 @@ export function JoinGroupsScreen() {
         )}
       </div>
 
-      <div className="px-6 pb-8 space-y-3">
-        <Button 
-          size="xl" 
-          className="w-full"
-          onClick={handleContinue}
-        >
-          Continue
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="lg" 
-          className="w-full"
-          onClick={handleSkip}
-        >
-          Skip for now
-        </Button>
+      {/* Sticky buttons */}
+      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background to-transparent">
+        <div className="space-y-3">
+          <Button 
+            size="xl" 
+            className="w-full"
+            onClick={handleContinue}
+          >
+            Continue
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="lg" 
+            className="w-full"
+            onClick={handleSkip}
+          >
+            Skip for now
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
