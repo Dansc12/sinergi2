@@ -15,7 +15,7 @@ const goals = [
 ] as const;
 
 export function PrimaryGoalScreen() {
-  const { data, updateData, goBack, setCurrentStep } = useOnboarding();
+  const { data, updateData, goBack, setCurrentStep, isEditingFromTargets, setIsEditingFromTargets } = useOnboarding();
 
   const handleSelect = (goalId: typeof goals[number]['id']) => {
     updateData({ goalType: goalId });
@@ -30,7 +30,13 @@ export function PrimaryGoalScreen() {
           .update({ primary_goal: data.goalType })
           .eq('user_id', user.id);
       }
-      setCurrentStep('sex_height');
+      
+      if (isEditingFromTargets) {
+        setIsEditingFromTargets(false);
+        setCurrentStep('calculate_targets');
+      } else {
+        setCurrentStep('sex_height');
+      }
     }
   };
 
@@ -44,13 +50,15 @@ export function PrimaryGoalScreen() {
       <OnboardingProgress />
       
       <div className="flex-1 px-6 py-8">
-        <button 
-          onClick={goBack}
-          className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span>Back</span>
-        </button>
+        {!isEditingFromTargets && (
+          <button 
+            onClick={goBack}
+            className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
+          >
+            <ChevronLeft size={20} />
+            <span>Back</span>
+          </button>
+        )}
 
         <h1 className="text-2xl font-bold mb-2">What's your main goal?</h1>
         <p className="text-muted-foreground mb-8">

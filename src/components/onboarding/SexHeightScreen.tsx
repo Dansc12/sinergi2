@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 export function SexHeightScreen() {
-  const { data, updateData, goBack, setCurrentStep } = useOnboarding();
+  const { data, updateData, goBack, setCurrentStep, isEditingFromTargets, setIsEditingFromTargets } = useOnboarding();
 
   const handleContinue = async () => {
     if (isValid) {
@@ -23,7 +23,13 @@ export function SexHeightScreen() {
           })
           .eq('user_id', user.id);
       }
-      setCurrentStep('current_weight');
+      
+      if (isEditingFromTargets) {
+        setIsEditingFromTargets(false);
+        setCurrentStep('calculate_targets');
+      } else {
+        setCurrentStep('current_weight');
+      }
     }
   };
 
@@ -39,13 +45,15 @@ export function SexHeightScreen() {
       <OnboardingProgress />
       
       <div className="flex-1 px-6 py-8">
-        <button 
-          onClick={goBack}
-          className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span>Back</span>
-        </button>
+        {!isEditingFromTargets && (
+          <button 
+            onClick={goBack}
+            className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
+          >
+            <ChevronLeft size={20} />
+            <span>Back</span>
+          </button>
+        )}
 
         <h1 className="text-2xl font-bold mb-2">A bit more about you</h1>
         <p className="text-muted-foreground mb-8">

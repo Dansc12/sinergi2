@@ -189,14 +189,6 @@ export function CalculateTargetsScreen() {
           </div>
         ) : targets ? (
           <div className="w-full max-w-sm">
-            <button 
-              onClick={goBack}
-              className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
-            >
-              <ChevronLeft size={20} />
-              <span>Back</span>
-            </button>
-
             <div className="text-center mb-8">
               <motion.div
                 initial={{ scale: 0 }}

@@ -49,7 +49,7 @@ const paceOptions: PaceOption[] = [
 ];
 
 export function PaceScreen() {
-  const { data, updateData, goBack, setCurrentStep } = useOnboarding();
+  const { data, updateData, goBack, setCurrentStep, isEditingFromTargets, setIsEditingFromTargets } = useOnboarding();
 
   // Determine if user is gaining weight (goal > current)
   const isGaining = data.goalWeight > data.currentWeight;
@@ -61,6 +61,10 @@ export function PaceScreen() {
         .from('profiles')
         .update({ pace: data.pace || 'standard' })
         .eq('user_id', user.id);
+    }
+    
+    if (isEditingFromTargets) {
+      setIsEditingFromTargets(false);
     }
     setCurrentStep('calculate_targets');
   };
@@ -75,13 +79,15 @@ export function PaceScreen() {
       <OnboardingProgress />
       
       <div className="flex-1 px-6 py-8">
-        <button 
-          onClick={goBack}
-          className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span>Back</span>
-        </button>
+        {!isEditingFromTargets && (
+          <button 
+            onClick={goBack}
+            className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
+          >
+            <ChevronLeft size={20} />
+            <span>Back</span>
+          </button>
+        )}
 
         <h1 className="text-2xl font-bold mb-2">What pace works for you?</h1>
         <p className="text-muted-foreground mb-8">

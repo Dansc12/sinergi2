@@ -75,6 +75,8 @@ interface OnboardingContextType {
   goBack: () => void;
   goNext: () => void;
   completeOnboarding: () => Promise<void>;
+  isEditingFromTargets: boolean;
+  setIsEditingFromTargets: (value: boolean) => void;
 }
 
 const defaultData: OnboardingData = {
@@ -128,6 +130,7 @@ const TARGETS_STEPS: OnboardingStep[] = [
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(defaultData);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('what_brings_you_here');
+  const [isEditingFromTargets, setIsEditingFromTargets] = useState(false);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -295,6 +298,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       goBack,
       goNext,
       completeOnboarding,
+      isEditingFromTargets,
+      setIsEditingFromTargets,
     }}>
       {children}
     </OnboardingContext.Provider>

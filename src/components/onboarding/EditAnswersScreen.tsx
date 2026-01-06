@@ -24,7 +24,7 @@ const sexLabels: Record<string, string> = {
 };
 
 export function EditAnswersScreen() {
-  const { data, setCurrentStep } = useOnboarding();
+  const { data, setCurrentStep, setIsEditingFromTargets } = useOnboarding();
 
   const formatHeight = () => {
     if (!data.heightValue) return 'Not set';
@@ -81,6 +81,7 @@ export function EditAnswersScreen() {
   ];
 
   const handleEdit = (step: typeof answers[number]['step']) => {
+    setIsEditingFromTargets(true);
     setCurrentStep(step);
   };
 
