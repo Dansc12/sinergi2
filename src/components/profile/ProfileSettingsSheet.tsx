@@ -21,8 +21,7 @@ interface ProfileSettingsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: {
-    first_name: string | null;
-    last_name: string | null;
+    display_name: string | null;
     bio: string | null;
     avatar_url: string | null;
     hobbies: string[] | null;
@@ -36,8 +35,7 @@ export const ProfileSettingsSheet = ({
   profile,
   onSave 
 }: ProfileSettingsSheetProps) => {
-  const [firstName, setFirstName] = useState(profile?.first_name || "");
-  const [lastName, setLastName] = useState(profile?.last_name || "");
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>(profile?.hobbies || []);
@@ -48,8 +46,7 @@ export const ProfileSettingsSheet = ({
   // Reset form when sheet opens
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
-      setFirstName(profile?.first_name || "");
-      setLastName(profile?.last_name || "");
+      setDisplayName(profile?.display_name || "");
       setBio(profile?.bio || "");
       setAvatarUrl(profile?.avatar_url || "");
       setSelectedHobbies(profile?.hobbies || []);
@@ -113,9 +110,14 @@ export const ProfileSettingsSheet = ({
     );
   };
 
+  // Condense consecutive line breaks (like Instagram)
+  const condenseBio = (text: string): string => {
+    return text.replace(/\n{2,}/g, '\n').trim();
+  };
+
   const handleSave = async () => {
-    if (!firstName.trim()) {
-      toast.error("Name is required");
+    if (!displayName.trim()) {
+      toast.error("Display name is required");
       return;
     }
 
@@ -127,9 +129,8 @@ export const ProfileSettingsSheet = ({
       const { error } = await supabase
         .from('profiles')
         .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim() || null,
-          bio: bio.trim() || null,
+          display_name: displayName.trim(),
+          bio: condenseBio(bio) || null,
           avatar_url: avatarUrl || null,
           hobbies: selectedHobbies.length > 0 ? selectedHobbies : null,
         })
@@ -187,27 +188,16 @@ export const ProfileSettingsSheet = ({
             <p className="text-xs text-muted-foreground mt-2">Tap to change photo</p>
           </div>
 
-          {/* Name Fields */}
+          {/* Display Name */}
           <div className="space-y-2">
-            <Label>Name</Label>
-            <div className="flex gap-3">
-              <Input
-                id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="First name"
-                maxLength={50}
-                className="flex-1"
-              />
-              <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Last name (optional)"
-                maxLength={50}
-                className="flex-1"
-              />
-            </div>
+            <Label htmlFor="displayName">Display Name</Label>
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name"
+              maxLength={50}
+            />
           </div>
 
           {/* Bio */}
@@ -251,7 +241,7 @@ export const ProfileSettingsSheet = ({
         <div className="pt-4 border-t border-border">
           <Button 
             onClick={handleSave} 
-            disabled={isSaving || !firstName.trim()}
+            disabled={isSaving || !displayName.trim()}
             className="w-full"
           >
             {isSaving ? (

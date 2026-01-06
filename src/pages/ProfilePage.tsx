@@ -8,8 +8,7 @@ import { ProfilePostsGrid } from "@/components/profile/ProfilePostsGrid";
 import { ProfileSettingsSheet } from "@/components/profile/ProfileSettingsSheet";
 
 interface UserProfile {
-  first_name: string | null;
-  last_name: string | null;
+  display_name: string | null;
   username: string | null;
   bio: string | null;
   avatar_url: string | null;
@@ -51,9 +50,19 @@ const ProfilePage = () => {
       // Fetch profile data
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('first_name, last_name, username, bio, avatar_url, hobbies')
+        .select('display_name, first_name, last_name, username, bio, avatar_url, hobbies')
         .eq('user_id', user.id)
         .single();
+
+      // Auto-populate display_name from first/last name if not set
+      if (profileData && !profileData.display_name && (profileData.first_name || profileData.last_name)) {
+        const autoDisplayName = [profileData.first_name, profileData.last_name].filter(Boolean).join(' ');
+        await supabase
+          .from('profiles')
+          .update({ display_name: autoDisplayName })
+          .eq('user_id', user.id);
+        profileData.display_name = autoDisplayName;
+      }
 
       if (profileData) {
         setProfile(profileData);
@@ -129,9 +138,7 @@ const ProfilePage = () => {
     );
   }
 
-  const displayName = profile?.last_name 
-    ? `${profile.first_name} ${profile.last_name}` 
-    : (profile?.first_name || "Your Name");
+  const displayName = profile?.display_name || "Your Name";
   const userBio = profile?.bio || "Add a bio to tell others about yourself";
   const avatarUrl = profile?.avatar_url;
   const interests = profile?.hobbies || [];
@@ -216,7 +223,7 @@ const ProfilePage = () => {
           </div>
 
           {/* Bio */}
-          <p className="text-muted-foreground text-sm mb-4">{userBio}</p>
+          <p className="text-muted-foreground text-sm mb-4 whitespace-pre-line">{userBio}</p>
         </div>
 
         {/* Posts Grid */}
