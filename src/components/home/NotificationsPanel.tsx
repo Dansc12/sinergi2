@@ -24,6 +24,7 @@ const getNotificationIcon = (type: string) => {
       return <UserPlus size={16} className="text-green-500" />;
     case 'group_invite_request':
     case 'group_invite_accepted':
+    case 'group_member_joined':
       return <Users size={16} className="text-amber-500" />;
     default:
       return <Bell size={16} className="text-muted-foreground" />;
@@ -135,6 +136,7 @@ function NotificationItem({
 }) {
   const isFriendRequest = notification.type === 'friend_request';
   const isGroupInviteRequest = notification.type === 'group_invite_request';
+  const isGroupMemberJoined = notification.type === 'group_member_joined';
   
   // Extract name from message for friend requests
   const extractName = () => {
@@ -149,8 +151,21 @@ function NotificationItem({
     const match = notification.message.match(/^(\w+)\s+wants to join/);
     return match ? match[1] : null;
   };
+
+  // Extract name from group member joined message
+  const extractGroupMemberJoinedName = () => {
+    if (!notification.message) return null;
+    const match = notification.message.match(/^(.+?)\s+joined\s+/);
+    return match ? match[1] : null;
+  };
   
-  const senderName = isFriendRequest ? extractName() : (isGroupInviteRequest ? extractGroupInviteName() : null);
+  const senderName = isFriendRequest 
+    ? extractName() 
+    : isGroupInviteRequest 
+      ? extractGroupInviteName() 
+      : isGroupMemberJoined 
+        ? extractGroupMemberJoinedName() 
+        : null;
 
   const handleNameClick = () => {
     if (notification.related_user_id && onNavigateToProfile) {
@@ -197,6 +212,16 @@ function NotificationItem({
                   {' sent you a friend request'}
                 </>
               ) : isGroupInviteRequest && senderName ? (
+                <>
+                  <button
+                    onClick={handleNameClick}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {senderName}
+                  </button>
+                  {notification.message.replace(senderName, '').trim()}
+                </>
+              ) : isGroupMemberJoined && senderName ? (
                 <>
                   <button
                     onClick={handleNameClick}

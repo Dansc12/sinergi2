@@ -73,13 +73,22 @@ export function useGroupJoin(groupId: string | undefined) {
         return;
       }
 
-      // Get user's name for join notification
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name, first_name, username')
-        .eq('user_id', user.id)
-        .single();
+      // Get user's name and group info for notifications
+      const [profileResult, groupResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('display_name, first_name, username')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('groups')
+          .select('creator_id, name')
+          .eq('id', groupId)
+          .single()
+      ]);
 
+      const profile = profileResult.data;
+      const group = groupResult.data;
       const userName = profile?.display_name || profile?.first_name || profile?.username || 'A new member';
 
       // Add user to group
@@ -95,6 +104,21 @@ export function useGroupJoin(groupId: string | undefined) {
 
       // Send join notification to group chat
       await sendJoinNotification(groupId, userName, user.id);
+
+      // Send notification to group creator (if not the same user)
+      if (group?.creator_id && group.creator_id !== user.id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: group.creator_id,
+            type: 'group_member_joined',
+            title: 'New group member!',
+            message: `${userName} joined ${group.name}`,
+            related_user_id: user.id,
+            related_content_type: 'group',
+            related_content_id: groupId,
+          });
+      }
 
       setState({ isMember: true, hasRequestedInvite: false, isLoading: false });
       toast.success('You joined the group!');
