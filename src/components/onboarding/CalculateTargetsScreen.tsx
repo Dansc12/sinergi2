@@ -104,20 +104,55 @@ function calculateTargets(data: {
   const minCalories = data.sexAtBirth === 'male' ? 1500 : 1200;
   calorieTarget = Math.max(calorieTarget, minCalories);
 
-  // Calculate macros
-  // Protein: ~2g per kg bodyweight
-  const proteinG = Math.round(weightKg * 2);
-  // Fat: 25% of calories
-  const fatG = Math.round((calorieTarget * 0.25) / 9);
-  // Carbs: remainder
-  const carbsG = Math.round((calorieTarget - (proteinG * 4) - (fatG * 9)) / 4);
+  // Calculate macros based on primary goal
+  const weightLb = data.unitsSystem === 'imperial' 
+    ? data.currentWeight 
+    : data.currentWeight * 2.20462;
+
+  // A) PROTEIN - goal-dependent multipliers (g per lb)
+  const proteinMultipliers: Record<string, number> = {
+    'fat_loss': 0.85,
+    'build_muscle': 0.80,
+    'get_stronger': 0.75,
+    'improve_health': 0.70,
+    'maintain': 0.70,
+  };
+  const proteinMult = proteinMultipliers[data.goalType] || 0.70;
+  const proteinG = Math.round(weightLb * proteinMult);
+
+  // B) FAT - goal-dependent percent of calories
+  const fatPercentages: Record<string, number> = {
+    'fat_loss': 0.25,
+    'build_muscle': 0.27,
+    'get_stronger': 0.27,
+    'improve_health': 0.30,
+    'maintain': 0.30,
+  };
+  const fatPercent = fatPercentages[data.goalType] || 0.30;
+  let fatG = Math.round((calorieTarget * fatPercent) / 9);
+
+  // Fat minimum floor (prevents ultra-low fats)
+  const fatGMin = Math.max(Math.round(0.25 * weightLb), 35);
+  fatG = Math.max(fatG, fatGMin);
+
+  // C) CARBS - remainder
+  const remainingCalories = calorieTarget - (proteinG * 4) - (fatG * 9);
+  let carbsG = Math.round(Math.max(remainingCalories, 0) / 4);
+
+  // D) Handle negative carbs edge case - reduce fat to minimum and clamp carbs
+  if (remainingCalories < 0) {
+    // Recalculate with minimum fat
+    fatG = fatGMin;
+    const recalcRemaining = calorieTarget - (proteinG * 4) - (fatG * 9);
+    carbsG = Math.round(Math.max(recalcRemaining, 0) / 4);
+  }
 
   return {
     calories: calorieTarget,
     macros: {
       protein: Math.max(proteinG, 50),
-      carbs: Math.max(carbsG, 50),
-      fat: Math.max(fatG, 30),
+      carbs: carbsG,
+      fat: fatG,
     }
   };
 }
