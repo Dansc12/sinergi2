@@ -147,12 +147,23 @@ function calculateTargets(data: {
     carbsG = Math.round(Math.max(recalcRemaining, 0) / 4);
   }
 
+  // Calculate macro percentages
+  const totalMacroCals = (Math.max(proteinG, 50) * 4) + (carbsG * 4) + (fatG * 9);
+  const proteinPercent = Math.round((Math.max(proteinG, 50) * 4 / totalMacroCals) * 100);
+  const carbsPercent = Math.round((carbsG * 4 / totalMacroCals) * 100);
+  const fatPercent_display = Math.round((fatG * 9 / totalMacroCals) * 100);
+
   return {
     calories: calorieTarget,
     macros: {
       protein: Math.max(proteinG, 50),
       carbs: carbsG,
       fat: fatG,
+    },
+    macroPercents: {
+      protein: proteinPercent,
+      carbs: carbsPercent,
+      fat: fatPercent_display,
     }
   };
 }
@@ -162,7 +173,7 @@ export function CalculateTargetsScreen() {
   const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [targets, setTargets] = useState<{ calories: number; macros: { protein: number; carbs: number; fat: number } } | null>(null);
+  const [targets, setTargets] = useState<{ calories: number; macros: { protein: number; carbs: number; fat: number }; macroPercents: { protein: number; carbs: number; fat: number } } | null>(null);
 
   useEffect(() => {
     const calculate = async () => {
@@ -267,6 +278,16 @@ export function CalculateTargetsScreen() {
               transition={{ delay: 0.2 }}
               className="bg-card border border-border rounded-2xl p-6 mb-6"
             >
+              {/* Primary Goal + Activity Info */}
+              <div className="text-center mb-4">
+                <p className="text-lg font-semibold capitalize">
+                  {data.goalType?.replace('_', ' ') || 'Improve health'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {data.activityLevelLabel || 'Moderate activity'} • {data.exerciseFrequency || '2-3 days'}/week
+                </p>
+              </div>
+
               {/* Calories */}
               <div className="text-center mb-6 pb-6 border-b border-border">
                 <p className="text-sm text-muted-foreground mb-1">Calories</p>
@@ -278,17 +299,37 @@ export function CalculateTargetsScreen() {
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-2xl font-bold">{targets.macros.protein}g</p>
-                  <p className="text-sm text-muted-foreground">Protein</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Protein</p>
+                  <p className="text-xs text-primary">{targets.macroPercents.protein}%</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{targets.macros.carbs}g</p>
-                  <p className="text-sm text-muted-foreground">Carbs</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Carbs</p>
+                  <p className="text-xs text-primary">{targets.macroPercents.carbs}%</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{targets.macros.fat}g</p>
-                  <p className="text-sm text-muted-foreground">Fat</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Fat</p>
+                  <p className="text-xs text-primary">{targets.macroPercents.fat}%</p>
                 </div>
               </div>
+
+              {/* Estimated Goal Date */}
+              {data.hasGoalWeight && data.goalWeight && data.goalWeight !== data.currentWeight && (() => {
+                const weightDiff = Math.abs(data.goalWeight - data.currentWeight);
+                const paceValues = { gentle: 0.5, standard: 0.8, aggressive: 1.1 };
+                const weeklyLoss = paceValues[data.pace as keyof typeof paceValues] || 0.8;
+                const weeksToGoal = Math.ceil(weightDiff / weeklyLoss);
+                const goalDate = new Date();
+                goalDate.setDate(goalDate.getDate() + (weeksToGoal * 7));
+                const formattedDate = goalDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                return (
+                  <div className="mt-6 pt-4 border-t border-border text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Estimated goal date</p>
+                    <p className="text-sm font-semibold text-primary">{formattedDate}</p>
+                  </div>
+                );
+              })()}
             </motion.div>
 
             <div className="space-y-3">

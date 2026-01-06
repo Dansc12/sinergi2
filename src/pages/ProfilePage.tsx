@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Settings, Flame, Camera, Loader2, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +20,40 @@ const postsEmptyState = {
   description: "Share your fitness journey with the community", 
   action: "Create Post" 
 };
+
+function BioSection({ bio }: { bio: string }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const bioRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (bioRef.current) {
+      // Check if content is taller than 2 lines (approx 40px at text-sm)
+      const lineHeight = parseFloat(getComputedStyle(bioRef.current).lineHeight);
+      const maxHeight = lineHeight * 2;
+      setIsTruncated(bioRef.current.scrollHeight > maxHeight + 2);
+    }
+  }, [bio]);
+
+  return (
+    <div className="mb-4">
+      <p 
+        ref={bioRef}
+        className={`text-muted-foreground text-sm whitespace-pre-line ${!isExpanded ? 'line-clamp-2' : ''}`}
+      >
+        {bio}
+      </p>
+      {isTruncated && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-primary text-sm font-medium mt-1"
+        >
+          {isExpanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 
 const ProfilePage = () => {
@@ -222,8 +256,8 @@ const ProfilePage = () => {
             )}
           </div>
 
-          {/* Bio */}
-          <p className="text-muted-foreground text-sm mb-4 whitespace-pre-line">{userBio}</p>
+          {/* Bio with expandable text */}
+          <BioSection bio={userBio} />
         </div>
 
         {/* Posts Grid */}
