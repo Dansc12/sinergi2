@@ -165,11 +165,11 @@ export function HobbiesScreen() {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex flex-col h-screen"
+      className="flex flex-col min-h-screen"
     >
       <OnboardingProgress />
       
-      <div className="flex-1 overflow-y-auto px-6 py-8 pb-36">
+      <div className="flex-1 px-6 py-8">
         <button 
           onClick={goBack}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
@@ -248,27 +248,25 @@ export function HobbiesScreen() {
         </div>
       </div>
 
-      {/* Sticky buttons */}
-      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="space-y-3">
-          <Button 
-            size="xl" 
-            className="w-full"
-            onClick={handleContinue}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Continue'}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="w-full"
-            onClick={handleSkip}
-            disabled={saving}
-          >
-            Skip for now
-          </Button>
-        </div>
+      {/* Static buttons at bottom */}
+      <div className="px-6 pb-8 pt-4 space-y-3">
+        <Button 
+          size="xl" 
+          className="w-full"
+          onClick={handleContinue}
+          disabled={saving}
+        >
+          {saving ? 'Saving...' : 'Continue'}
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="lg" 
+          className="w-full"
+          onClick={handleSkip}
+          disabled={saving}
+        >
+          Skip for now
+        </Button>
       </div>
     </motion.div>
   );

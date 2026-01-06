@@ -57,8 +57,8 @@ export function SexHeightScreen() {
           <div className="space-y-3">
             <Label>Sex at birth</Label>
             <p className="text-sm text-muted-foreground -mt-1">Used for metabolic calculations</p>
-            <div className="grid grid-cols-3 gap-3">
-              {(['male', 'female', 'prefer_not'] as const).map((option) => (
+            <div className="grid grid-cols-2 gap-3">
+              {(['male', 'female'] as const).map((option) => (
                 <button
                   key={option}
                   onClick={() => updateData({ sexAtBirth: option })}
@@ -70,7 +70,7 @@ export function SexHeightScreen() {
                   )}
                 >
                   <p className="font-medium text-sm">
-                    {option === 'male' ? 'Male' : option === 'female' ? 'Female' : 'Prefer not to say'}
+                    {option === 'male' ? 'Male' : 'Female'}
                   </p>
                 </button>
               ))}

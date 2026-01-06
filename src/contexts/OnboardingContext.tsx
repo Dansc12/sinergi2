@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface OnboardingData {
   // Step 1: What brings you here
@@ -21,10 +22,10 @@ export interface OnboardingData {
   // Step 5: Interests (optional)
   interests: string[];
   
-  // Step 6: Joined Groups
+  // Step 6: Joined Groups (deferred until completion)
   joinedGroupIds: string[];
   
-  // Step 7: Followed Users
+  // Step 7: Followed Users (deferred until completion)
   followedUserIds: string[];
   
   // Step 8: Setup path choice
@@ -32,7 +33,7 @@ export interface OnboardingData {
   
   // Targets flow (Steps 9-13)
   goalType: 'fat_loss' | 'build_muscle' | 'get_stronger' | 'improve_health' | 'maintain' | '';
-  sexAtBirth: 'male' | 'female' | 'prefer_not' | '';
+  sexAtBirth: 'male' | 'female' | '';
   heightValue: number;
   currentWeight: number;
   hasGoalWeight: boolean;
@@ -43,7 +44,7 @@ export interface OnboardingData {
   calorieTarget: number;
   macroTargets: { protein: number; carbs: number; fat: number } | null;
   
-  // First win
+  // First win (deprecated)
   firstWinType: 'meal' | 'workout' | 'post' | '';
 }
 
@@ -62,8 +63,7 @@ export type OnboardingStep =
   | 'goal_weight'
   | 'pace'
   | 'calculate_targets'
-  | 'edit_answers'
-  | 'first_win';
+  | 'edit_answers';
 
 interface OnboardingContextType {
   data: OnboardingData;
@@ -74,6 +74,7 @@ interface OnboardingContextType {
   totalSteps: number;
   goBack: () => void;
   goNext: () => void;
+  completeOnboarding: () => Promise<void>;
 }
 
 const defaultData: OnboardingData = {
@@ -127,7 +128,6 @@ const TARGETS_STEPS: OnboardingStep[] = [
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(defaultData);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('what_brings_you_here');
-  const [savedStep, setSavedStep] = useState<OnboardingStep | null>(null);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -189,7 +189,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           else if (!profile.current_weight) setCurrentStep('current_weight');
           else setCurrentStep('calculate_targets');
         } else {
-          setCurrentStep('first_win');
+          setCurrentStep('choose_setup_path');
         }
       }
     };
@@ -202,7 +202,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     if (data.setupPath === 'targets') {
       flow.push(...TARGETS_STEPS);
     }
-    flow.push('first_win');
     return flow;
   };
 
@@ -229,6 +228,62 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Complete onboarding: join groups, send friend requests, mark complete
+  const completeOnboarding = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Join selected groups
+      if (data.joinedGroupIds.length > 0) {
+        const groupInserts = data.joinedGroupIds.map(groupId => ({
+          group_id: groupId,
+          user_id: user.id,
+        }));
+        await supabase.from('group_members').insert(groupInserts);
+      }
+
+      // Send friend requests to selected users
+      if (data.followedUserIds.length > 0) {
+        // Get sender profile for notification
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+
+        const friendshipInserts = data.followedUserIds.map(addresseeId => ({
+          requester_id: user.id,
+          addressee_id: addresseeId,
+        }));
+        await supabase.from('friendships').insert(friendshipInserts);
+
+        // Send notifications
+        const notificationInserts = data.followedUserIds.map(addresseeId => ({
+          user_id: addresseeId,
+          type: 'friend_request',
+          title: 'New friend request',
+          message: `${senderProfile?.display_name || 'Someone'} sent you a friend request`,
+          related_user_id: user.id,
+          related_content_type: 'friend_request',
+        }));
+        await supabase.from('notifications').insert(notificationInserts);
+      }
+
+      // Mark onboarding as complete
+      await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('user_id', user.id);
+
+      toast.success('Welcome to Sinergi!');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      toast.error('Something went wrong');
+      throw error;
+    }
+  };
+
   return (
     <OnboardingContext.Provider value={{ 
       data, 
@@ -239,6 +294,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       totalSteps,
       goBack,
       goNext,
+      completeOnboarding,
     }}>
       {children}
     </OnboardingContext.Provider>

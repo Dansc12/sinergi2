@@ -6,40 +6,53 @@ import { ChevronLeft, Turtle, Gauge, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
-const paces: Array<{
+interface PaceOption {
   id: 'gentle' | 'standard' | 'aggressive';
   label: string;
   icon: typeof Turtle;
-  description: string;
-  detail: string;
+  loseDescription: string;
+  gainDescription: string;
+  loseDetail: string;
+  gainDetail: string;
   recommended?: boolean;
-}> = [
+}
+
+const paceOptions: PaceOption[] = [
   { 
     id: 'gentle', 
     label: 'Gentle', 
     icon: Turtle,
-    description: 'Slower but more sustainable',
-    detail: '~0.5 lb/week'
+    loseDescription: 'Slower but more sustainable',
+    gainDescription: 'Gradual and sustainable',
+    loseDetail: '~0.5 lb/week',
+    gainDetail: '+0.25 lb/week'
   },
   { 
     id: 'standard', 
     label: 'Standard', 
     icon: Gauge,
-    description: 'Balanced approach',
-    detail: '~1 lb/week',
+    loseDescription: 'Balanced approach',
+    gainDescription: 'Balanced approach',
+    loseDetail: '~1 lb/week',
+    gainDetail: '+0.5 lb/week',
     recommended: true
   },
   { 
     id: 'aggressive', 
     label: 'Aggressive', 
     icon: Rocket,
-    description: 'Faster results, more discipline',
-    detail: '~1.5 lb/week'
+    loseDescription: 'Faster results, more discipline',
+    gainDescription: 'Faster gains, higher surplus',
+    loseDetail: '~1.5 lb/week',
+    gainDetail: '+0.75 lb/week'
   },
 ];
 
 export function PaceScreen() {
   const { data, updateData, goBack, setCurrentStep } = useOnboarding();
+
+  // Determine if user is gaining weight (goal > current)
+  const isGaining = data.goalWeight > data.currentWeight;
 
   const handleContinue = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -49,11 +62,6 @@ export function PaceScreen() {
         .update({ pace: data.pace || 'standard' })
         .eq('user_id', user.id);
     }
-    setCurrentStep('calculate_targets');
-  };
-
-  const handleSkip = () => {
-    updateData({ pace: 'standard' });
     setCurrentStep('calculate_targets');
   };
 
@@ -77,13 +85,18 @@ export function PaceScreen() {
 
         <h1 className="text-2xl font-bold mb-2">What pace works for you?</h1>
         <p className="text-muted-foreground mb-8">
-          This affects your calorie deficit or surplus
+          {isGaining 
+            ? 'This affects your calorie surplus for gaining weight'
+            : 'This affects your calorie deficit for losing weight'
+          }
         </p>
 
         <div className="space-y-3">
-          {paces.map((pace, index) => {
+          {paceOptions.map((pace, index) => {
             const Icon = pace.icon;
             const isSelected = data.pace === pace.id;
+            const description = isGaining ? pace.gainDescription : pace.loseDescription;
+            const detail = isGaining ? pace.gainDetail : pace.loseDetail;
             
             return (
               <motion.button
@@ -115,9 +128,9 @@ export function PaceScreen() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{pace.description}</p>
+                    <p className="text-sm text-muted-foreground">{description}</p>
                   </div>
-                  <span className="text-sm text-muted-foreground">{pace.detail}</span>
+                  <span className="text-sm text-muted-foreground">{detail}</span>
                 </div>
               </motion.button>
             );
@@ -125,21 +138,13 @@ export function PaceScreen() {
         </div>
       </div>
 
-      <div className="px-6 pb-8 space-y-3">
+      <div className="px-6 pb-8">
         <Button 
           size="xl" 
           className="w-full"
           onClick={handleContinue}
         >
           Continue
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="lg" 
-          className="w-full"
-          onClick={handleSkip}
-        >
-          Skip (use standard)
         </Button>
       </div>
     </motion.div>

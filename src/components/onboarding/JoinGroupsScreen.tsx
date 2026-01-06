@@ -5,7 +5,6 @@ import { OnboardingProgress } from './OnboardingProgress';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Users, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface SystemGroup {
@@ -28,9 +27,8 @@ function shuffleArray<T>(array: T[]): T[] {
 export function JoinGroupsScreen() {
   const { data, updateData, goBack, setCurrentStep } = useOnboarding();
   const [groups, setGroups] = useState<SystemGroup[]>([]);
-  const [joinedGroups, setJoinedGroups] = useState<Set<string>>(new Set(data.joinedGroupIds));
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set(data.joinedGroupIds));
   const [loading, setLoading] = useState(true);
-  const [joiningGroup, setJoiningGroup] = useState<string | null>(null);
 
   // Randomize groups order once on mount
   const shuffledGroups = useMemo(() => shuffleArray(groups), [groups]);
@@ -50,19 +48,6 @@ export function JoinGroupsScreen() {
 
       if (error) throw error;
       setGroups(groupsData || []);
-
-      // Check which groups user has already joined
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: memberships } = await supabase
-          .from('group_members')
-          .select('group_id')
-          .eq('user_id', user.id);
-
-        if (memberships) {
-          setJoinedGroups(new Set(memberships.map(m => m.group_id)));
-        }
-      }
     } catch (error) {
       console.error('Error fetching groups:', error);
     } finally {
@@ -70,50 +55,26 @@ export function JoinGroupsScreen() {
     }
   };
 
-  const toggleGroup = async (groupId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setJoiningGroup(groupId);
-
-    try {
-      if (joinedGroups.has(groupId)) {
-        // Leave group
-        await supabase
-          .from('group_members')
-          .delete()
-          .eq('group_id', groupId)
-          .eq('user_id', user.id);
-
-        setJoinedGroups(prev => {
-          const updated = new Set(prev);
-          updated.delete(groupId);
-          return updated;
-        });
+  const toggleGroup = (groupId: string) => {
+    setSelectedGroups(prev => {
+      const updated = new Set(prev);
+      if (updated.has(groupId)) {
+        updated.delete(groupId);
       } else {
-        // Join group
-        await supabase
-          .from('group_members')
-          .insert({ group_id: groupId, user_id: user.id });
-
-        setJoinedGroups(prev => new Set([...prev, groupId]));
+        updated.add(groupId);
       }
-
-      updateData({ joinedGroupIds: Array.from(joinedGroups) });
-    } catch (error: any) {
-      console.error('Error toggling group:', error);
-      toast.error('Failed to update group membership');
-    } finally {
-      setJoiningGroup(null);
-    }
+      return updated;
+    });
   };
 
   const handleContinue = () => {
-    updateData({ joinedGroupIds: Array.from(joinedGroups) });
+    // Store selections in onboarding data - actual joining happens at onboarding completion
+    updateData({ joinedGroupIds: Array.from(selectedGroups) });
     setCurrentStep('follow_people');
   };
 
   const handleSkip = () => {
+    updateData({ joinedGroupIds: [] });
     setCurrentStep('follow_people');
   };
 
@@ -122,11 +83,11 @@ export function JoinGroupsScreen() {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex flex-col h-screen"
+      className="flex flex-col min-h-screen"
     >
       <OnboardingProgress />
       
-      <div className="flex-1 overflow-y-auto px-6 py-8 pb-36">
+      <div className="flex-1 px-6 py-8">
         <button 
           onClick={goBack}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
@@ -149,18 +110,18 @@ export function JoinGroupsScreen() {
         ) : (
           <div className="space-y-4">
             {shuffledGroups.map((group, index) => {
-              const isJoined = joinedGroups.has(group.id);
-              const isJoining = joiningGroup === group.id;
+              const isSelected = selectedGroups.has(group.id);
               
               return (
-                <motion.div
+                <motion.button
                   key={group.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
+                  onClick={() => toggleGroup(group.id)}
                   className={cn(
-                    "p-4 rounded-2xl border-2 transition-all",
-                    isJoined ? "border-primary bg-primary/5" : "border-border bg-card"
+                    "w-full p-4 rounded-2xl border-2 transition-all text-left",
+                    isSelected ? "border-primary bg-primary/5" : "border-border bg-card"
                   )}
                 >
                   <div className="flex items-start gap-4">
@@ -179,51 +140,37 @@ export function JoinGroupsScreen() {
                         {group.description}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={isJoined ? "secondary" : "default"}
-                      disabled={isJoining}
-                      onClick={() => toggleGroup(group.id)}
-                      className="flex-shrink-0"
-                    >
-                      {isJoining ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : isJoined ? (
-                        <>
-                          <Check size={16} className="mr-1" />
-                          Joined
-                        </>
-                      ) : (
-                        'Join'
-                      )}
-                    </Button>
+                    <div className={cn(
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                      isSelected ? "border-primary bg-primary" : "border-muted-foreground"
+                    )}>
+                      {isSelected && <Check size={14} className="text-primary-foreground" />}
+                    </div>
                   </div>
-                </motion.div>
+                </motion.button>
               );
             })}
           </div>
         )}
       </div>
 
-      {/* Sticky buttons */}
-      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="space-y-3">
-          <Button 
-            size="xl" 
-            className="w-full"
-            onClick={handleContinue}
-          >
-            Continue
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="w-full"
-            onClick={handleSkip}
-          >
-            Skip for now
-          </Button>
-        </div>
+      {/* Static buttons at bottom */}
+      <div className="px-6 pb-8 pt-4 space-y-3">
+        <Button 
+          size="xl" 
+          className="w-full"
+          onClick={handleContinue}
+        >
+          Continue
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="lg" 
+          className="w-full"
+          onClick={handleSkip}
+        >
+          Skip for now
+        </Button>
       </div>
     </motion.div>
   );

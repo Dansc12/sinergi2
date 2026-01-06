@@ -2,12 +2,16 @@ import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingProgress } from './OnboardingProgress';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Target, Zap } from 'lucide-react';
+import { ChevronLeft, Target, Zap, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function ChooseSetupPathScreen() {
-  const { data, updateData, goBack, setCurrentStep } = useOnboarding();
+  const { data, updateData, goBack, setCurrentStep, completeOnboarding } = useOnboarding();
+  const [isCompleting, setIsCompleting] = useState(false);
+  const navigate = useNavigate();
 
   const handleSelectPath = async (path: 'targets' | 'just_log') => {
     updateData({ setupPath: path });
@@ -23,7 +27,18 @@ export function ChooseSetupPathScreen() {
     if (path === 'targets') {
       setCurrentStep('primary_goal');
     } else {
-      setCurrentStep('first_win');
+      // Complete onboarding directly
+      setIsCompleting(true);
+      try {
+        await supabase
+          .from('profiles')
+          .update({ goals_setup_completed: true })
+          .eq('user_id', user!.id);
+        await completeOnboarding();
+        navigate('/');
+      } catch (error) {
+        setIsCompleting(false);
+      }
     }
   };
 
@@ -57,11 +72,13 @@ export function ChooseSetupPathScreen() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             onClick={() => handleSelectPath('targets')}
+            disabled={isCompleting}
             className={cn(
               "w-full p-6 rounded-2xl border-2 text-left transition-all",
               data.setupPath === 'targets'
                 ? "border-primary bg-primary/10"
-                : "border-border bg-card hover:border-primary/50"
+                : "border-border bg-card hover:border-primary/50",
+              isCompleting && "opacity-50 cursor-not-allowed"
             )}
           >
             <div className="flex gap-4">
@@ -86,16 +103,22 @@ export function ChooseSetupPathScreen() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             onClick={() => handleSelectPath('just_log')}
+            disabled={isCompleting}
             className={cn(
               "w-full p-6 rounded-2xl border-2 text-left transition-all",
               data.setupPath === 'just_log'
                 ? "border-primary bg-primary/10"
-                : "border-border bg-card hover:border-primary/50"
+                : "border-border bg-card hover:border-primary/50",
+              isCompleting && "opacity-50 cursor-not-allowed"
             )}
           >
             <div className="flex gap-4">
               <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                <Zap className="w-7 h-7 text-muted-foreground" />
+                {isCompleting ? (
+                  <Loader2 className="w-7 h-7 text-muted-foreground animate-spin" />
+                ) : (
+                  <Zap className="w-7 h-7 text-muted-foreground" />
+                )}
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-1">Just start logging</h3>

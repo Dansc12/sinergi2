@@ -73,18 +73,25 @@ export function ProfilePhotoBioScreen() {
     }
   };
 
+  // Condense consecutive line breaks to single ones (like Instagram)
+  const condenseBio = (text: string): string => {
+    return text.replace(/\n{2,}/g, '\n').trim();
+  };
+
   const handleContinue = async () => {
-    // Save progress
+    // Save progress with condensed bio
+    const condensedBio = condenseBio(data.bio);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase
         .from('profiles')
         .update({
           avatar_url: data.avatarUrl || null,
-          bio: data.bio || null,
+          bio: condensedBio || null,
         })
         .eq('user_id', user.id);
     }
+    updateData({ bio: condensedBio });
     setCurrentStep('units_age');
   };
 

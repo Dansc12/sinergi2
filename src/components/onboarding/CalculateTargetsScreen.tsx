@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Loader2, Sparkles, Edit2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Simple BMR/TDEE calculation
 function calculateTargets(data: {
@@ -15,6 +16,8 @@ function calculateTargets(data: {
   goalType: string;
   pace: string;
   unitsSystem: string;
+  goalWeight: number;
+  hasGoalWeight: boolean;
 }) {
   // Convert to metric if needed
   let weightKg = data.currentWeight;
@@ -40,23 +43,39 @@ function calculateTargets(data: {
   // Apply activity multiplier (assume lightly active)
   const tdee = Math.round(bmr * 1.375);
 
+  // Determine if gaining or losing based on goal weight
+  const isGaining = data.hasGoalWeight && data.goalWeight > data.currentWeight;
+
   // Apply goal adjustment
   let calorieTarget = tdee;
   const paceMultiplier = data.pace === 'gentle' ? 250 : data.pace === 'aggressive' ? 750 : 500;
 
-  switch (data.goalType) {
-    case 'fat_loss':
+  if (data.hasGoalWeight) {
+    // Use goal weight to determine surplus/deficit
+    if (isGaining) {
+      // Gaining weight - apply surplus
+      const gainMultiplier = data.pace === 'gentle' ? 125 : data.pace === 'aggressive' ? 375 : 250;
+      calorieTarget = tdee + gainMultiplier;
+    } else {
+      // Losing weight - apply deficit
       calorieTarget = tdee - paceMultiplier;
-      break;
-    case 'build_muscle':
-      calorieTarget = tdee + Math.round(paceMultiplier * 0.5);
-      break;
-    case 'get_stronger':
-      calorieTarget = tdee + Math.round(paceMultiplier * 0.3);
-      break;
-    default:
-      // maintain or improve_health - stay at TDEE
-      break;
+    }
+  } else {
+    // No goal weight - use goalType
+    switch (data.goalType) {
+      case 'fat_loss':
+        calorieTarget = tdee - paceMultiplier;
+        break;
+      case 'build_muscle':
+        calorieTarget = tdee + Math.round(paceMultiplier * 0.5);
+        break;
+      case 'get_stronger':
+        calorieTarget = tdee + Math.round(paceMultiplier * 0.3);
+        break;
+      default:
+        // maintain or improve_health - stay at TDEE
+        break;
+    }
   }
 
   // Apply minimum floors
@@ -82,8 +101,10 @@ function calculateTargets(data: {
 }
 
 export function CalculateTargetsScreen() {
-  const { data, updateData, goBack, setCurrentStep } = useOnboarding();
+  const { data, updateData, goBack, setCurrentStep, completeOnboarding } = useOnboarding();
+  const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(true);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [targets, setTargets] = useState<{ calories: number; macros: { protein: number; carbs: number; fat: number } } | null>(null);
 
   useEffect(() => {
@@ -99,6 +120,8 @@ export function CalculateTargetsScreen() {
         goalType: data.goalType,
         pace: data.pace || 'standard',
         unitsSystem: data.unitsSystem,
+        goalWeight: data.goalWeight,
+        hasGoalWeight: data.hasGoalWeight,
       });
 
       setTargets(calculated);
@@ -115,6 +138,7 @@ export function CalculateTargetsScreen() {
   const handleConfirm = async () => {
     if (!targets) return;
 
+    setIsConfirming(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -129,10 +153,13 @@ export function CalculateTargetsScreen() {
         })
         .eq('user_id', user.id);
 
-      setCurrentStep('first_win');
+      // Complete onboarding (join groups, send friend requests, mark complete)
+      await completeOnboarding();
+      navigate('/');
     } catch (error) {
       console.error('Error saving targets:', error);
       toast.error('Failed to save targets');
+      setIsConfirming(false);
     }
   };
 
@@ -217,14 +244,20 @@ export function CalculateTargetsScreen() {
                 size="xl" 
                 className="w-full"
                 onClick={handleConfirm}
+                disabled={isConfirming}
               >
-                Looks good!
+                {isConfirming ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Looks good!"
+                )}
               </Button>
               <Button 
                 variant="ghost" 
                 size="lg" 
                 className="w-full"
                 onClick={handleEdit}
+                disabled={isConfirming}
               >
                 <Edit2 size={16} className="mr-2" />
                 Edit my answers

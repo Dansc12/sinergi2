@@ -3,9 +3,8 @@ import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingProgress } from './OnboardingProgress';
 import { motion } from 'framer-motion';
-import { ChevronLeft, User, UserPlus, Check, Loader2 } from 'lucide-react';
+import { ChevronLeft, User, UserPlus, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface SuggestedUser {
@@ -27,11 +26,10 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function FollowPeopleScreen() {
-  const { goBack, setCurrentStep } = useOnboarding();
+  const { data, updateData, goBack, setCurrentStep } = useOnboarding();
   const [users, setUsers] = useState<SuggestedUser[]>([]);
-  const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set(data.followedUserIds));
   const [loading, setLoading] = useState(true);
-  const [followingUser, setFollowingUser] = useState<string | null>(null);
 
   // Randomize users order once on mount
   const shuffledUsers = useMemo(() => shuffleArray(users), [users]);
@@ -54,16 +52,6 @@ export function FollowPeopleScreen() {
 
       if (error) throw error;
       setUsers(usersData || []);
-
-      // Check existing friend requests/friendships
-      const { data: existingRequests } = await supabase
-        .from('friendships')
-        .select('addressee_id')
-        .eq('requester_id', user.id);
-
-      if (existingRequests) {
-        setFollowedUsers(new Set(existingRequests.map(r => r.addressee_id)));
-      }
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -71,68 +59,26 @@ export function FollowPeopleScreen() {
     }
   };
 
-  const toggleFollow = async (addresseeId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setFollowingUser(addresseeId);
-
-    try {
-      if (followedUsers.has(addresseeId)) {
-        // Unfollow
-        await supabase
-          .from('friendships')
-          .delete()
-          .eq('requester_id', user.id)
-          .eq('addressee_id', addresseeId);
-
-        setFollowedUsers(prev => {
-          const updated = new Set(prev);
-          updated.delete(addresseeId);
-          return updated;
-        });
+  const toggleUser = (userId: string) => {
+    setSelectedUsers(prev => {
+      const updated = new Set(prev);
+      if (updated.has(userId)) {
+        updated.delete(userId);
       } else {
-        // Follow
-        await supabase
-          .from('friendships')
-          .insert({ requester_id: user.id, addressee_id: addresseeId });
-
-        // Send notification
-        const { data: senderProfile } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .single();
-
-        await supabase.from('notifications').insert({
-          user_id: addresseeId,
-          type: 'friend_request',
-          title: 'New friend request',
-          message: `${senderProfile?.display_name || 'Someone'} sent you a friend request`,
-          related_user_id: user.id,
-          related_content_type: 'friend_request'
-        });
-
-        setFollowedUsers(prev => new Set([...prev, addresseeId]));
-        toast.success('Friend request sent!');
+        updated.add(userId);
       }
-    } catch (error: any) {
-      console.error('Error toggling follow:', error);
-      if (error.code === '23505') {
-        toast.error('Request already sent');
-      } else {
-        toast.error('Failed to update');
-      }
-    } finally {
-      setFollowingUser(null);
-    }
+      return updated;
+    });
   };
 
   const handleContinue = () => {
+    // Store selections in onboarding data - actual friend requests happen at onboarding completion
+    updateData({ followedUserIds: Array.from(selectedUsers) });
     setCurrentStep('choose_setup_path');
   };
 
   const handleSkip = () => {
+    updateData({ followedUserIds: [] });
     setCurrentStep('choose_setup_path');
   };
 
@@ -141,11 +87,11 @@ export function FollowPeopleScreen() {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex flex-col h-screen"
+      className="flex flex-col min-h-screen"
     >
       <OnboardingProgress />
       
-      <div className="flex-1 overflow-y-auto px-6 py-8 pb-36">
+      <div className="flex-1 px-6 py-8">
         <button 
           onClick={goBack}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
@@ -173,17 +119,20 @@ export function FollowPeopleScreen() {
         ) : (
           <div className="space-y-3">
             {shuffledUsers.map((user, index) => {
-              const isFollowed = followedUsers.has(user.user_id);
-              const isFollowing = followingUser === user.user_id;
+              const isSelected = selectedUsers.has(user.user_id);
               const displayName = user.display_name || user.username || 'User';
               
               return (
-                <motion.div
+                <motion.button
                   key={user.user_id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="p-3 rounded-xl bg-card border border-border flex items-center gap-3"
+                  onClick={() => toggleUser(user.user_id)}
+                  className={cn(
+                    "w-full p-3 rounded-xl border transition-all text-left flex items-center gap-3",
+                    isSelected ? "border-primary bg-primary/5" : "border-border bg-card"
+                  )}
                 >
                   <div className="w-12 h-12 rounded-full bg-muted overflow-hidden shrink-0">
                     {user.avatar_url ? (
@@ -202,56 +151,36 @@ export function FollowPeopleScreen() {
                     )}
                   </div>
                   
-                  <Button
-                    size="sm"
-                    variant={isFollowed ? "secondary" : "default"}
-                    disabled={isFollowed || isFollowing}
-                    onClick={() => toggleFollow(user.user_id)}
-                    className={cn(
-                      "shrink-0",
-                      isFollowed && "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {isFollowing ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : isFollowed ? (
-                      <>
-                        <Check size={16} className="mr-1" />
-                        Sent
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus size={16} className="mr-1" />
-                        Add
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
+                  <div className={cn(
+                    "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                    isSelected ? "border-primary bg-primary" : "border-muted-foreground"
+                  )}>
+                    {isSelected && <Check size={14} className="text-primary-foreground" />}
+                  </div>
+                </motion.button>
               );
             })}
           </div>
         )}
       </div>
 
-      {/* Sticky buttons */}
-      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="space-y-3">
-          <Button 
-            size="xl" 
-            className="w-full"
-            onClick={handleContinue}
-          >
-            Continue
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="w-full"
-            onClick={handleSkip}
-          >
-            Skip for now
-          </Button>
-        </div>
+      {/* Static buttons at bottom */}
+      <div className="px-6 pb-8 pt-4 space-y-3">
+        <Button 
+          size="xl" 
+          className="w-full"
+          onClick={handleContinue}
+        >
+          Continue
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="lg" 
+          className="w-full"
+          onClick={handleSkip}
+        >
+          Skip for now
+        </Button>
       </div>
     </motion.div>
   );

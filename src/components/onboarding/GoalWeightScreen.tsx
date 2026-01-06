@@ -19,8 +19,16 @@ export function GoalWeightScreen() {
         .update({ goal_weight: data.goalWeight })
         .eq('user_id', user.id);
     }
-    setCurrentStep('pace');
+    // Skip pace screen if no goal weight
+    if (!data.hasGoalWeight) {
+      setCurrentStep('calculate_targets');
+    } else {
+      setCurrentStep('pace');
+    }
   };
+
+  // Goal weight cannot equal current weight
+  const isGoalWeightValid = !data.hasGoalWeight || (data.goalWeight > 0 && data.goalWeight !== data.currentWeight);
 
   return (
     <motion.div 
@@ -98,10 +106,15 @@ export function GoalWeightScreen() {
       </div>
 
       <div className="px-6 pb-8">
+        {data.hasGoalWeight && data.goalWeight === data.currentWeight && data.goalWeight > 0 && (
+          <p className="text-destructive text-sm text-center mb-3">
+            Goal weight cannot be the same as current weight
+          </p>
+        )}
         <Button 
           size="xl" 
           className="w-full"
-          disabled={data.hasGoalWeight && data.goalWeight <= 0}
+          disabled={!isGoalWeightValid}
           onClick={handleContinue}
         >
           Continue
