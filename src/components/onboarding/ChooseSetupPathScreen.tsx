@@ -128,14 +128,19 @@ export function ChooseSetupPathScreen() {
                 return (
                   <CarouselItem key={option.id} className="pl-2 basis-[85%]">
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * index }}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ 
+                        opacity: currentIndex === index ? 1 : 0.6, 
+                        y: 0,
+                        scale: currentIndex === index ? 1 : 0.95
+                      }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      onClick={() => api?.scrollTo(index)}
                       className={cn(
-                        "p-6 rounded-2xl border-2 transition-all h-full min-h-[280px]",
+                        "p-6 rounded-2xl border-2 transition-all h-full min-h-[280px] cursor-pointer",
                         currentIndex === index
-                          ? "border-primary bg-card"
-                          : "border-border bg-card/50 opacity-60"
+                          ? "border-primary bg-card shadow-lg shadow-primary/10"
+                          : "border-border bg-card/50"
                       )}
                     >
                       <div className="flex flex-col items-center text-center gap-4 h-full">
