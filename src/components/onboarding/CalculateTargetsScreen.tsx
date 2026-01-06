@@ -80,25 +80,8 @@ function calculateTargets(data: {
       // Losing weight - apply deficit
       calorieTarget = tdee - paceAdjustment;
     }
-  } else {
-    // No goal weight - use goalType
-    switch (data.goalType) {
-      case 'fat_loss':
-        calorieTarget = tdee - paceAdjustment;
-        break;
-      case 'build_muscle':
-        calorieTarget = tdee + Math.round(paceAdjustment * 0.5);
-        break;
-      case 'get_stronger':
-        calorieTarget = tdee + Math.round(paceAdjustment * 0.3);
-        break;
-      case 'improve_health':
-      case 'maintain':
-      default:
-        // Stay at TDEE
-        break;
-    }
   }
+  // If no goal weight, stay at TDEE (maintenance) - goalType only affects macros, not calories
 
   // Apply minimum floors
   const minCalories = data.sexAtBirth === 'male' ? 1500 : 1200;

@@ -24,8 +24,8 @@ const paceOptions: PaceOption[] = [
     icon: Turtle,
     loseDescription: 'Slower but more sustainable',
     gainDescription: 'Gradual and sustainable',
-    loseDetail: '~0.5 lb/week',
-    gainDetail: '+0.25 lb/week'
+    loseDetail: '~0.5 lb/week (~0.2 kg)',
+    gainDetail: '+0.25 lb/week (~0.1 kg)'
   },
   { 
     id: 'standard', 
@@ -33,8 +33,8 @@ const paceOptions: PaceOption[] = [
     icon: Gauge,
     loseDescription: 'Balanced approach',
     gainDescription: 'Balanced approach',
-    loseDetail: '~1 lb/week',
-    gainDetail: '+0.5 lb/week',
+    loseDetail: '~0.8 lb/week (~0.35 kg)',
+    gainDetail: '+0.4 lb/week (~0.2 kg)',
     recommended: true
   },
   { 
@@ -43,8 +43,8 @@ const paceOptions: PaceOption[] = [
     icon: Rocket,
     loseDescription: 'Faster results, more discipline',
     gainDescription: 'Faster gains, higher surplus',
-    loseDetail: '~1.5 lb/week',
-    gainDetail: '+0.75 lb/week'
+    loseDetail: '~1.1 lb/week (~0.5 kg)',
+    gainDetail: '+0.55 lb/week (~0.25 kg)'
   },
 ];
 
