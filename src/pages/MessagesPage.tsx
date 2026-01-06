@@ -246,10 +246,32 @@ const GroupChatView = ({ groupId, onBack }: GroupChatViewProps) => {
             const isSystem = msg.message_type === 'system';
 
             if (isSystem) {
+              // Parse the system message to extract user ID and make name clickable
+              const userIdMatch = msg.content.match(/\[USER_ID:([^\]]+)\]/);
+              const userId = userIdMatch ? userIdMatch[1] : null;
+              const displayContent = msg.content.replace(/\[USER_ID:[^\]]+\]/, '');
+              
+              // Extract the name (everything before " joined the group!")
+              const nameMatch = displayContent.match(/^(.+?) joined the group!/);
+              const userName = nameMatch ? nameMatch[1] : null;
+              const restOfMessage = userName ? displayContent.replace(userName, '') : displayContent;
+              
               return (
                 <div key={msg.id} className="flex justify-center">
                   <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                    {msg.content}
+                    {userId && userName ? (
+                      <>
+                        <span 
+                          className="font-medium text-foreground hover:underline cursor-pointer"
+                          onClick={() => navigate(`/user/${userId}`)}
+                        >
+                          {userName}
+                        </span>
+                        {restOfMessage}
+                      </>
+                    ) : (
+                      displayContent
+                    )}
                   </span>
                 </div>
               );
