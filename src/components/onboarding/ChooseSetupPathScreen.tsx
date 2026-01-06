@@ -5,12 +5,20 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Target, Zap, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from '@/components/ui/carousel';
 
 export function ChooseSetupPathScreen() {
   const { data, updateData, goBack, setCurrentStep, completeOnboarding } = useOnboarding();
   const [isCompleting, setIsCompleting] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [api, setApi] = useState<CarouselApi>();
   const navigate = useNavigate();
 
   const handleSelectPath = async (path: 'targets' | 'just_log') => {
@@ -42,6 +50,46 @@ export function ChooseSetupPathScreen() {
     }
   };
 
+  const onSelect = useCallback(() => {
+    if (!api) return;
+    setCurrentIndex(api.selectedScrollSnap());
+  }, [api]);
+
+  // Set up carousel event listener
+  useState(() => {
+    if (!api) return;
+    api.on('select', onSelect);
+    return () => {
+      api.off('select', onSelect);
+    };
+  });
+
+  const handleConfirm = () => {
+    const path = currentIndex === 0 ? 'targets' : 'just_log';
+    handleSelectPath(path);
+  };
+
+  const options = [
+    {
+      id: 'targets',
+      icon: Target,
+      iconBg: 'bg-primary/20',
+      iconColor: 'text-primary',
+      title: 'Set up targets',
+      description: 'Answer a few quick questions and we\'ll calculate personalized calorie and macro targets based on your goals.',
+      badge: '⭐ Recommended',
+    },
+    {
+      id: 'just_log',
+      icon: Zap,
+      iconBg: 'bg-muted',
+      iconColor: 'text-muted-foreground',
+      title: 'Just start logging',
+      description: 'Skip the setup and start tracking your food and workouts right away. You can set up targets later in settings.',
+      badge: null,
+    },
+  ];
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -51,7 +99,7 @@ export function ChooseSetupPathScreen() {
     >
       <OnboardingProgress />
       
-      <div className="flex-1 px-6 py-8">
+      <div className="flex-1 flex flex-col px-6 py-8">
         <button 
           onClick={goBack}
           className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors"
@@ -61,69 +109,95 @@ export function ChooseSetupPathScreen() {
         </button>
 
         <h1 className="text-2xl font-bold mb-2">How do you want to start?</h1>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-muted-foreground mb-6">
           You can always change this later in settings
         </p>
 
-        <div className="grid grid-cols-2 gap-3">
-          {/* Set up targets */}
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            onClick={() => handleSelectPath('targets')}
-            disabled={isCompleting}
-            className={cn(
-              "p-4 rounded-2xl border-2 text-left transition-all h-full",
-              "border-border bg-card hover:border-primary/50",
-              isCompleting && "opacity-50 cursor-not-allowed"
-            )}
+        <div className="flex-1 flex flex-col">
+          <Carousel
+            setApi={setApi}
+            opts={{
+              align: 'center',
+              loop: false,
+            }}
+            className="w-full"
           >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Target className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Set up targets</h3>
-                <p className="text-xs text-muted-foreground">
-                  30 seconds to personalized goals
-                </p>
-                <div className="mt-2 inline-flex items-center gap-1 text-xs text-primary font-medium">
-                  <span>⭐ Recommended</span>
-                </div>
-              </div>
-            </div>
-          </motion.button>
+            <CarouselContent className="-ml-2">
+              {options.map((option, index) => {
+                const Icon = option.icon;
+                return (
+                  <CarouselItem key={option.id} className="pl-2 basis-[85%]">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className={cn(
+                        "p-6 rounded-2xl border-2 transition-all h-full min-h-[280px]",
+                        currentIndex === index
+                          ? "border-primary bg-card"
+                          : "border-border bg-card/50 opacity-60"
+                      )}
+                    >
+                      <div className="flex flex-col items-center text-center gap-4 h-full">
+                        <div className={cn(
+                          "w-16 h-16 rounded-2xl flex items-center justify-center",
+                          option.iconBg
+                        )}>
+                          <Icon className={cn("w-8 h-8", option.iconColor)} />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-semibold mb-2">{option.title}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {option.description}
+                          </p>
+                          {option.badge && (
+                            <div className="mt-4 inline-flex items-center gap-1 text-sm text-primary font-medium">
+                              <span>{option.badge}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+          </Carousel>
 
-          {/* Just start logging */}
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            onClick={() => handleSelectPath('just_log')}
-            disabled={isCompleting}
-            className={cn(
-              "p-4 rounded-2xl border-2 text-left transition-all h-full",
-              "border-border bg-card hover:border-primary/50",
-              isCompleting && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                {isCompleting ? (
-                  <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-                ) : (
-                  <Zap className="w-6 h-6 text-muted-foreground" />
+          {/* Dot indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {options.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => api?.scrollTo(index)}
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all",
+                  currentIndex === index
+                    ? "bg-primary w-6"
+                    : "bg-muted-foreground/30"
                 )}
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Just start logging</h3>
-                <p className="text-xs text-muted-foreground">
-                  Set targets later in settings
-                </p>
-              </div>
-            </div>
-          </motion.button>
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom button */}
+        <div className="pt-6">
+          <Button
+            onClick={handleConfirm}
+            disabled={isCompleting}
+            className="w-full"
+            size="lg"
+          >
+            {isCompleting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Setting up...
+              </>
+            ) : (
+              currentIndex === 0 ? 'Set up my targets' : 'Start logging'
+            )}
+          </Button>
         </div>
       </div>
     </motion.div>
