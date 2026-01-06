@@ -17,7 +17,6 @@ import { PaceScreen } from '@/components/onboarding/PaceScreen';
 import { CalculateTargetsScreen } from '@/components/onboarding/CalculateTargetsScreen';
 import { EditAnswersScreen } from '@/components/onboarding/EditAnswersScreen';
 import { AnimatePresence } from 'framer-motion';
-import { AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 
 function OnboardingFlow() {
@@ -101,7 +100,6 @@ function OnboardingFlow() {
         return <CalculateTargetsScreen />;
       case 'edit_answers':
         return <EditAnswersScreen />;
-      default:
       default:
         return <WhatBringsYouHereScreen />;
     }
