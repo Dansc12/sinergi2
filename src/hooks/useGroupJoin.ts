@@ -76,11 +76,11 @@ export function useGroupJoin(groupId: string | undefined) {
       // Get user's name for join notification
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, username')
+        .select('display_name, first_name, username')
         .eq('user_id', user.id)
         .single();
 
-      const userName = profile?.first_name || profile?.username || 'A new member';
+      const userName = profile?.display_name || profile?.first_name || profile?.username || 'A new member';
 
       // Add user to group
       const { error } = await supabase
@@ -94,7 +94,7 @@ export function useGroupJoin(groupId: string | undefined) {
       if (error) throw error;
 
       // Send join notification to group chat
-      await sendJoinNotification(groupId, userName);
+      await sendJoinNotification(groupId, userName, user.id);
 
       setState({ isMember: true, hasRequestedInvite: false, isLoading: false });
       toast.success('You joined the group!');
@@ -210,14 +210,14 @@ export async function acceptGroupInviteRequest(
     // Get requester's name for join notification
     const { data: requesterProfile } = await supabase
       .from('profiles')
-      .select('first_name, username')
+      .select('display_name, first_name, username')
       .eq('user_id', requestUserId)
       .single();
 
-    const requesterName = requesterProfile?.first_name || requesterProfile?.username || 'A new member';
+    const requesterName = requesterProfile?.display_name || requesterProfile?.first_name || requesterProfile?.username || 'A new member';
 
     // Send join notification to group chat
-    await sendJoinNotification(groupId, requesterName);
+    await sendJoinNotification(groupId, requesterName, requestUserId);
 
     // Notify the requester that they were accepted
     const { data: ownerProfile } = await supabase

@@ -335,17 +335,19 @@ export function useGroupChatMessages(groupId: string | null) {
   };
 }
 
-export async function sendJoinNotification(groupId: string, userName: string) {
+export async function sendJoinNotification(groupId: string, userName: string, userId: string) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Store the message with a special format: [USER_ID:user_id]userName
+    // This allows us to parse and make the name clickable
     await supabase
       .from('chat_messages')
       .insert({
         group_id: groupId,
-        sender_id: user.id,
-        content: `${userName} joined the group! Say hi! 👋`,
+        sender_id: userId,
+        content: `[USER_ID:${userId}]${userName} joined the group! Say hi! 👋`,
         message_type: 'system'
       });
   } catch (error) {
