@@ -340,13 +340,14 @@ export async function sendJoinNotification(groupId: string, userName: string, us
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Store the message with a special format: [USER_ID:user_id]userName
-    // This allows us to parse and make the name clickable
+    // Use the *current authenticated user* as the sender so RLS policies like
+    // "sender_id = auth.uid()" pass even when a group owner accepts someone else's request.
+    // The joiner's profile link is carried in the [USER_ID:...] tag.
     await supabase
       .from('chat_messages')
       .insert({
         group_id: groupId,
-        sender_id: userId,
+        sender_id: user.id,
         content: `[USER_ID:${userId}]${userName} joined the group! Say hi! 👋`,
         message_type: 'system'
       });

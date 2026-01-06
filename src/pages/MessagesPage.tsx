@@ -518,8 +518,8 @@ const DMChatView = ({ otherUserId, onBack }: DMChatViewProps) => {
 
 const MessagesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { groupChats, isLoading: groupsLoading } = useGroupChats();
-  const { conversations: dmConversations, isLoading: dmsLoading } = useDirectMessages();
+  const { groupChats, isLoading: groupsLoading, refreshChats } = useGroupChats();
+  const { conversations: dmConversations, isLoading: dmsLoading, refreshConversations } = useDirectMessages();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedDMUserId, setSelectedDMUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -577,11 +577,31 @@ const MessagesPage = () => {
   );
 
   if (selectedGroupId) {
-    return <GroupChatView groupId={selectedGroupId} onBack={() => setSelectedGroupId(null)} />;
+    return (
+      <GroupChatView
+        groupId={selectedGroupId}
+        onBack={() => {
+          setSelectedGroupId(null);
+          // Ensure unread counts clear immediately after viewing a chat
+          refreshChats();
+          refreshConversations();
+        }}
+      />
+    );
   }
 
   if (selectedDMUserId) {
-    return <DMChatView otherUserId={selectedDMUserId} onBack={() => setSelectedDMUserId(null)} />;
+    return (
+      <DMChatView
+        otherUserId={selectedDMUserId}
+        onBack={() => {
+          setSelectedDMUserId(null);
+          // Ensure unread counts clear immediately after viewing a chat
+          refreshConversations();
+          refreshChats();
+        }}
+      />
+    );
   }
 
   return (
