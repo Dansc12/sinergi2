@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Target, Zap, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Carousel,
@@ -56,16 +56,24 @@ export function ChooseSetupPathScreen() {
   }, [api]);
 
   // Set up carousel event listener
-  useState(() => {
+  useEffect(() => {
     if (!api) return;
+
+    // ensure state matches the initial snap
+    onSelect();
+
     api.on('select', onSelect);
+    api.on('reInit', onSelect);
+
     return () => {
       api.off('select', onSelect);
+      api.off('reInit', onSelect);
     };
-  });
+  }, [api, onSelect]);
 
   const handleConfirm = () => {
-    const path = currentIndex === 0 ? 'targets' : 'just_log';
+    const selected = api?.selectedScrollSnap() ?? currentIndex;
+    const path = selected === 0 ? 'targets' : 'just_log';
     handleSelectPath(path);
   };
 
@@ -122,20 +130,23 @@ export function ChooseSetupPathScreen() {
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-2">
+            <CarouselContent>
               {options.map((option, index) => {
                 const Icon = option.icon;
                 return (
-                  <CarouselItem key={option.id} className="pl-2 basis-[85%]">
+                  <CarouselItem key={option.id} className="basis-[85%]">
                     <motion.div
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ 
-                        opacity: currentIndex === index ? 1 : 0.6, 
+                      animate={{
+                        opacity: currentIndex === index ? 1 : 0.6,
                         y: 0,
-                        scale: currentIndex === index ? 1 : 0.95
+                        scale: currentIndex === index ? 1 : 0.95,
                       }}
                       transition={{ duration: 0.3, ease: "easeOut" }}
-                      onClick={() => api?.scrollTo(index)}
+                      onClick={() => {
+                        api?.scrollTo(index);
+                        setCurrentIndex(index);
+                      }}
                       className={cn(
                         "p-6 rounded-2xl border-2 transition-all h-full min-h-[280px] cursor-pointer",
                         currentIndex === index
