@@ -24,7 +24,8 @@ interface MacroBarProps {
 }
 
 const MacroBar = ({ label, current, goal, color }: MacroBarProps) => {
-  const percentage = Math.min((current / goal) * 100, 100);
+  const hasGoal = goal > 0;
+  const percentage = hasGoal ? Math.min((current / goal) * 100, 100) : 100;
   
   return (
     <div className="flex items-center gap-3">
@@ -35,7 +36,9 @@ const MacroBar = ({ label, current, goal, color }: MacroBarProps) => {
           style={{ width: `${percentage}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-xs font-medium w-16 text-right">{Math.round(current)}g / {goal}g</span>
+      <span className="text-xs font-medium w-16 text-right">
+        {hasGoal ? `${Math.round(current)}g / ${goal}g` : `${Math.round(current)}g`}
+      </span>
     </div>
   );
 };
@@ -286,8 +289,9 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mealsByType, mealLogs, totals, isLoading, refetch } = useDailyLogs(selectedDate || new Date());
-  const [caloriesGoal, setCaloriesGoal] = useState(2200);
-  const [macroGoals, setMacroGoals] = useState({ protein: 150, carbs: 250, fat: 70 });
+  const [caloriesGoal, setCaloriesGoal] = useState(0);
+  const [macroGoals, setMacroGoals] = useState({ protein: 0, carbs: 0, fat: 0 });
+  const [hasTargets, setHasTargets] = useState(false);
   const [foodToDelete, setFoodToDelete] = useState<FoodToDelete | null>(null);
   const [isDeletingFood, setIsDeletingFood] = useState(false);
 
@@ -362,25 +366,25 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
         .eq("user_id", user.id)
         .single();
       
-      if (data?.daily_calorie_target) {
+      // Check if user has set up targets
+      if (data?.daily_calorie_target && data.daily_calorie_target > 0) {
+        setHasTargets(true);
         setCaloriesGoal(data.daily_calorie_target);
-      }
-      
-      // Use saved macro targets if available, otherwise calculate defaults
-      if (data?.macro_targets && typeof data.macro_targets === 'object') {
-        const macros = data.macro_targets as { protein?: number; carbs?: number; fat?: number };
-        if (macros.protein && macros.carbs && macros.fat) {
-          setMacroGoals({
-            protein: macros.protein,
-            carbs: macros.carbs,
-            fat: macros.fat,
-          });
-          return;
+        
+        // Use saved macro targets if available, otherwise calculate defaults
+        if (data?.macro_targets && typeof data.macro_targets === 'object') {
+          const macros = data.macro_targets as { protein?: number; carbs?: number; fat?: number };
+          if (macros.protein && macros.carbs && macros.fat) {
+            setMacroGoals({
+              protein: macros.protein,
+              carbs: macros.carbs,
+              fat: macros.fat,
+            });
+            return;
+          }
         }
-      }
-      
-      // Fallback to calculated defaults if no macro targets saved
-      if (data?.daily_calorie_target) {
+        
+        // Fallback to calculated defaults if no macro targets saved
         const proteinCals = data.daily_calorie_target * 0.30;
         const carbsCals = data.daily_calorie_target * 0.40;
         const fatCals = data.daily_calorie_target * 0.30;
@@ -389,6 +393,11 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
           carbs: Math.round(carbsCals / 4),
           fat: Math.round(fatCals / 9),
         });
+      } else {
+        // User chose "Just start logging" - no targets
+        setHasTargets(false);
+        setCaloriesGoal(0);
+        setMacroGoals({ protein: 0, carbs: 0, fat: 0 });
       }
     };
     
@@ -396,11 +405,11 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
   }, [user]);
 
   const caloriesConsumed = totals.calories;
-  const isOverGoal = caloriesConsumed > caloriesGoal;
-  const caloriesDisplay = isOverGoal 
-    ? caloriesConsumed - caloriesGoal 
-    : caloriesGoal - caloriesConsumed;
-  const fillPercentage = (caloriesConsumed / caloriesGoal) * 100;
+  const isOverGoal = hasTargets && caloriesConsumed > caloriesGoal;
+  const caloriesDisplay = hasTargets 
+    ? (isOverGoal ? caloriesConsumed - caloriesGoal : caloriesGoal - caloriesConsumed)
+    : caloriesConsumed;
+  const fillPercentage = hasTargets ? (caloriesConsumed / caloriesGoal) * 100 : Math.min(caloriesConsumed / 2000 * 100, 100);
 
   const handleAddFood = (mealType: string) => {
     navigate("/create/meal", { 
@@ -434,9 +443,11 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
               {caloriesDisplay}
             </span>
             <span className={`text-sm font-medium mt-1 drop-shadow ${isOverGoal ? 'text-red-300/80' : 'text-white/80'}`}>
-              {isOverGoal ? 'calories over' : 'calories remaining'}
+              {hasTargets ? (isOverGoal ? 'calories over' : 'calories remaining') : 'calories consumed'}
             </span>
-            <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
+            {hasTargets && (
+              <span className="text-xs text-white/60 mt-2">{caloriesConsumed} / {caloriesGoal} consumed</span>
+            )}
           </div>
           
           {/* Macros - no frame */}
