@@ -279,7 +279,7 @@ export function CalculateTargetsScreen() {
               className="bg-card border border-border rounded-2xl p-6 mb-6"
             >
               {/* Primary Goal + Activity Info */}
-              <div className="text-center mb-4">
+              <div className="text-center mb-4 pb-4 border-b border-border">
                 <p className="text-lg font-semibold capitalize">
                   {data.goalType?.replace('_', ' ') || 'Improve health'}
                 </p>

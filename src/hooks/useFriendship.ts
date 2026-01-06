@@ -95,6 +95,26 @@ export function useFriendship(otherUserId: string | null) {
         .eq('addressee_id', currentUserId);
 
       if (error) throw error;
+
+      // Get accepter's name for the notification
+      const { data: accepterProfile } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('user_id', currentUserId)
+        .single();
+
+      const accepterName = accepterProfile?.first_name || 'Someone';
+
+      // Create notification for the original requester
+      await supabase.from('notifications').insert({
+        user_id: otherUserId,
+        type: 'friend_request_accepted',
+        title: 'Friend request accepted',
+        message: `${accepterName} accepted your friend request`,
+        related_user_id: currentUserId,
+        related_content_type: 'friend_request'
+      });
+
       setStatus('accepted');
       toast.success('Friend request accepted!');
     } catch (error) {

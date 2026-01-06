@@ -65,7 +65,7 @@ export function ChooseSetupPathScreen() {
           You can always change this later in settings
         </p>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
           {/* Set up targets */}
           <motion.button
             initial={{ opacity: 0, y: 10 }}
@@ -74,24 +74,22 @@ export function ChooseSetupPathScreen() {
             onClick={() => handleSelectPath('targets')}
             disabled={isCompleting}
             className={cn(
-              "w-full p-6 rounded-2xl border-2 text-left transition-all",
-              data.setupPath === 'targets'
-                ? "border-primary bg-primary/10"
-                : "border-border bg-card hover:border-primary/50",
+              "p-4 rounded-2xl border-2 text-left transition-all h-full",
+              "border-border bg-card hover:border-primary/50",
               isCompleting && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="flex gap-4">
-              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Target className="w-7 h-7 text-primary" />
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Target className="w-6 h-6 text-primary" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-1">Set up calorie & macro targets</h3>
-                <p className="text-sm text-muted-foreground">
-                  Takes about 30 seconds. We'll calculate personalized daily targets for you.
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Set up targets</h3>
+                <p className="text-xs text-muted-foreground">
+                  30 seconds to personalized goals
                 </p>
-                <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium">
-                  <span>⭐ Recommended for best results</span>
+                <div className="mt-2 inline-flex items-center gap-1 text-xs text-primary font-medium">
+                  <span>⭐ Recommended</span>
                 </div>
               </div>
             </div>
@@ -105,25 +103,23 @@ export function ChooseSetupPathScreen() {
             onClick={() => handleSelectPath('just_log')}
             disabled={isCompleting}
             className={cn(
-              "w-full p-6 rounded-2xl border-2 text-left transition-all",
-              data.setupPath === 'just_log'
-                ? "border-primary bg-primary/10"
-                : "border-border bg-card hover:border-primary/50",
+              "p-4 rounded-2xl border-2 text-left transition-all h-full",
+              "border-border bg-card hover:border-primary/50",
               isCompleting && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="flex gap-4">
-              <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                 {isCompleting ? (
-                  <Loader2 className="w-7 h-7 text-muted-foreground animate-spin" />
+                  <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
                 ) : (
-                  <Zap className="w-7 h-7 text-muted-foreground" />
+                  <Zap className="w-6 h-6 text-muted-foreground" />
                 )}
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-1">Just start logging</h3>
-                <p className="text-sm text-muted-foreground">
-                  Skip the setup and jump right in. You can set targets anytime from your profile.
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Just start logging</h3>
+                <p className="text-xs text-muted-foreground">
+                  Set targets later in settings
                 </p>
               </div>
             </div>

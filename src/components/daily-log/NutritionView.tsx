@@ -351,28 +351,43 @@ export const NutritionView = ({ selectedDate }: NutritionViewProps) => {
     setFoodToDelete({ mealLogId, foodIndex, foodName });
   };
 
-  // Fetch user's calorie target from profile
+  // Fetch user's calorie and macro targets from profile
   useEffect(() => {
     const fetchUserGoals = async () => {
       if (!user) return;
       
       const { data } = await supabase
         .from("profiles")
-        .select("daily_calorie_target")
+        .select("daily_calorie_target, macro_targets")
         .eq("user_id", user.id)
         .single();
       
       if (data?.daily_calorie_target) {
         setCaloriesGoal(data.daily_calorie_target);
-        // Calculate macro goals based on calorie target
-        // Typical split: 30% protein, 40% carbs, 30% fat
+      }
+      
+      // Use saved macro targets if available, otherwise calculate defaults
+      if (data?.macro_targets && typeof data.macro_targets === 'object') {
+        const macros = data.macro_targets as { protein?: number; carbs?: number; fat?: number };
+        if (macros.protein && macros.carbs && macros.fat) {
+          setMacroGoals({
+            protein: macros.protein,
+            carbs: macros.carbs,
+            fat: macros.fat,
+          });
+          return;
+        }
+      }
+      
+      // Fallback to calculated defaults if no macro targets saved
+      if (data?.daily_calorie_target) {
         const proteinCals = data.daily_calorie_target * 0.30;
         const carbsCals = data.daily_calorie_target * 0.40;
         const fatCals = data.daily_calorie_target * 0.30;
         setMacroGoals({
-          protein: Math.round(proteinCals / 4), // 4 cal per gram
-          carbs: Math.round(carbsCals / 4), // 4 cal per gram
-          fat: Math.round(fatCals / 9), // 9 cal per gram
+          protein: Math.round(proteinCals / 4),
+          carbs: Math.round(carbsCals / 4),
+          fat: Math.round(fatCals / 9),
         });
       }
     };
