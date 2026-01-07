@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureProfile } from "@/lib/ensureProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,48 +27,38 @@ const AuthPage = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Check if onboarding is complete
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarding_completed")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-        if (profile?.onboarding_completed) {
-          navigate("/", { replace: true });
-        } else {
-          navigate("/onboarding", { replace: true });
-        }
+      if (session?.user) {
+        const profile = await ensureProfile(session.user);
+        navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
       }
     };
+
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setTimeout(() => {
-          checkOnboardingStatus(session.user.id);
-        }, 0);
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) return;
+
+      // Never call database reads directly inside the callback.
+      setTimeout(() => {
+        ensureProfile(session.user).then((profile) => {
+          navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
+        });
+      }, 0);
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const checkOnboardingStatus = async (userId: string) => {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (profile?.onboarding_completed) {
-      navigate("/", { replace: true });
-    } else {
-      navigate("/onboarding", { replace: true });
-    }
+    const profile = await ensureProfile({ id: userId } as any);
+    navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
   };
 
   const validateForm = () => {

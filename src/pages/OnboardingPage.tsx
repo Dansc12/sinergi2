@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingProvider, useOnboarding } from '@/contexts/OnboardingContext';
+import { useAuth } from '@/hooks/useAuth';
+import { ensureProfile } from '@/lib/ensureProfile';
 import { WhatBringsYouHereScreen } from '@/components/onboarding/WhatBringsYouHereScreen';
 import { NameUsernameScreen } from '@/components/onboarding/NameUsernameScreen';
 import { ProfilePhotoBioScreen } from '@/components/onboarding/ProfilePhotoBioScreen';
@@ -19,48 +21,41 @@ import { PaceScreen } from '@/components/onboarding/PaceScreen';
 import { CalculateTargetsScreen } from '@/components/onboarding/CalculateTargetsScreen';
 import { EditAnswersScreen } from '@/components/onboarding/EditAnswersScreen';
 import { AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
 
 function OnboardingFlow() {
   const navigate = useNavigate();
   const { currentStep } = useOnboarding();
+  const { user, isLoading } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        // Not authenticated - redirect to auth
+      if (isLoading) return;
+
+      if (!user) {
         navigate('/auth', { replace: true });
         return;
       }
 
-      // Check if onboarding is already complete
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
+      const profile = await ensureProfile(user);
+      if (cancelled) return;
 
-      if (profile?.onboarding_completed) {
-        navigate("/", { replace: true });
+      if (profile.onboarding_completed) {
+        navigate('/', { replace: true });
         return;
       }
-      
+
       setIsCheckingAuth(false);
     };
-    
+
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session?.user) {
-        navigate('/auth', { replace: true });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, user, isLoading]);
 
   if (isCheckingAuth) {
     return (
@@ -121,30 +116,16 @@ function OnboardingFlow() {
 }
 
 export default function OnboardingPage() {
-  const [isChecking, setIsChecking] = useState(true);
   const navigate = useNavigate();
-  
+  const { user, isLoading } = useAuth();
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        navigate('/auth', { replace: true });
-        return;
-      }
-      setIsChecking(false);
-    };
-    checkAuth();
+    if (!isLoading && !user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [navigate, user, isLoading]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session?.user) {
-        navigate('/auth', { replace: true });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  if (isChecking) {
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
