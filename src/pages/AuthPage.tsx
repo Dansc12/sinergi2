@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Lock, Sparkles, Zap, Users, Utensils, ChevronDown } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Sparkles, Zap, Users, Utensils } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -24,7 +24,7 @@ const benefitCards = [
   {
     icon: Users,
     title: "Find your people",
-    body: "Friends, groups, and creators for daily motivation.",
+    body: "Friends, groups, and creators for daily motivation and accountability.",
   },
   {
     icon: Utensils,
@@ -210,15 +210,10 @@ const AuthPage = () => {
           Share workouts and meals, follow friends, and save inspo that keeps you consistent.
         </p>
 
-        {/* Trust line */}
-        <p className="text-sm text-muted-foreground/70 text-center lg:text-left mb-10">
-          Free to start • Share only what you want
-        </p>
-
         {/* Benefit Cards - Horizontal scroll on mobile, grid on desktop */}
         <div className="w-full lg:max-w-lg">
           {/* Mobile: horizontal scroll */}
-          <div className="lg:hidden flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar -mx-6 px-6">
+          <div className="lg:hidden flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory hide-scrollbar -mx-6 px-6">
             {benefitCards.map((card, index) => (
               <motion.div
                 key={card.title}
@@ -253,25 +248,32 @@ const AuthPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="relative z-10 w-full lg:w-1/2 px-6 py-8 lg:py-0 lg:px-16 xl:px-24 flex items-center justify-center"
+        className="relative z-10 w-full lg:w-1/2 px-6 pt-4 pb-8 lg:py-0 lg:px-16 xl:px-24 flex items-center justify-center"
       >
         <div className="w-full max-w-md">
           {/* Auth Card */}
-          <div className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl p-8 shadow-elevated">
-            {/* Card Header */}
-            <div className="text-center mb-8 lg:hidden">
+          <div className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl p-6 shadow-elevated">
+            {/* Card Header with Toggle */}
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-semibold text-foreground">
                 {isLogin ? "Welcome back" : "Create your account"}
               </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setErrors({});
+                }}
+                className="text-sm text-primary font-semibold hover:underline"
+              >
+                {isLogin ? "Create Account" : "Log In"}
+              </button>
             </div>
-            <div className="hidden lg:block text-center mb-8">
-              <h3 className="text-2xl font-semibold text-foreground mb-2">
-                {isLogin ? "Welcome back" : "Get started free"}
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                {isLogin ? "Log in to continue your journey" : "Join thousands building healthy habits"}
-              </p>
-            </div>
+
+            {/* Trust line */}
+            <p className="text-sm text-muted-foreground/70 mb-6">
+              Free to start • Share only what you want
+            </p>
 
             {/* Primary CTA - Google */}
             <Button
@@ -301,126 +303,103 @@ const AuthPage = () => {
               Continue with Google
             </Button>
 
-            {/* Secondary CTA - Email */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowEmailForm(!showEmailForm)}
-              className="w-full h-12 text-base font-medium rounded-xl border-border/50 hover:bg-muted/30 hover:border-border"
-            >
-              <Mail className="w-5 h-5 mr-2 text-muted-foreground" />
-              Continue with Email
-              <ChevronDown
-                className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-200 ${showEmailForm ? "rotate-180" : ""}`}
-              />
-            </Button>
+            {/* Email Option - Clickable text */}
+            {!showEmailForm && (
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(true)}
+                className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              >
+                or continue with email
+              </button>
+            )}
 
-            {/* Collapsible Email Form */}
-            <AnimatePresence>
-              {showEmailForm && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <form onSubmit={handleSubmit} className="pt-6 space-y-4">
-                    {/* Email Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
-                        Email
-                      </Label>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/60" />
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-12 h-14 bg-input/50 border-border/50 rounded-xl text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20"
-                        />
-                      </div>
-                      {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
+            {/* Email Form - Shows after click, no minimize */}
+            {showEmailForm && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <form onSubmit={handleSubmit} className="pt-4 space-y-4">
+                  {/* Email Field */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/60" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-12 h-14 bg-input/50 border-border/50 rounded-xl text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20"
+                      />
                     </div>
+                    {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
+                  </div>
 
-                    {/* Password Field */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="password" className="text-sm font-medium text-muted-foreground">
-                          Password
-                        </Label>
-                        {isLogin && (
-                          <button
-                            type="button"
-                            className="text-xs text-primary hover:underline"
-                            onClick={() => toast.info("Password reset coming soon!")}
-                          >
-                            Forgot password?
-                          </button>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/60" />
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-12 pr-12 h-14 bg-input/50 border-border/50 rounded-xl text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20"
-                        />
+                  {/* Password Field */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium text-muted-foreground">
+                        Password
+                      </Label>
+                      {isLogin && (
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground transition-colors"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => toast.info("Password reset coming soon!")}
                         >
-                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          Forgot password?
                         </button>
-                      </div>
-                      {errors.password && <p className="text-destructive text-sm">{errors.password}</p>}
-                    </div>
-
-                    {/* Submit Button */}
-                    <Button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full h-12 text-base font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl"
-                    >
-                      {isLoading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full"
-                        />
-                      ) : isLogin ? (
-                        "Log In"
-                      ) : (
-                        "Create Account"
                       )}
-                    </Button>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/60" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-12 pr-12 h-14 bg-input/50 border-border/50 rounded-xl text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                    {errors.password && <p className="text-destructive text-sm">{errors.password}</p>}
+                  </div>
 
-            {/* Toggle Login/Signup */}
-            <div className="mt-6 pt-6 border-t border-border/30 text-center">
-              <p className="text-muted-foreground text-sm">
-                {isLogin ? "New here?" : "Already have an account?"}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setErrors({});
-                  }}
-                  className="ml-2 text-primary font-semibold hover:underline"
-                >
-                  {isLogin ? "Create an account" : "Log in"}
-                </button>
-              </p>
-            </div>
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-12 text-base font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl"
+                  >
+                    {isLoading ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full"
+                      />
+                    ) : isLogin ? (
+                      "Log In"
+                    ) : (
+                      "Create Account"
+                    )}
+                  </Button>
+                </form>
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -430,14 +409,14 @@ const AuthPage = () => {
 
 // Benefit Card Component
 const BenefitCard = ({ icon: Icon, title, body }: { icon: any; title: string; body: string }) => (
-  <div className="rounded-xl border border-white/10 bg-card/40 backdrop-blur-lg p-5 shadow-card">
-    <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-5 h-5 text-primary" />
+  <div className="rounded-xl border border-white/10 bg-card/40 backdrop-blur-lg p-4 shadow-card h-full min-h-[88px] flex items-center">
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 text-primary" />
       </div>
       <div>
-        <h4 className="font-semibold text-foreground mb-1">{title}</h4>
-        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+        <h4 className="font-semibold text-foreground text-sm mb-0.5">{title}</h4>
+        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
       </div>
     </div>
   </div>
