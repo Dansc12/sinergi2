@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PostDetailProvider } from "@/contexts/PostDetailContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +29,7 @@ import MyRecipesPage from "./pages/MyRecipesPage";
 import DiscoverMealsPage from "./pages/DiscoverMealsPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AuthPage from "./pages/AuthPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import DiaryPage from "./pages/DiaryPage";
 import DirectShareSelectionPage from "./pages/DirectShareSelectionPage";
 
@@ -84,8 +85,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppRoutes = () => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) {
+  // Don't block the dedicated OAuth callback route while auth is still initializing.
+  if (isLoading && location.pathname !== "/auth/callback") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -95,39 +98,48 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route
+        path="/auth"
+        element={
+          isLoading ? <AuthPage /> : user ? <Navigate to="/" replace /> : <AuthPage />
+        }
+      />
       <Route path="/onboarding" element={<OnboardingPage />} />
-      <Route path="/*" element={
-        <ProtectedRoute>
-          <AppLayout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/daily-log" element={<DailyLogPage />} />
-              <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/user/:userId" element={<UserProfilePage />} />
-              <Route path="/create/workout" element={<CreateWorkoutPage />} />
-              <Route path="/create/meal" element={<CreateMealPage />} />
-              <Route path="/create/saved-meal" element={<CreateSavedMealPage />} />
-              <Route path="/create/post" element={<CreatePostPage />} />
-              <Route path="/create/group" element={<CreateGroupPage />} />
-              <Route path="/create/recipe" element={<CreateRecipePage />} />
-              <Route path="/create/routine" element={<CreateRoutinePage />} />
-              <Route path="/share" element={<SharePostScreen />} />
-              <Route path="/select-content" element={<SelectContentPage />} />
-              <Route path="/workout/my-saved" element={<MySavedPage />} />
-              <Route path="/workout/discover" element={<DiscoverWorkoutsPage />} />
-              <Route path="/meal/my-recipes" element={<MyRecipesPage />} />
-              <Route path="/meal/discover" element={<DiscoverMealsPage />} />
-              <Route path="/diary" element={<DiaryPage />} />
-              <Route path="/direct-share" element={<DirectShareSelectionPage />} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/daily-log" element={<DailyLogPage />} />
+                <Route path="/discover" element={<DiscoverPage />} />
+                <Route path="/messages" element={<MessagesPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/user/:userId" element={<UserProfilePage />} />
+                <Route path="/create/workout" element={<CreateWorkoutPage />} />
+                <Route path="/create/meal" element={<CreateMealPage />} />
+                <Route path="/create/saved-meal" element={<CreateSavedMealPage />} />
+                <Route path="/create/post" element={<CreatePostPage />} />
+                <Route path="/create/group" element={<CreateGroupPage />} />
+                <Route path="/create/recipe" element={<CreateRecipePage />} />
+                <Route path="/create/routine" element={<CreateRoutinePage />} />
+                <Route path="/share" element={<SharePostScreen />} />
+                <Route path="/select-content" element={<SelectContentPage />} />
+                <Route path="/workout/my-saved" element={<MySavedPage />} />
+                <Route path="/workout/discover" element={<DiscoverWorkoutsPage />} />
+                <Route path="/meal/my-recipes" element={<MyRecipesPage />} />
+                <Route path="/meal/discover" element={<DiscoverMealsPage />} />
+                <Route path="/diary" element={<DiaryPage />} />
+                <Route path="/direct-share" element={<DirectShareSelectionPage />} />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 };
