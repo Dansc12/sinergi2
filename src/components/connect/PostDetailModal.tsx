@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, format } from "date-fns";
-import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell, Utensils, Bookmark } from "lucide-react";
+import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell, Utensils } from "lucide-react";
 import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import { useGroupJoin } from "@/hooks/useGroupJoin";
@@ -1171,17 +1171,17 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   </button>
                   {/* Save button - only for saveable content types */}
                   {(post.type === "meal" || post.type === "recipe" || post.type === "workout" || post.type === "routine") && (
-                    <button
+                    <Button
                       onClick={() => toggleSave()}
-                      className="flex items-center gap-1 transition-transform active:scale-90"
+                      size="sm"
+                      className={`h-8 px-3 transition-all duration-150 ease-out ${
+                        isSaved 
+                          ? "bg-primary/20 text-primary border border-primary hover:bg-primary/30" 
+                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      }`}
                     >
-                      <Bookmark
-                        size={24}
-                        className={`transition-all duration-150 ease-out ${
-                          isSaved ? "fill-primary text-primary" : "text-foreground"
-                        }`}
-                      />
-                    </button>
+                      {isSaved ? "Saved" : "Save"}
+                    </Button>
                   )}
                 </div>
               </div>

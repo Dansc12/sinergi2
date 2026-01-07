@@ -96,6 +96,7 @@ export const useSavedWorkouts = () => {
     if (!user?.id) return;
 
     try {
+      // Fetch user's own scheduled routines
       const { data, error } = await supabase
         .from("scheduled_routines")
         .select("*")
@@ -104,7 +105,31 @@ export const useSavedWorkouts = () => {
 
       if (error) throw error;
 
-      // Deduplicate by routine_name (get unique routines)
+      // Fetch routines saved from other users via saved_posts
+      const { data: savedPostsData, error: savedError } = await supabase
+        .from("saved_posts")
+        .select("post_id, created_at")
+        .eq("user_id", user.id)
+        .eq("content_type", "routine");
+
+      if (savedError) throw savedError;
+
+      // Fetch the actual posts for saved routines
+      const savedPostIds = (savedPostsData || []).map(sp => sp.post_id);
+      let savedRoutinePosts: { id: string; content_data: unknown; created_at: string }[] = [];
+      
+      if (savedPostIds.length > 0) {
+        const { data: savedPosts, error: fetchError } = await supabase
+          .from("posts")
+          .select("id, content_data, created_at")
+          .in("id", savedPostIds);
+        
+        if (!fetchError && savedPosts) {
+          savedRoutinePosts = savedPosts;
+        }
+      }
+
+      // Deduplicate by routine_name (get unique routines from scheduled_routines)
       const uniqueRoutines = new Map<string, SavedRoutine>();
       (data || []).forEach((r) => {
         if (!uniqueRoutines.has(r.routine_name)) {
@@ -121,6 +146,26 @@ export const useSavedWorkouts = () => {
         }
       });
 
+      // Add saved routine posts from other users
+      savedRoutinePosts.forEach((post) => {
+        const contentData = post.content_data as Record<string, unknown>;
+        const routineName = (contentData?.name as string) || (contentData?.routineName as string) || "Saved Routine";
+        const exercises = (contentData?.exercises as RoutineExercise[]) || [];
+        
+        // Use post.id as unique key to avoid conflicts with scheduled_routines
+        if (!uniqueRoutines.has(`saved_${post.id}`)) {
+          uniqueRoutines.set(`saved_${post.id}`, {
+            id: post.id,
+            routine_name: routineName,
+            routine_data: { exercises, description: contentData?.description as string },
+            day_of_week: "",
+            created_at: post.created_at,
+            updated_at: post.created_at,
+            exerciseCount: exercises.length,
+          });
+        }
+      });
+
       setSavedRoutines(Array.from(uniqueRoutines.values()));
     } catch (err) {
       console.error("Error fetching saved routines:", err);
@@ -131,6 +176,7 @@ export const useSavedWorkouts = () => {
     if (!user?.id) return;
 
     try {
+      // Fetch user's own workout logs
       const { data, error } = await supabase
         .from("workout_logs")
         .select("*")
@@ -139,6 +185,30 @@ export const useSavedWorkouts = () => {
         .limit(50);
 
       if (error) throw error;
+
+      // Fetch workouts saved from other users via saved_posts
+      const { data: savedPostsData, error: savedError } = await supabase
+        .from("saved_posts")
+        .select("post_id, created_at")
+        .eq("user_id", user.id)
+        .eq("content_type", "workout");
+
+      if (savedError) throw savedError;
+
+      // Fetch the actual posts for saved workouts
+      const savedPostIds = (savedPostsData || []).map(sp => sp.post_id);
+      let savedWorkoutPosts: { id: string; content_data: unknown; created_at: string }[] = [];
+      
+      if (savedPostIds.length > 0) {
+        const { data: savedPosts, error: fetchError } = await supabase
+          .from("posts")
+          .select("id, content_data, created_at")
+          .in("id", savedPostIds);
+        
+        if (!fetchError && savedPosts) {
+          savedWorkoutPosts = savedPosts;
+        }
+      }
 
       const workouts: PastWorkout[] = (data || []).map((w) => {
         const rawData = w.exercises as unknown;
@@ -183,6 +253,39 @@ export const useSavedWorkouts = () => {
           totalSets,
         };
       });
+
+      // Add saved workout posts from other users
+      savedWorkoutPosts.forEach((post) => {
+        const contentData = post.content_data as Record<string, unknown>;
+        const exercises = (contentData?.exercises as WorkoutExercise[]) || [];
+        const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
+        
+        let title = (contentData?.title as string) || (contentData?.name as string);
+        if (!title) {
+          const createdDate = new Date(post.created_at);
+          const hour = createdDate.getHours();
+          if (hour < 12) {
+            title = "Morning Workout";
+          } else if (hour < 17) {
+            title = "Afternoon Workout";
+          } else {
+            title = "Evening Workout";
+          }
+        }
+
+        workouts.push({
+          id: post.id,
+          title,
+          exercises,
+          log_date: post.created_at.split('T')[0],
+          created_at: post.created_at,
+          exerciseCount: exercises.length,
+          totalSets,
+        });
+      });
+
+      // Sort by date descending
+      workouts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setPastWorkouts(workouts);
     } catch (err) {
