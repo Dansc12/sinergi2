@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PostDetailProvider } from "@/contexts/PostDetailContext";
 import { useAuth } from "@/hooks/useAuth";
+import { ensureProfile } from "@/lib/ensureProfile";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import HomePage from "./pages/HomePage";
@@ -49,13 +50,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      setOnboardingComplete(profile?.onboarding_completed ?? false);
+      const profile = await ensureProfile(user);
+      setOnboardingComplete(profile.onboarding_completed);
       setCheckingOnboarding(false);
     };
 

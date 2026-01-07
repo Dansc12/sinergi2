@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureProfile } from "@/lib/ensureProfile";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -49,35 +50,21 @@ const AuthCallbackPage = () => {
 
       const user = session.user;
 
-      // Ensure a profile row exists so the app doesn't treat the user as incomplete.
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id, onboarding_completed")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const meta = (user.user_metadata ?? {}) as Record<string, any>;
+      const first_name = meta.first_name ?? meta.given_name ?? null;
+      const last_name = meta.last_name ?? meta.family_name ?? null;
+      const display_name = meta.display_name ?? meta.full_name ?? meta.name ?? null;
 
-      if (!existingProfile) {
-        const meta = (user.user_metadata ?? {}) as Record<string, any>;
-        const first_name = meta.first_name ?? meta.given_name ?? null;
-        const last_name = meta.last_name ?? meta.family_name ?? null;
-        const display_name = meta.display_name ?? meta.full_name ?? meta.name ?? null;
-
-        await supabase.from("profiles").insert({
-          user_id: user.id,
+      const profile = await ensureProfile(user, {
+        defaults: {
           first_name,
           last_name,
           display_name,
-        });
-      }
+        },
+      });
 
       // Use the same destination logic as email login: main app if onboarded, otherwise onboarding.
-      const { data: profileAfter } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      const destination = profileAfter?.onboarding_completed ? "/" : "/onboarding";
+      const destination = profile.onboarding_completed ? "/" : "/onboarding";
       if (!cancelled) navigate(destination, { replace: true });
     };
 
