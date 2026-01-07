@@ -4,7 +4,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, format } from "date-fns";
-import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell, Utensils } from "lucide-react";
+import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell, Utensils, Bookmark } from "lucide-react";
+import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import { useGroupJoin } from "@/hooks/useGroupJoin";
 import { usePostReactions } from "@/hooks/usePostReactions";
@@ -119,6 +120,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
   const { isLiked, toggleLike } = usePostReactions(post.id);
   const { comments, commentCount, addComment } = usePostComments(post.id);
   const { setIsPostDetailOpen } = usePostDetail();
+  const { isSaved, toggleSave } = useSavedPosts(post.id, post.type);
   
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -422,6 +424,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
   const renderMealDetails = () => {
     const foods = (contentData?.foods as MealFood[]) || [];
+    const coverPhoto = contentData?.coverPhoto as string | undefined;
     const totalCalories = (contentData?.totalCalories as number) || foods.reduce((sum, f) => sum + (f.calories || 0), 0);
     const totalProtein = (contentData?.totalProtein as number) || foods.reduce((sum, f) => sum + (f.protein || 0), 0);
     const totalCarbs = (contentData?.totalCarbs as number) || foods.reduce((sum, f) => sum + (f.carbs || 0), 0);
@@ -452,6 +455,17 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
     return (
       <div className="space-y-4">
+        {/* Cover Photo */}
+        {coverPhoto && (
+          <div className="relative w-full aspect-video rounded-xl overflow-hidden">
+            <img 
+              src={coverPhoto} 
+              alt="Meal cover" 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+          </div>
+        )}
         {/* Nutrition Summary Bar - matching MealSavedCard style */}
         <div className="relative w-full h-14 rounded-xl overflow-hidden shadow-lg shadow-black/30">
           {/* Liquid blob background */}
@@ -1152,6 +1166,20 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                       }`}
                     />
                   </button>
+                  {/* Save button - only for saveable content types */}
+                  {(post.type === "meal" || post.type === "recipe" || post.type === "workout" || post.type === "routine") && (
+                    <button
+                      onClick={() => toggleSave()}
+                      className="flex items-center gap-1 transition-transform active:scale-90"
+                    >
+                      <Bookmark
+                        size={24}
+                        className={`transition-all duration-150 ease-out ${
+                          isSaved ? "fill-primary text-primary" : "text-foreground"
+                        }`}
+                      />
+                    </button>
+                  )}
                 </div>
               </div>
 
