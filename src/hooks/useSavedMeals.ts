@@ -143,16 +143,46 @@ export const useSavedMeals = () => {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
+      // Fetch user's own recipes
+      const { data: ownRecipes, error: ownError } = await supabase
         .from("posts")
         .select("id, content_data, images, created_at")
         .eq("user_id", user.id)
         .eq("content_type", "recipe")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (ownError) throw ownError;
 
-      const recipes: SavedRecipe[] = (data || []).map((post) => {
+      // Fetch recipes saved from other users via saved_posts
+      const { data: savedPostsData, error: savedError } = await supabase
+        .from("saved_posts")
+        .select("post_id, created_at")
+        .eq("user_id", user.id)
+        .eq("content_type", "recipe");
+
+      if (savedError) throw savedError;
+
+      // Fetch the actual posts for saved recipes
+      const savedPostIds = (savedPostsData || []).map(sp => sp.post_id);
+      let savedRecipePosts: typeof ownRecipes = [];
+      
+      if (savedPostIds.length > 0) {
+        const { data: savedPosts, error: fetchError } = await supabase
+          .from("posts")
+          .select("id, content_data, images, created_at")
+          .in("id", savedPostIds);
+        
+        if (!fetchError && savedPosts) {
+          savedRecipePosts = savedPosts;
+        }
+      }
+
+      // Combine own recipes and saved recipes (deduped by id)
+      const allRecipePosts = [...(ownRecipes || []), ...savedRecipePosts];
+      const uniqueRecipes = new Map<string, typeof allRecipePosts[0]>();
+      allRecipePosts.forEach(post => uniqueRecipes.set(post.id, post));
+
+      const recipes: SavedRecipe[] = Array.from(uniqueRecipes.values()).map((post) => {
         const contentData = post.content_data as unknown as RecipeContentData;
         return {
           id: post.id,
@@ -180,15 +210,44 @@ export const useSavedMeals = () => {
     if (!user?.id) return;
 
     try {
-      // Fetch saved_meal posts (food groups created via CreateSavedMealPage)
-      const { data, error } = await supabase
+      // Fetch user's own saved_meal posts (food groups created via CreateSavedMealPage)
+      const { data: ownMeals, error: ownError } = await supabase
         .from("posts")
         .select("id, content_data, images, created_at")
         .eq("user_id", user.id)
         .eq("content_type", "saved_meal")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (ownError) throw ownError;
+
+      // Fetch meals saved from other users via saved_posts (both "meal" and "saved_meal" types)
+      const { data: savedPostsData, error: savedError } = await supabase
+        .from("saved_posts")
+        .select("post_id, created_at, content_type")
+        .eq("user_id", user.id)
+        .in("content_type", ["meal", "saved_meal"]);
+
+      if (savedError) throw savedError;
+
+      // Fetch the actual posts for saved meals
+      const savedPostIds = (savedPostsData || []).map(sp => sp.post_id);
+      let savedMealPosts: typeof ownMeals = [];
+      
+      if (savedPostIds.length > 0) {
+        const { data: savedPosts, error: fetchError } = await supabase
+          .from("posts")
+          .select("id, content_data, images, created_at, content_type")
+          .in("id", savedPostIds);
+        
+        if (!fetchError && savedPosts) {
+          savedMealPosts = savedPosts;
+        }
+      }
+
+      // Combine own meals and saved meals (deduped by id)
+      const allMealPosts = [...(ownMeals || []), ...savedMealPosts];
+      const uniqueMeals = new Map<string, typeof allMealPosts[0]>();
+      allMealPosts.forEach(post => uniqueMeals.set(post.id, post));
 
       interface SavedMealContentData {
         name?: string;
@@ -200,15 +259,16 @@ export const useSavedMeals = () => {
         totalCarbs?: number;
         totalFats?: number;
         coverPhoto?: string;
+        mealType?: string;
       }
 
-      const meals: SavedMeal[] = (data || []).map((post) => {
+      const meals: SavedMeal[] = Array.from(uniqueMeals.values()).map((post) => {
         const contentData = post.content_data as unknown as SavedMealContentData;
         
         return {
           id: post.id,
           title: contentData?.name || "Untitled Meal",
-          mealType: "saved",
+          mealType: contentData?.mealType || "saved",
           foods: contentData?.foods || [],
           totalCalories: contentData?.totalCalories || 0,
           totalProtein: contentData?.totalProtein || 0,
