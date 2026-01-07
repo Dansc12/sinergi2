@@ -39,17 +39,25 @@ const AuthPage = () => {
 
     checkSession();
 
-    // Listen for auth changes
+    // Listen for auth changes - only handle relevant events
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only run navigation for initial session and sign-in events
+      if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN") return;
       if (!session?.user) return;
 
       // Never call database reads directly inside the callback.
       setTimeout(() => {
-        ensureProfile(session.user).then((profile) => {
-          navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
-        });
+        ensureProfile(session.user)
+          .then((profile) => {
+            navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
+          })
+          .catch((err) => {
+            console.error("ensureProfile failed:", err);
+            // Still route to onboarding on failure
+            navigate("/onboarding", { replace: true });
+          });
       }, 0);
     });
 
