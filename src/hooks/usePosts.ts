@@ -430,6 +430,15 @@ export const usePosts = () => {
       const today = startOfDay(new Date());
       const endPeriod = addMonths(today, 3);
 
+      // Collect all instances to insert in a single batch
+      const instancesToInsert: Array<{
+        scheduled_routine_id: string;
+        user_id: string;
+        scheduled_date: string;
+        scheduled_time: string | null;
+        status: string;
+      }> = [];
+
       for (const routine of routines || []) {
         const routineEndDate = routine.end_date ? new Date(routine.end_date) : endPeriod;
         const targetDayIndex = dayMapping[routine.day_of_week];
@@ -445,25 +454,26 @@ export const usePosts = () => {
         while (isBefore(currentDate, routineEndDate) && isBefore(currentDate, endPeriod)) {
           const dateStr = format(currentDate, "yyyy-MM-dd");
           
-          const { data: existing } = await supabase
-            .from("routine_instances")
-            .select("id")
-            .eq("scheduled_routine_id", routine.id)
-            .eq("scheduled_date", dateStr)
-            .single();
-
-          if (!existing) {
-            await supabase.from("routine_instances").insert({
-              scheduled_routine_id: routine.id,
-              user_id: userId,
-              scheduled_date: dateStr,
-              scheduled_time: routine.scheduled_time,
-              status: "pending",
-            });
-          }
+          instancesToInsert.push({
+            scheduled_routine_id: routine.id,
+            user_id: userId,
+            scheduled_date: dateStr,
+            scheduled_time: routine.scheduled_time,
+            status: "pending",
+          });
 
           currentDate = addDays(currentDate, 7);
         }
+      }
+
+      // Batch insert all instances at once, ignoring duplicates
+      if (instancesToInsert.length > 0) {
+        await supabase
+          .from("routine_instances")
+          .upsert(instancesToInsert, { 
+            onConflict: "scheduled_routine_id,scheduled_date",
+            ignoreDuplicates: true 
+          });
       }
     } catch (err) {
       console.error("Error generating routine instances:", err);
