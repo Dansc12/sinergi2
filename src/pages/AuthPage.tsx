@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureProfile } from "@/lib/ensureProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Lock, Sparkles, Zap, Users, Utensils } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Handshake, Zap, Users, Utensils } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -42,6 +42,8 @@ const AuthPage = () => {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -195,7 +197,7 @@ const AuthPage = () => {
             transition={{ delay: 0.1, duration: 0.4 }}
             className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center glow-primary"
           >
-            <Sparkles className="w-7 h-7 text-primary-foreground" />
+            <Handshake className="w-7 h-7 text-primary-foreground" />
           </motion.div>
           <h1 className="text-4xl font-bold gradient-text">Sinergi</h1>
         </div>
@@ -206,7 +208,7 @@ const AuthPage = () => {
         </h2>
 
         {/* Subhead */}
-        <p className="text-lg text-muted-foreground text-center lg:text-left max-w-md lg:mb-8">
+        <p className="text-lg text-muted-foreground text-center lg:text-left max-w-md mb-4 lg:mb-8">
           Share workouts and meals, follow friends, and save inspo that keeps you consistent.
         </p>
 
@@ -235,15 +237,15 @@ const AuthPage = () => {
         <div className="w-full max-w-md">
           {/* Auth Card */}
           <div className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl p-6 shadow-elevated">
-            {/* Toggle button - top right */}
-            <div className="flex justify-end mb-3">
+            {/* Toggle button - top right corner */}
+            <div className="flex justify-end -mt-2 -mr-2 mb-1">
               <button
                 type="button"
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setErrors({});
                 }}
-                className="text-sm text-primary font-semibold hover:underline"
+                className="text-xs text-primary/80 hover:text-primary hover:underline"
               >
                 {isLogin ? "Create Account" : "Log In"}
               </button>
@@ -386,19 +388,44 @@ const AuthPage = () => {
             )}
           </div>
 
-          {/* Mobile: Benefit Cards below auth card */}
-          <div className="lg:hidden mt-6 flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory hide-scrollbar scroll-px-[calc(50vw-130px)]">
-            {benefitCards.map((card, index) => (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
-                className="flex-shrink-0 w-[260px] snap-center"
-              >
-                <BenefitCard {...card} />
-              </motion.div>
-            ))}
+          {/* Mobile: Benefit Cards below auth card with pagination */}
+          <div className="lg:hidden mt-4">
+            <div 
+              ref={carouselRef}
+              className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory hide-scrollbar"
+              style={{ scrollPaddingInline: 'calc(50% - 130px)' }}
+              onScroll={(e) => {
+                const container = e.currentTarget;
+                const cardWidth = 260 + 12; // card width + gap
+                const scrollLeft = container.scrollLeft;
+                const centerOffset = container.offsetWidth / 2 - 130;
+                const index = Math.round((scrollLeft + centerOffset) / cardWidth);
+                setActiveCardIndex(Math.max(0, Math.min(index, benefitCards.length - 1)));
+              }}
+            >
+              {benefitCards.map((card, index) => (
+                <motion.div
+                  key={card.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  className="flex-shrink-0 w-[260px] snap-center first:ml-[calc(50vw-130px)] last:mr-[calc(50vw-130px)]"
+                >
+                  <BenefitCard {...card} />
+                </motion.div>
+              ))}
+            </div>
+            {/* Pagination dots */}
+            <div className="flex justify-center gap-1.5 pt-2">
+              {benefitCards.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                    index === activeCardIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>
