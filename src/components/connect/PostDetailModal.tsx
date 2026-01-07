@@ -455,15 +455,18 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
     return (
       <div className="space-y-4">
-        {/* Cover Photo */}
+        {/* Cover Photo - styled like MealSavedCard expanded view */}
         {coverPhoto && (
-          <div className="relative w-full aspect-video rounded-xl overflow-hidden">
+          <div className="relative h-40 overflow-hidden rounded-xl -mx-4">
             <img 
               src={coverPhoto} 
               alt="Meal cover" 
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+            {/* Top gradient for legibility */}
+            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+            {/* Bottom soft fade */}
+            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none" />
           </div>
         )}
         {/* Nutrition Summary Bar - matching MealSavedCard style */}
