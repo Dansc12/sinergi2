@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Camera, Loader2, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Camera, Loader2, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,12 +36,14 @@ export const ProfileSettingsSheet = ({
   profile,
   onSave 
 }: ProfileSettingsSheetProps) => {
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>(profile?.hobbies || []);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset form when sheet opens
@@ -149,11 +152,44 @@ export const ProfileSettingsSheet = ({
     }
   };
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      onOpenChange(false);
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to log out");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl">
         <SheetHeader className="pb-4">
-          <SheetTitle>Edit Profile</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle>Edit Profile</SheetTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              {isLoggingOut ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <>
+                  <LogOut size={16} className="mr-1.5" />
+                  Log Out
+                </>
+              )}
+            </Button>
+          </div>
         </SheetHeader>
 
         <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-140px)] pb-4">
