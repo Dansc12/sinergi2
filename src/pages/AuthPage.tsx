@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Lock, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Sparkles, Zap, Users, Utensils, ChevronDown } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -15,17 +15,35 @@ const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const benefitCards = [
+  {
+    icon: Zap,
+    title: "Make consistency fun",
+    body: "Turn logging into a feed you actually want to open.",
+  },
+  {
+    icon: Users,
+    title: "Find your people",
+    body: "Friends, groups, and creators for daily motivation.",
+  },
+  {
+    icon: Utensils,
+    title: "Meal + workout inspo",
+    body: "Save ideas, remix them, and share your own.",
+  },
+];
+
 const AuthPage = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   useEffect(() => {
-    // Check if user is already logged in
     const checkSession = async () => {
       const {
         data: { session },
@@ -39,15 +57,12 @@ const AuthPage = () => {
 
     checkSession();
 
-    // Listen for auth changes - only handle relevant events
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only run navigation for initial session and sign-in events
       if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN") return;
       if (!session?.user) return;
 
-      // Never call database reads directly inside the callback.
       setTimeout(() => {
         ensureProfile(session.user)
           .then((profile) => {
@@ -55,7 +70,6 @@ const AuthPage = () => {
           })
           .catch((err) => {
             console.error("ensureProfile failed:", err);
-            // Still route to onboarding on failure
             navigate("/onboarding", { replace: true });
           });
       }, 0);
@@ -63,11 +77,6 @@ const AuthPage = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const checkOnboardingStatus = async (userId: string) => {
-    const profile = await ensureProfile({ id: userId } as any);
-    navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
-  };
 
   const validateForm = () => {
     const result = loginSchema.safeParse({ email, password });
@@ -155,172 +164,285 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 py-12">
-      {/* Background glow effect */}
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row items-center justify-center relative overflow-hidden">
+      {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px]" />
+        {/* Primary glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/8 rounded-full blur-[150px]" />
+        {/* Secondary accent glow */}
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px]" />
+        {/* Subtle noise texture overlay */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }} />
       </div>
 
+      {/* Left Column - Marketing/Value Content */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-md"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10 w-full lg:w-1/2 px-6 py-12 lg:py-0 lg:px-16 xl:px-24 flex flex-col items-center lg:items-start"
       >
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
+        {/* Logo & Brand */}
+        <div className="flex items-center gap-3 mb-6">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-            className="inline-flex items-center gap-2 mb-4"
+            className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center glow-primary"
           >
-            <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center glow-primary">
-              <Sparkles className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <Sparkles className="w-7 h-7 text-primary-foreground" />
           </motion.div>
-          <h1 className="text-3xl font-bold gradient-text">Sinergi</h1>
-          <p className="text-muted-foreground mt-2">
-            {isLogin ? "Welcome back! Log in to continue." : "Create your account to get started."}
-          </p>
+          <h1 className="text-4xl font-bold gradient-text">Sinergi</h1>
         </div>
 
-        {/* Auth Form Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-          className="glass-elevated rounded-3xl p-8"
-        >
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 h-12 bg-input border-border rounded-xl"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-destructive text-sm">{errors.email}</p>
-              )}
+        {/* Headline */}
+        <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground text-center lg:text-left mb-4 leading-tight">
+          Fitness + nutrition logging,{" "}
+          <span className="gradient-text">made social.</span>
+        </h2>
+
+        {/* Subhead */}
+        <p className="text-lg text-muted-foreground text-center lg:text-left max-w-md mb-4">
+          Share workouts and meals, follow friends, and save inspo that keeps you consistent.
+        </p>
+
+        {/* Trust line */}
+        <p className="text-sm text-muted-foreground/70 text-center lg:text-left mb-10">
+          Free to start • Share only what you want
+        </p>
+
+        {/* Benefit Cards - Horizontal scroll on mobile, grid on desktop */}
+        <div className="w-full lg:max-w-lg">
+          {/* Mobile: horizontal scroll */}
+          <div className="lg:hidden flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar -mx-6 px-6">
+            {benefitCards.map((card, index) => (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
+                className="flex-shrink-0 w-[260px] snap-center"
+              >
+                <BenefitCard {...card} />
+              </motion.div>
+            ))}
+          </div>
+          
+          {/* Desktop: stacked list */}
+          <div className="hidden lg:flex flex-col gap-4">
+            {benefitCards.map((card, index) => (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+              >
+                <BenefitCard {...card} />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Right Column - Auth Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="relative z-10 w-full lg:w-1/2 px-6 py-8 lg:py-0 lg:px-16 xl:px-24 flex items-center justify-center"
+      >
+        <div className="w-full max-w-md">
+          {/* Auth Card */}
+          <div className="rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl p-8 shadow-elevated">
+            {/* Card Header */}
+            <div className="text-center mb-8 lg:hidden">
+              <h3 className="text-xl font-semibold text-foreground">
+                {isLogin ? "Welcome back" : "Create your account"}
+              </h3>
+            </div>
+            <div className="hidden lg:block text-center mb-8">
+              <h3 className="text-2xl font-semibold text-foreground mb-2">
+                {isLogin ? "Welcome back" : "Get started free"}
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                {isLogin ? "Log in to continue your journey" : "Join thousands building healthy habits"}
+              </p>
             </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-12 pr-12 h-12 bg-input border-border rounded-xl"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-destructive text-sm">{errors.password}</p>
-              )}
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 text-lg font-semibold gradient-primary rounded-xl glow-primary"
-            >
-              {isLoading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full"
-                />
-              ) : isLogin ? (
-                "Log In"
-              ) : (
-                "Create Account"
-              )}
-            </Button>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            {/* Google Login Button */}
+            {/* Primary CTA - Google */}
             <Button
               type="button"
-              variant="outline"
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full h-12 text-base font-medium rounded-xl border-border hover:bg-muted/50"
+              className="w-full h-14 text-base font-semibold gradient-primary rounded-xl glow-primary mb-4"
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path
-                  fill="#4285F4"
+                  fill="currentColor"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 />
                 <path
-                  fill="#34A853"
+                  fill="currentColor"
                   d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                 />
                 <path
-                  fill="#FBBC05"
+                  fill="currentColor"
                   d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
                 />
                 <path
-                  fill="#EA4335"
+                  fill="currentColor"
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
               Continue with Google
             </Button>
-          </form>
 
-          {/* Toggle Login/Signup */}
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-            </p>
-            <button
+            {/* Secondary CTA - Email */}
+            <Button
               type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setErrors({});
-              }}
-              className="text-primary font-semibold hover:underline mt-1"
+              variant="outline"
+              onClick={() => setShowEmailForm(!showEmailForm)}
+              className="w-full h-12 text-base font-medium rounded-xl border-border/50 hover:bg-muted/30 hover:border-border"
             >
-              {isLogin ? "Sign up" : "Log in"}
-            </button>
+              <Mail className="w-5 h-5 mr-2 text-muted-foreground" />
+              Continue with Email
+              <ChevronDown 
+                className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-200 ${showEmailForm ? 'rotate-180' : ''}`} 
+              />
+            </Button>
+
+            {/* Collapsible Email Form */}
+            <AnimatePresence>
+              {showEmailForm && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <form onSubmit={handleSubmit} className="pt-6 space-y-4">
+                    {/* Email Field */}
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
+                        Email
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/60" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-12 h-14 bg-input/50 border-border/50 rounded-xl text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20"
+                        />
+                      </div>
+                      {errors.email && (
+                        <p className="text-destructive text-sm">{errors.email}</p>
+                      )}
+                    </div>
+
+                    {/* Password Field */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="password" className="text-sm font-medium text-muted-foreground">
+                          Password
+                        </Label>
+                        {isLogin && (
+                          <button
+                            type="button"
+                            className="text-xs text-primary hover:underline"
+                            onClick={() => toast.info("Password reset coming soon!")}
+                          >
+                            Forgot password?
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/60" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-12 pr-12 h-14 bg-input/50 border-border/50 rounded-xl text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                      {errors.password && (
+                        <p className="text-destructive text-sm">{errors.password}</p>
+                      )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full h-12 text-base font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl"
+                    >
+                      {isLoading ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full"
+                        />
+                      ) : isLogin ? (
+                        "Log In"
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Toggle Login/Signup */}
+            <div className="mt-6 pt-6 border-t border-border/30 text-center">
+              <p className="text-muted-foreground text-sm">
+                {isLogin ? "New here?" : "Already have an account?"}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setErrors({});
+                  }}
+                  className="ml-2 text-primary font-semibold hover:underline"
+                >
+                  {isLogin ? "Create an account" : "Log in"}
+                </button>
+              </p>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );
 };
+
+// Benefit Card Component
+const BenefitCard = ({ icon: Icon, title, body }: { icon: any; title: string; body: string }) => (
+  <div className="rounded-xl border border-white/10 bg-card/40 backdrop-blur-lg p-5 shadow-card">
+    <div className="flex items-start gap-4">
+      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-5 h-5 text-primary" />
+      </div>
+      <div>
+        <h4 className="font-semibold text-foreground mb-1">{title}</h4>
+        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+      </div>
+    </div>
+  </div>
+);
 
 export default AuthPage;
