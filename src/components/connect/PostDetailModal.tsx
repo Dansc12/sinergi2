@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, format } from "date-fns";
@@ -607,15 +606,15 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           />
           
           {/* Content - Mobile-first responsive layout (prevents horizontal clipping) */}
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between px-2 sm:px-4 py-2 gap-1 sm:gap-3 min-w-0 w-full">
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-2 gap-1 sm:gap-3 min-w-0 w-full">
             {/* Top row on mobile / Left on desktop: Icon + Count + Calories */}
-            <div className="flex items-center justify-between w-full sm:w-auto sm:justify-start gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center flex-wrap w-full sm:w-auto sm:justify-start gap-2 sm:gap-4 min-w-0">
               <div className="flex items-center gap-1 sm:gap-1.5 text-white shrink-0">
                 <Utensils size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
                 <span className="font-semibold text-xs sm:text-sm">{foods.length}</span>
               </div>
-              {/* Calories on mobile (so it never gets cut off) */}
-              <div className="text-[11px] sm:text-sm text-white shrink-0 sm:hidden">
+              {/* Calories on mobile */}
+              <div className="ml-auto text-[11px] sm:text-sm text-white shrink-0 sm:hidden">
                 <span className="font-medium">{Math.round(totalCalories)} cal</span>
               </div>
             </div>
@@ -1072,10 +1071,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background overflow-hidden"
+          className="fixed inset-0 z-50 bg-background w-screen max-w-screen overflow-hidden"
           ref={containerRef}
         >
-          <ScrollArea className="h-full w-full overflow-x-hidden">
+          <div className="h-full w-screen max-w-screen overflow-y-auto overflow-x-hidden">
             {/* Image Header - Collapsed/Cropped view */}
             {hasImages && (
               <motion.div
@@ -1182,7 +1181,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
 
-            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-safe overflow-hidden w-full max-w-full box-border">
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-safe overflow-hidden w-screen max-w-screen overflow-x-hidden min-w-0 box-border">
               {/* Title row with icon and action buttons */}
               <div className="flex items-start justify-between gap-2 sm:gap-3 w-full min-w-0">
                 {/* Left side: Title with icon */}
@@ -1346,7 +1345,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 {renderContentDetails()}
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
