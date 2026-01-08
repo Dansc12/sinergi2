@@ -1153,10 +1153,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background"
+          className="fixed inset-0 z-50 bg-background h-[100dvh] w-full overflow-x-hidden"
           ref={containerRef}
         >
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full w-full">
             {/* Image Header - Collapsed/Cropped view */}
             {hasImages && (
               <motion.div

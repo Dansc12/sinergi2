@@ -159,6 +159,20 @@
     animation: fade-in 0.3s ease-out;
   }
 
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pb-safe {
+    /* Used on containers that already have p-4; preserves that base padding and adds safe area */
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pb-safe-bottom {
+    /* Used on containers that already have p-6; preserves that base padding and adds safe area */
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0.25rem);
   }
