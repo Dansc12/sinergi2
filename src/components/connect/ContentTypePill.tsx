@@ -45,9 +45,9 @@ export function ContentTypePill({
 
   if (noPill) {
     return (
-      <div className={cn("inline-flex items-center gap-2", className)}>
-        {Icon ? <Icon size={18} className="text-foreground/80" /> : null}
-        <span className="max-w-[70vw] truncate text-base font-semibold text-foreground">
+      <div className={cn("flex items-center gap-2 min-w-0 w-full", className)}>
+        {Icon ? <Icon size={18} className="text-foreground/80 shrink-0" /> : null}
+        <span className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
           {title}
         </span>
       </div>
@@ -57,12 +57,12 @@ export function ContentTypePill({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-sm px-3 py-1.5 shadow-lg",
+        "flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-sm px-3 py-1.5 shadow-lg min-w-0 max-w-full",
         className
       )}
     >
-      {Icon ? <Icon size={18} className="text-white/90 drop-shadow-md" /> : null}
-      <span className="max-w-[70vw] truncate text-base font-semibold text-white drop-shadow-md">
+      {Icon ? <Icon size={18} className="text-white/90 drop-shadow-md shrink-0" /> : null}
+      <span className="min-w-0 flex-1 truncate text-base font-semibold text-white drop-shadow-md">
         {title}
       </span>
     </div>

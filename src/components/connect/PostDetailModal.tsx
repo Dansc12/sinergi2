@@ -1127,7 +1127,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </motion.div>
 
             {/* Bottom row - Content type/name (directly touching image) */}
-            <div className="px-4 py-2 bg-background w-full">
+            <div className="px-4 py-2 bg-background w-full overflow-hidden">
               <ContentTypePill type={post.type} title={contentTitle} noPill className="[&>span]:text-foreground [&>svg]:text-foreground/80" />
             </div>
           </div>
