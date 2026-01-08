@@ -146,10 +146,13 @@ const WorkoutSavedCard = ({
               exit={{ opacity: 0 }}
               className="flex items-start gap-3"
             >
-              {/* Workout Icon */}
-              <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-primary/20 flex items-center justify-center">
-                <Dumbbell size={18} className="text-primary" />
-              </div>
+              {/* Creator's Profile Photo */}
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage src={creator.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                  {getInitials(creator.name)}
+                </AvatarFallback>
+              </Avatar>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
@@ -188,7 +191,7 @@ const WorkoutSavedCard = ({
               exit={{ opacity: 0 }}
             >
               {/* Header with Title and Copy Button */}
-              <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-start justify-between gap-3 mb-2">
                 <h4 className="font-bold text-foreground text-xl">{title}</h4>
                 <Button
                   size="sm"
