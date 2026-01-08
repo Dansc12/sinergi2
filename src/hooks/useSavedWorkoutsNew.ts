@@ -60,18 +60,18 @@ export const useSavedWorkoutsNew = () => {
 
       if (error) throw error;
 
-      // Fetch user's profile for creator info
-      const { data: profile } = await supabase
+      // Fetch user's own profile for self-created workouts
+      const { data: userProfile } = await supabase
         .from("profiles")
-        .select("user_id, first_name, last_name, username, avatar_url")
+        .select("user_id, first_name, last_name, username, avatar_url, display_name")
         .eq("user_id", user.id)
         .single();
 
-      const creator: Creator = profile ? {
-        id: profile.user_id,
-        name: [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "You",
-        username: profile.username,
-        avatar_url: profile.avatar_url,
+      const currentUserCreator: Creator = userProfile ? {
+        id: userProfile.user_id,
+        name: userProfile.display_name || [userProfile.first_name, userProfile.last_name].filter(Boolean).join(" ") || "You",
+        username: userProfile.username,
+        avatar_url: userProfile.avatar_url,
       } : {
         id: user.id,
         name: "You",
@@ -79,17 +79,57 @@ export const useSavedWorkoutsNew = () => {
         avatar_url: null,
       };
 
-      const workouts: SavedWorkout[] = (data || []).map((w) => ({
-        id: w.id,
-        title: w.title,
-        exercises: (w.exercises as unknown as WorkoutExercise[]) || [],
-        tags: w.tags || [],
-        description: w.description,
-        created_at: w.created_at,
-        workout_log_id: w.workout_log_id,
-        post_id: w.post_id,
-        creator,
-      }));
+      // Collect post_ids to fetch original creators for saved-from-connect workouts
+      const postIds = (data || []).filter(w => w.post_id).map(w => w.post_id as string);
+      
+      // Fetch posts to get original user_ids
+      let postCreatorMap = new Map<string, Creator>();
+      if (postIds.length > 0) {
+        const { data: postsData } = await supabase
+          .from("posts")
+          .select("id, user_id")
+          .in("id", postIds);
+
+        if (postsData && postsData.length > 0) {
+          const creatorUserIds = [...new Set(postsData.map(p => p.user_id))];
+          
+          const { data: creatorsData } = await supabase
+            .from("profiles")
+            .select("user_id, first_name, last_name, username, avatar_url, display_name")
+            .in("user_id", creatorUserIds);
+
+          const profileMap = new Map(creatorsData?.map(p => [p.user_id, p]));
+
+          postsData.forEach(post => {
+            const profile = profileMap.get(post.user_id);
+            if (profile) {
+              postCreatorMap.set(post.id, {
+                id: profile.user_id,
+                name: profile.display_name || [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "User",
+                username: profile.username,
+                avatar_url: profile.avatar_url,
+              });
+            }
+          });
+        }
+      }
+
+      const workouts: SavedWorkout[] = (data || []).map((w) => {
+        // If saved from a post, use the original post creator
+        const creator = w.post_id ? (postCreatorMap.get(w.post_id) || currentUserCreator) : currentUserCreator;
+        
+        return {
+          id: w.id,
+          title: w.title,
+          exercises: (w.exercises as unknown as WorkoutExercise[]) || [],
+          tags: w.tags || [],
+          description: w.description,
+          created_at: w.created_at,
+          workout_log_id: w.workout_log_id,
+          post_id: w.post_id,
+          creator,
+        };
+      });
 
       setSavedWorkouts(workouts);
     } catch (err) {
