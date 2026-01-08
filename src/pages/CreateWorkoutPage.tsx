@@ -606,10 +606,19 @@ const CreateWorkoutPage = () => {
     if (shouldReplace) {
       setExercises(newExercises);
       if (name) setTitle(name);
+      // Auto-select the first exercise
+      if (newExercises.length > 0) {
+        setSelectedExerciseId(newExercises[0].id);
+      }
     } else {
-      setExercises([...exercises, ...newExercises]);
+      const combinedExercises = [...exercises, ...newExercises];
+      setExercises(combinedExercises);
       // Set title from routine/workout if no title exists yet
       if (name && !title) setTitle(name);
+      // Auto-select the first of the newly added exercises
+      if (newExercises.length > 0) {
+        setSelectedExerciseId(newExercises[0].id);
+      }
     }
     toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
   };
@@ -686,12 +695,20 @@ const CreateWorkoutPage = () => {
       const newExercises = convertWorkoutToExercises(workoutItem.exercises);
       setExercises(newExercises);
       setTitle(workoutItem.title);
+      // Auto-select the first exercise
+      if (newExercises.length > 0) {
+        setSelectedExerciseId(newExercises[0].id);
+      }
       toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
     } else {
       const routineItem = item as RecentRoutine;
       const newExercises = convertRoutineToExercises(routineItem.exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
       setExercises(newExercises);
       setTitle(routineItem.title);
+      // Auto-select the first exercise
+      if (newExercises.length > 0) {
+        setSelectedExerciseId(newExercises[0].id);
+      }
       toast({ title: "Routine loaded!", description: `${newExercises.length} exercises added.` });
     }
   };
