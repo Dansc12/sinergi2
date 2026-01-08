@@ -606,30 +606,24 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             }}
           />
           
-          {/* Content - Mobile-first responsive layout */}
-          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between h-full px-3 sm:px-4 py-2 sm:py-0 gap-1 sm:gap-2 min-w-0 w-full overflow-hidden">
-            {/* Top row on mobile / Left on desktop: Icon + Count + Calories */}
-            <div className="flex items-center justify-between w-full sm:w-auto sm:justify-start gap-2 sm:gap-4 min-w-0">
-              <div className="flex items-center gap-1.5 text-white shrink-0">
-                <Utensils size={18} className="shrink-0" />
-                <span className="font-semibold text-sm">{foods.length}</span>
-              </div>
-              {/* Calories - shown on top row mobile, right side desktop */}
-              <div className="text-sm text-white shrink-0 sm:hidden">
-                <span className="font-medium">{Math.round(totalCalories)} cal</span>
-              </div>
+          {/* Content - Mobile-first single row layout */}
+          <div className="relative z-10 flex items-center justify-between h-full px-2 sm:px-4 py-2 gap-1.5 sm:gap-3 min-w-0 w-full overflow-hidden">
+            {/* Left: Icon + Count */}
+            <div className="flex items-center gap-1 sm:gap-1.5 text-white shrink-0">
+              <Utensils size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
+              <span className="font-semibold text-xs sm:text-sm">{foods.length}</span>
             </div>
             
-            {/* Bottom row on mobile / Center on desktop: Macros */}
-            <div className="flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm min-w-0 flex-wrap">
+            {/* Center: Macros - always visible, responsive text */}
+            <div className="flex items-center justify-center gap-1.5 sm:gap-3 text-[10px] sm:text-sm min-w-0 flex-shrink">
               <span className="whitespace-nowrap" style={{ color: proteinColor }}>P {Math.round(totalProtein)}g</span>
               <span className="whitespace-nowrap" style={{ color: carbsColor }}>C {Math.round(totalCarbs)}g</span>
               <span className="whitespace-nowrap" style={{ color: fatsColor }}>F {Math.round(totalFat)}g</span>
             </div>
             
-            {/* Right: Calories - hidden on mobile, shown on desktop */}
-            <div className="hidden sm:block text-sm text-white shrink-0">
-              <span>{Math.round(totalCalories)} cal</span>
+            {/* Right: Calories */}
+            <div className="text-[10px] sm:text-sm text-white shrink-0">
+              <span className="font-medium">{Math.round(totalCalories)} cal</span>
             </div>
           </div>
         </div>
@@ -658,9 +652,9 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     }}
                   />
                 )}
-                <div className="p-3 pt-4">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-semibold text-primary shrink-0">
+                <div className="p-2 sm:p-3 pt-3 sm:pt-4">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold text-primary shrink-0">
                       {(() => {
                         const servings = food.servings ?? 1;
                         const servingSize = food.servingSize || 'g';
@@ -671,11 +665,11 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                         return `${servings}${servingSize}`;
                       })()}
                     </span>
-                    <span className="font-medium text-foreground text-sm truncate">{food.name}</span>
+                    <span className="font-medium text-foreground text-xs sm:text-sm truncate min-w-0 flex-1">{food.name}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span className="text-xs text-foreground shrink-0">{Math.round(food.calories || 0)} cal</span>
-                    <div className="flex items-center gap-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5 flex-wrap">
+                    <span className="text-[10px] sm:text-xs text-foreground shrink-0">{Math.round(food.calories || 0)} cal</span>
+                    <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs">
                       <span className="whitespace-nowrap" style={{ color: proteinColor }}>P: {Math.round(p)}g</span>
                       <span className="whitespace-nowrap" style={{ color: carbsColor }}>C: {Math.round(c)}g</span>
                       <span className="whitespace-nowrap" style={{ color: fatsColor }}>F: {Math.round(f)}g</span>
@@ -709,23 +703,23 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
       <div className="space-y-6">
         {/* Prep Time, Cook Time, Servings */}
         {(prepTime || cookTime || servingsCount) && (
-          <div className="flex justify-between bg-muted/50 rounded-xl p-4">
+          <div className="flex justify-between bg-muted/50 rounded-xl p-3 sm:p-4 gap-1 sm:gap-2">
             {prepTime && (
-              <div className="text-center flex-1">
-                <p className="text-lg font-semibold">{prepTime}</p>
-                <p className="text-xs text-muted-foreground">Prep Time</p>
+              <div className="text-center flex-1 min-w-0">
+                <p className="text-sm sm:text-lg font-semibold truncate">{prepTime}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Prep Time</p>
               </div>
             )}
             {cookTime && (
-              <div className="text-center flex-1">
-                <p className="text-lg font-semibold">{cookTime}</p>
-                <p className="text-xs text-muted-foreground">Cook Time</p>
+              <div className="text-center flex-1 min-w-0">
+                <p className="text-sm sm:text-lg font-semibold truncate">{cookTime}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Cook Time</p>
               </div>
             )}
             {servingsCount && (
-              <div className="text-center flex-1">
-                <p className="text-lg font-semibold">{servingsCount}</p>
-                <p className="text-xs text-muted-foreground">Servings</p>
+              <div className="text-center flex-1 min-w-0">
+                <p className="text-sm sm:text-lg font-semibold truncate">{servingsCount}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Servings</p>
               </div>
             )}
           </div>
@@ -757,8 +751,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             <h4 className="text-lg font-semibold">Ingredients</h4>
             <div className="space-y-2">
               {ingredients.map((ingredient, idx) => (
-                <div key={idx} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                  <span className="text-sm font-medium text-primary min-w-[60px]">
+                <div key={idx} className="flex items-center gap-2 sm:gap-3 py-2 border-b border-border last:border-0">
+                  <span className="text-xs sm:text-sm font-medium text-primary shrink-0">
                     {(() => {
                       const servings = ingredient.servings ?? 1;
                       const servingSize = ingredient.servingSize || 'serving';
@@ -769,7 +763,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                       return `${servings} ${servingSize}`;
                     })()}
                   </span>
-                  <span className="text-sm flex-1">{ingredient.name}</span>
+                  <span className="text-xs sm:text-sm flex-1 min-w-0 truncate">{ingredient.name}</span>
                 </div>
               ))}
             </div>
@@ -1072,10 +1066,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background"
+          className="fixed inset-0 z-50 bg-background overflow-hidden"
           ref={containerRef}
         >
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full w-full">
             {/* Image Header - Collapsed/Cropped view */}
             {hasImages && (
               <motion.div
@@ -1182,37 +1176,37 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
 
-            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-safe overflow-hidden w-full max-w-full">
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-safe overflow-hidden w-full max-w-full box-border">
               {/* Title row with icon and action buttons */}
-              <div className="flex items-start justify-between gap-3 w-full">
+              <div className="flex items-start justify-between gap-2 sm:gap-3 w-full min-w-0">
                 {/* Left side: Title with icon */}
                 <div className="flex-1 min-w-0 overflow-hidden">
                   {getContentTitle() && (
-                    <div className="flex items-center gap-2 min-w-0">
-                      {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
-                      <span className="font-semibold text-base truncate">{getContentTitle()}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      {TypeIcon && <TypeIcon size={18} className="text-muted-foreground shrink-0 sm:w-5 sm:h-5" />}
+                      <span className="font-semibold text-sm sm:text-base truncate">{getContentTitle()}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Right side: Comment and Like buttons */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                   <button
                     onClick={() => setShowComments(!showComments)}
-                    className="flex items-center gap-1 transition-transform active:scale-90"
+                    className="flex items-center gap-0.5 sm:gap-1 transition-transform active:scale-90"
                   >
-                    <MessageCircle size={24} className="text-foreground" />
+                    <MessageCircle size={20} className="text-foreground sm:w-6 sm:h-6" />
                     {commentCount > 0 && (
-                      <span className="text-sm font-medium">{commentCount}</span>
+                      <span className="text-xs sm:text-sm font-medium">{commentCount}</span>
                     )}
                   </button>
                   <button
                     onClick={() => toggleLike()}
-                    className="flex items-center gap-1 transition-transform active:scale-90"
+                    className="flex items-center gap-0.5 sm:gap-1 transition-transform active:scale-90"
                   >
                     <Heart
-                      size={24}
-                      className={`transition-all duration-150 ease-out ${
+                      size={20}
+                      className={`transition-all duration-150 ease-out sm:w-6 sm:h-6 ${
                         isLiked ? "fill-primary text-primary" : "text-foreground"
                       }`}
                     />
@@ -1222,9 +1216,9 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <Button
                       onClick={handleCopyWorkout}
                       size="sm"
-                      className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 ease-out"
+                      className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 ease-out"
                     >
-                      <Copy size={14} className="mr-1.5" />
+                      <Copy size={12} className="mr-1 sm:mr-1.5 sm:w-3.5 sm:h-3.5" />
                       Copy
                     </Button>
                   )}
@@ -1232,7 +1226,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <Button
                       onClick={() => toggleSave()}
                       size="sm"
-                      className={`h-8 px-3 transition-all duration-150 ease-out ${
+                      className={`h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm transition-all duration-150 ease-out ${
                         isSaved 
                           ? "bg-primary/20 text-primary border border-primary hover:bg-primary/30" 
                           : "bg-primary text-primary-foreground hover:bg-primary/90"
