@@ -412,34 +412,34 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                         return (
                           <div 
                             key={setIdx}
-                            className="flex items-center gap-3 py-1"
+                            className="flex flex-wrap items-center gap-3 py-1"
                           >
                             {/* Set type/# badge - circular matching Log Workout style */}
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle} shrink-0`}>
                               {setLabel}
                             </div>
                             
                             {/* Weight/Distance and Reps/Time in boxes */}
                             {exercise.isCardio ? (
                               <>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 shrink-0">
                                   <span className="text-sm font-medium text-foreground">{distance}</span>
                                   <span className="text-xs text-muted-foreground">mi</span>
                                 </div>
                                 {set.time && (
-                                  <div className="bg-muted/30 rounded-md px-3 py-1.5">
+                                  <div className="bg-muted/30 rounded-md px-3 py-1.5 shrink-0">
                                     <span className="text-sm font-medium text-foreground">{set.time}</span>
                                   </div>
                                 )}
                               </>
                             ) : (
                               <>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 shrink-0">
                                   <span className="text-sm font-medium text-foreground">{weight}</span>
                                   <span className="text-xs text-muted-foreground">lbs</span>
                                 </div>
-                                <span className="text-muted-foreground">×</span>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                <span className="text-muted-foreground shrink-0">×</span>
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 shrink-0">
                                   <span className="text-sm font-medium text-foreground">{reps}</span>
                                   <span className="text-xs text-muted-foreground">reps</span>
                                 </div>
@@ -925,17 +925,17 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                           return (
                             <div 
                               key={setIdx}
-                              className="flex items-center gap-3 py-1"
+                              className="flex flex-wrap items-center gap-3 py-1"
                             >
                               {/* Set type/# badge - circular matching Log Workout style */}
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle} shrink-0`}>
                                 {setLabel}
                               </div>
                               
                               {/* Reps in box */}
-                              <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
-                                <span className="text-sm font-medium text-foreground">{displayReps}</span>
-                                <span className="text-xs text-muted-foreground">reps</span>
+                              <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 min-w-0 max-w-full">
+                                <span className="text-sm font-medium text-foreground truncate">{displayReps}</span>
+                                <span className="text-xs text-muted-foreground shrink-0">reps</span>
                               </div>
                             </div>
                           );
@@ -1263,21 +1263,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
 
-            <div className="p-4 space-y-4 pb-safe">
+            <div className="p-4 space-y-4 pb-safe overflow-x-hidden">
               {/* Title row with icon and action buttons */}
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 {/* Left side: Title with icon */}
                 <div className="flex-1 min-w-0">
                   {getContentTitle() && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
-                      <span className="font-semibold text-base">{getContentTitle()}</span>
+                      <span className="font-semibold text-base truncate">{getContentTitle()}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Right side: Comment and Like buttons */}
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3 flex-wrap justify-end">
                   <button
                     onClick={() => setShowComments(!showComments)}
                     className="flex items-center gap-1 transition-transform active:scale-90"
@@ -1303,7 +1303,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <Button
                       onClick={handleCopyWorkout}
                       size="sm"
-                      className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 ease-out"
+                      className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 ease-out whitespace-nowrap"
                     >
                       <Copy size={14} className="mr-1.5" />
                       Copy
@@ -1313,7 +1313,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <Button
                       onClick={() => toggleSave()}
                       size="sm"
-                      className={`h-8 px-3 transition-all duration-150 ease-out ${
+                      className={`h-8 px-3 transition-all duration-150 ease-out whitespace-nowrap ${
                         isSaved 
                           ? "bg-primary/20 text-primary border border-primary hover:bg-primary/30" 
                           : "bg-primary text-primary-foreground hover:bg-primary/90"
