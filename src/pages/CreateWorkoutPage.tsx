@@ -72,6 +72,7 @@ interface RestoredState {
   // From MySavedPage
   selectedRoutine?: SavedRoutine;
   selectedPastWorkout?: PastWorkout;
+  selectedTags?: string[];
   // From DiscoverWorkoutsPage
   selectedCommunityRoutine?: CommunityRoutine;
   selectedCommunityWorkout?: CommunityWorkout;
@@ -191,6 +192,7 @@ const CreateWorkoutPage = () => {
           const newExercises = convertRoutineToExercises(restoredState.selectedRoutine.routine_data.exercises);
           setExercises(newExercises);
           setTitle(restoredState.selectedRoutine.routine_name);
+          if (restoredState.selectedTags) setTags(restoredState.selectedTags);
           toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
         }
       } else if (restoredState.selectedPastWorkout) {
@@ -205,6 +207,7 @@ const CreateWorkoutPage = () => {
           const newExercises = convertWorkoutToExercises(restoredState.selectedPastWorkout.exercises);
           setExercises(newExercises);
           setTitle(restoredState.selectedPastWorkout.title);
+          if (restoredState.selectedTags) setTags(restoredState.selectedTags);
           toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
         }
       }

@@ -72,6 +72,7 @@ const MySavedPage = () => {
         routineInstanceId: returnState?.routineInstanceId,
         logDate: returnState?.logDate,
         selectedRoutine: routine,
+        selectedTags: routine.tags || [],
       },
     });
   };
@@ -88,6 +89,7 @@ const MySavedPage = () => {
         routineInstanceId: returnState?.routineInstanceId,
         logDate: returnState?.logDate,
         selectedPastWorkout: workout,
+        selectedTags: workout.tags || [],
       },
     });
   };
