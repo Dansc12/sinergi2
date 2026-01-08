@@ -51,15 +51,6 @@ export const useSavedPosts = (postId: string, contentType: string) => {
         return;
       }
 
-      // If unsaving a workout, also remove from saved_workouts table
-      if (contentType === "workout") {
-        await supabase
-          .from("saved_workouts")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("post_id", postId);
-      }
-
       setIsSaved(false);
       toast.success("Removed from saved");
     } else {
@@ -73,29 +64,6 @@ export const useSavedPosts = (postId: string, contentType: string) => {
       if (error) {
         toast.error("Failed to save");
         return;
-      }
-
-      // If saving a workout, also add to saved_workouts table
-      if (contentType === "workout") {
-        // Fetch the post data to get workout details
-        const { data: postData } = await supabase
-          .from("posts")
-          .select("content_data, description")
-          .eq("id", postId)
-          .single();
-
-        if (postData) {
-          const contentData = postData.content_data as Record<string, unknown>;
-          const exercisesData = (contentData?.exercises || []) as unknown[];
-          await supabase.from("saved_workouts").insert({
-            user_id: user.id,
-            post_id: postId,
-            title: (contentData?.title as string) || (contentData?.name as string) || "Workout",
-            exercises: JSON.parse(JSON.stringify(exercisesData)),
-            tags: (contentData?.tags as string[]) || [],
-            description: postData.description,
-          });
-        }
       }
 
       setIsSaved(true);

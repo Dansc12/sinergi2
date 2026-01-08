@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown, Clock } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,10 +16,6 @@ import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseHistory } from "@/hooks/useExerciseHistory";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
-import { useRecentWorkouts, RecentWorkout, RecentRoutine, RecentItem } from "@/hooks/useRecentWorkouts";
-import { useSavedWorkoutsNew } from "@/hooks/useSavedWorkoutsNew";
-import WorkoutSavedCard from "@/components/workout/WorkoutSavedCard";
-import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,10 +71,7 @@ interface RestoredState {
   logDate?: string; // ISO date string for logging to a specific date
   // From MySavedPage
   selectedRoutine?: SavedRoutine;
-  selectedPastWorkout?: PastWorkout & { post_id?: string | null; creator?: { id: string; name: string; username?: string | null; avatar_url?: string | null } };
-  selectedTags?: string[];
-  savedWorkoutId?: string; // Track if copying an already-saved workout
-  sourcePostId?: string | null; // Track original creator's post
+  selectedPastWorkout?: PastWorkout;
   // From DiscoverWorkoutsPage
   selectedCommunityRoutine?: CommunityRoutine;
   selectedCommunityWorkout?: CommunityWorkout;
@@ -90,9 +83,6 @@ const CreateWorkoutPage = () => {
   const restoredState = location.state as RestoredState | null;
   const { createPost } = usePosts();
   const { getLastExerciseData } = useExerciseHistory();
-  const { recentItems, isLoading: isLoadingRecent, userProfile } = useRecentWorkouts(10);
-  const { saveWorkout, savedWorkouts, isWorkoutSaved } = useSavedWorkoutsNew();
-  const { user } = useAuth();
   
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -118,9 +108,6 @@ const CreateWorkoutPage = () => {
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>([]);
   const [animatingExerciseIds, setAnimatingExerciseIds] = useState<string[]>([]);
   const [logDate, setLogDate] = useState<string | undefined>(restoredState?.logDate);
-  const [isSaved, setIsSaved] = useState(!!restoredState?.savedWorkoutId); // Pre-set if copying a saved workout
-  const [isSaving, setIsSaving] = useState(false);
-  const [sourcePostId, setSourcePostId] = useState<string | null>(restoredState?.sourcePostId || null); // Track if workout came from a saved post
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -204,15 +191,10 @@ const CreateWorkoutPage = () => {
           const newExercises = convertRoutineToExercises(restoredState.selectedRoutine.routine_data.exercises);
           setExercises(newExercises);
           setTitle(restoredState.selectedRoutine.routine_name);
-          if (restoredState.selectedTags) setTags(restoredState.selectedTags);
           toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
         }
       } else if (restoredState.selectedPastWorkout) {
         const currentExercises = restoredState.contentData?.exercises || [];
-        // Set sourcePostId if workout came from another user's post
-        if (restoredState.selectedPastWorkout.post_id) {
-          setSourcePostId(restoredState.selectedPastWorkout.post_id);
-        }
         if (currentExercises.length > 0) {
           setPendingAutofill({ 
             type: "workout", 
@@ -223,7 +205,6 @@ const CreateWorkoutPage = () => {
           const newExercises = convertWorkoutToExercises(restoredState.selectedPastWorkout.exercises);
           setExercises(newExercises);
           setTitle(restoredState.selectedPastWorkout.title);
-          if (restoredState.selectedTags) setTags(restoredState.selectedTags);
           toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
         }
       }
@@ -538,13 +519,7 @@ const CreateWorkoutPage = () => {
     try {
       await createPost({
         content_type: "workout",
-        content_data: { 
-          title, 
-          exercises, 
-          tags, 
-          durationSeconds: elapsedSeconds,
-          sourcePostId: sourcePostId || undefined, // Include source for tracking original creator
-        },
+        content_data: { title, exercises, tags, durationSeconds: elapsedSeconds },
         images: photos,
         visibility: "private",
         logDate: logDate,
@@ -623,19 +598,10 @@ const CreateWorkoutPage = () => {
     if (shouldReplace) {
       setExercises(newExercises);
       if (name) setTitle(name);
-      // Auto-select the first exercise
-      if (newExercises.length > 0) {
-        setSelectedExerciseId(newExercises[0].id);
-      }
     } else {
-      const combinedExercises = [...exercises, ...newExercises];
-      setExercises(combinedExercises);
+      setExercises([...exercises, ...newExercises]);
       // Set title from routine/workout if no title exists yet
       if (name && !title) setTitle(name);
-      // Auto-select the first of the newly added exercises
-      if (newExercises.length > 0) {
-        setSelectedExerciseId(newExercises[0].id);
-      }
     }
     toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
   };
@@ -705,36 +671,6 @@ const CreateWorkoutPage = () => {
     setPendingAutofill(null);
   };
 
-  // Handler for selecting a recent workout or routine
-  const handleSelectRecentItem = (item: RecentItem) => {
-    if (item.type === "workout") {
-      const workoutItem = item as RecentWorkout;
-      const newExercises = convertWorkoutToExercises(workoutItem.exercises);
-      setExercises(newExercises);
-      setTitle(workoutItem.title);
-      if (workoutItem.tags) setTags(workoutItem.tags);
-      // Capture source post ID for tracking original creator
-      if (workoutItem.sourcePostId) {
-        setSourcePostId(workoutItem.sourcePostId);
-      }
-      // Auto-select the first exercise
-      if (newExercises.length > 0) {
-        setSelectedExerciseId(newExercises[0].id);
-      }
-      toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
-    } else {
-      const routineItem = item as RecentRoutine;
-      const newExercises = convertRoutineToExercises(routineItem.exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
-      setExercises(newExercises);
-      setTitle(routineItem.title);
-      // Auto-select the first exercise
-      if (newExercises.length > 0) {
-        setSelectedExerciseId(newExercises[0].id);
-      }
-      toast({ title: "Routine loaded!", description: `${newExercises.length} exercises added.` });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background pb-32">
       <motion.div
@@ -757,62 +693,9 @@ const CreateWorkoutPage = () => {
           </Button>
         </div>
 
-        {/* Workout Title with Collapsible Toggle and Save Button */}
+        {/* Workout Title with Collapsible Toggle */}
         <Collapsible open={isExerciseSectionOpen} onOpenChange={setIsExerciseSectionOpen} className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            {/* Bookmark Icon - only show when exercises exist */}
-            {exercises.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (isSaved || isSaving) return;
-                  
-                  setIsSaving(true);
-                  const result = await saveWorkout({
-                    title: title || "My Workout",
-                    exercises: exercises.map(ex => ({
-                      id: ex.id,
-                      name: ex.name,
-                      category: ex.category,
-                      muscleGroup: ex.muscleGroup,
-                      notes: ex.notes,
-                      isCardio: ex.isCardio,
-                      sets: ex.sets.map(s => ({
-                        id: s.id,
-                        weight: s.weight,
-                        reps: s.reps,
-                        distance: s.distance,
-                        time: s.time,
-                        completed: s.completed,
-                        repRangeHint: s.repRangeHint,
-                      })),
-                    })),
-                    tags,
-                  });
-                  
-                  if (result) {
-                    setIsSaved(true);
-                    toast({ title: "Workout saved!", description: "You can find it in My Saved Workouts." });
-                  } else {
-                    toast({ title: "Failed to save", description: "Please try again.", variant: "destructive" });
-                  }
-                  setIsSaving(false);
-                }}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 size={18} className="animate-spin text-primary" />
-                ) : (
-                  <Bookmark 
-                    size={18} 
-                    className={isSaved ? "text-primary fill-primary" : "text-muted-foreground"} 
-                  />
-                )}
-              </Button>
-            )}
             <Input
               placeholder="Workout name"
               value={title}
@@ -860,72 +743,6 @@ const CreateWorkoutPage = () => {
                 <span>Discover</span>
               </Button>
             </div>
-
-            {/* Recent Workouts Section - Only show when no exercises selected */}
-            {exercises.length === 0 && (
-              <div className="space-y-4 mt-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock size={16} />
-                  <span className="text-sm font-medium">Recent Workouts</span>
-                </div>
-                {isLoadingRecent ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
-                ) : recentItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No recent workouts yet. Start logging workouts!
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {recentItems.map((item) => {
-                      const isWorkout = item.type === "workout";
-                      const workoutItem = isWorkout ? (item as RecentWorkout) : null;
-                      const routineItem = !isWorkout ? (item as RecentRoutine) : null;
-                      
-                      // Use creator from the item if available, otherwise fallback to current user
-                      const itemCreator = (isWorkout ? workoutItem?.creator : routineItem?.creator) || {
-                        id: user?.id || "",
-                        name: userProfile?.name || "You",
-                        username: null as string | null,
-                        avatar_url: userProfile?.avatar_url || null,
-                      };
-                      
-                      // Convert exercises to the format WorkoutSavedCard expects
-                      const cardExercises = isWorkout 
-                        ? (item as RecentWorkout).exercises 
-                        : (item as RecentRoutine).exercises.map(ex => ({
-                            ...ex,
-                            isCardio: false,
-                            sets: ex.sets.map(s => ({
-                              ...s,
-                              weight: "",
-                              reps: "",
-                              distance: "",
-                              time: "",
-                            })),
-                          }));
-                      
-                      // Determine if this is an unsaved log (workout without a saved title)
-                      const isUnsavedLog = isWorkout && !workoutItem?.isSavedWorkout;
-                      
-                      return (
-                        <WorkoutSavedCard
-                          key={item.id}
-                          title={item.title}
-                          exercises={cardExercises}
-                          creator={itemCreator}
-                          createdAt={isWorkout ? (item as RecentWorkout).logDate : item.createdAt}
-                          onCopy={() => handleSelectRecentItem(item)}
-                          copyButtonText="Copy"
-                          isRoutine={item.type === "routine"}
-                          isUnsavedLog={isUnsavedLog}
-                          tags={workoutItem?.tags}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
           </CollapsibleContent>
         </Collapsible>
         
