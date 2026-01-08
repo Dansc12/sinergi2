@@ -300,8 +300,8 @@ export const useSavedMeals = () => {
           totalProtein: contentData?.totalProtein || 0,
           totalCarbs: contentData?.totalCarbs || 0,
           totalFats: contentData?.totalFats || 0,
-          // Always prioritize coverPhoto from content_data over images array
-          coverPhoto: contentData?.coverPhoto || null,
+          // Prioritize coverPhoto from content_data, fallback to first image in images array
+          coverPhoto: contentData?.coverPhoto || (post.images && post.images.length > 0 ? post.images[0] : null),
           images: post.images || [],
           created_at: post.created_at,
           tags: contentData?.tags || [],
