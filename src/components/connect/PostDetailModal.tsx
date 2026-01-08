@@ -67,6 +67,9 @@ interface RoutineExercise {
   minReps?: number;
   maxReps?: number;
   supersetGroup?: number;
+  category?: string;
+  muscleGroup?: string;
+  isCardio?: boolean;
 }
 
 interface RoutineDay {
@@ -858,19 +861,22 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 )}
                 
                 <div className="flex-1 p-4 space-y-3 min-w-0 overflow-hidden">
-                  {/* Exercise header - icon, name */}
+                  {/* Exercise header - icon, name, category, muscles (matching workout style) */}
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                       <Dumbbell size={18} className="text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-semibold text-foreground truncate">{exercise.name}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {setsArray.length > 0 
-                          ? `${setsArray.length} sets` 
-                          : typeof exercise.sets === 'number' 
-                            ? `${exercise.sets} sets` 
-                            : 'Exercise'}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {exercise.category || "Exercise"} • {(() => {
+                          if (exercise.isCardio) return "Cardio";
+                          const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
+                          const sortedMuscles = Object.entries(config.muscleContributions)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([muscle]) => getMuscleDisplayName(muscle));
+                          return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
+                        })()}
                       </p>
                     </div>
                   </div>
