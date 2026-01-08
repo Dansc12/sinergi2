@@ -188,10 +188,12 @@ export const usePosts = () => {
     // If this is a workout, also save to workout_logs table
     if (postData.content_type === "workout") {
       const workoutData = postData.content_data;
-      // Include title in the exercises JSON for retrieval later
+      // Include title and sourcePostId in the exercises JSON for retrieval later
       const exercisesWithMeta = {
         title: workoutData.title as string || "",
         exercises: workoutData.exercises,
+        tags: workoutData.tags as string[] || [],
+        sourcePostId: workoutData.sourcePostId as string || null,
       };
       
       // Calculate log_date from provided logDate or use current date

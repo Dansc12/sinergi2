@@ -118,6 +118,7 @@ const CreateWorkoutPage = () => {
   const [logDate, setLogDate] = useState<string | undefined>(restoredState?.logDate);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sourcePostId, setSourcePostId] = useState<string | null>(null); // Track if workout came from a saved post
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -531,7 +532,13 @@ const CreateWorkoutPage = () => {
     try {
       await createPost({
         content_type: "workout",
-        content_data: { title, exercises, tags, durationSeconds: elapsedSeconds },
+        content_data: { 
+          title, 
+          exercises, 
+          tags, 
+          durationSeconds: elapsedSeconds,
+          sourcePostId: sourcePostId || undefined, // Include source for tracking original creator
+        },
         images: photos,
         visibility: "private",
         logDate: logDate,
@@ -699,6 +706,11 @@ const CreateWorkoutPage = () => {
       const newExercises = convertWorkoutToExercises(workoutItem.exercises);
       setExercises(newExercises);
       setTitle(workoutItem.title);
+      if (workoutItem.tags) setTags(workoutItem.tags);
+      // Capture source post ID for tracking original creator
+      if (workoutItem.sourcePostId) {
+        setSourcePostId(workoutItem.sourcePostId);
+      }
       // Auto-select the first exercise
       if (newExercises.length > 0) {
         setSelectedExerciseId(newExercises[0].id);

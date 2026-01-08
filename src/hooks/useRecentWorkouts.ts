@@ -50,6 +50,7 @@ export interface RecentWorkout {
   isSavedWorkout: boolean;
   tags?: string[];
   creator?: Creator;
+  sourcePostId?: string | null; // If this workout originated from a saved post
 }
 
 export interface RecentRoutine {
@@ -137,6 +138,17 @@ export const useRecentWorkouts = (limit: number = 10) => {
         }
       });
 
+      // Also extract sourcePostId from workout logs' exercises data
+      (workouts || []).forEach(w => {
+        const rawData = w.exercises as unknown;
+        if (rawData && typeof rawData === "object" && "sourcePostId" in rawData) {
+          const sourcePostId = (rawData as { sourcePostId?: string }).sourcePostId;
+          if (sourcePostId && !postIdsToFetch.includes(sourcePostId)) {
+            postIdsToFetch.push(sourcePostId);
+          }
+        }
+      });
+
       // Fetch post creators for saved-from-connect workouts
       let postCreatorMap = new Map<string, Creator>();
       if (postIdsToFetch.length > 0) {
@@ -185,14 +197,16 @@ export const useRecentWorkouts = (limit: number = 10) => {
         let exercises: WorkoutExercise[] = [];
         let savedTitle = "";
         let savedTags: string[] = [];
+        let sourcePostId: string | null = null;
 
         if (Array.isArray(rawData)) {
           exercises = rawData as WorkoutExercise[];
         } else if (rawData && typeof rawData === "object" && "exercises" in rawData) {
-          const wrappedData = rawData as { title?: string; exercises: WorkoutExercise[]; tags?: string[] };
+          const wrappedData = rawData as { title?: string; exercises: WorkoutExercise[]; tags?: string[]; sourcePostId?: string };
           exercises = wrappedData.exercises || [];
           savedTitle = wrappedData.title || "";
           savedTags = wrappedData.tags || [];
+          sourcePostId = wrappedData.sourcePostId || null;
         }
 
         // Check if this workout log has a saved workout entry
@@ -200,6 +214,10 @@ export const useRecentWorkouts = (limit: number = 10) => {
         if (savedInfo) {
           savedTitle = savedInfo.title || savedTitle;
           savedTags = savedInfo.tags.length > 0 ? savedInfo.tags : savedTags;
+          // Use the saved workout's post_id as sourcePostId if not already set
+          if (!sourcePostId && savedInfo.post_id) {
+            sourcePostId = savedInfo.post_id;
+          }
         }
 
         const isSavedWorkout = Boolean(savedTitle) || Boolean(savedInfo);
@@ -217,10 +235,10 @@ export const useRecentWorkouts = (limit: number = 10) => {
           }
         }
 
-        // Determine creator - if saved from a post, use post creator
+        // Determine creator - if has sourcePostId, use post creator
         let creator = currentUserCreator;
-        if (savedInfo?.post_id) {
-          const postCreator = postCreatorMap.get(savedInfo.post_id);
+        if (sourcePostId) {
+          const postCreator = postCreatorMap.get(sourcePostId);
           if (postCreator) {
             creator = postCreator;
           }
@@ -240,6 +258,7 @@ export const useRecentWorkouts = (limit: number = 10) => {
           isSavedWorkout,
           tags: savedTags,
           creator,
+          sourcePostId,
         };
       });
 
