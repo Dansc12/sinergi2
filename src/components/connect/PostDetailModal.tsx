@@ -153,9 +153,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
     
     navigate("/create/workout", {
       state: {
-        restoredExercises: transformedExercises,
-        restoredTitle: workoutTitle,
-        restoredTags: workoutTags,
+        prefilled: true,
+        routineName: workoutTitle,
+        exercises: transformedExercises,
+        copiedTags: workoutTags,
         sourcePostId: post.id,
       },
       replace: true,

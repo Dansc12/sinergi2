@@ -71,6 +71,8 @@ interface RestoredState {
   exercises?: Exercise[];
   routineInstanceId?: string;
   logDate?: string; // ISO date string for logging to a specific date
+  copiedTags?: string[]; // Tags from copied workout
+  sourcePostId?: string; // Original post ID for attribution
   // From MySavedPage
   selectedRoutine?: SavedRoutine;
   selectedPastWorkout?: PastWorkout;
@@ -246,7 +248,14 @@ const CreateWorkoutPage = () => {
       window.history.replaceState({}, document.title);
     } else if (restoredState?.prefilled) {
       if (restoredState.routineName) setTitle(restoredState.routineName);
-      if (restoredState.exercises) setExercises(restoredState.exercises);
+      if (restoredState.exercises) {
+        setExercises(restoredState.exercises);
+        // Auto-select first exercise
+        if (restoredState.exercises.length > 0) {
+          setSelectedExerciseId(restoredState.exercises[0].id);
+        }
+      }
+      if (restoredState.copiedTags) setTags(restoredState.copiedTags);
       if (restoredState.routineInstanceId) setRoutineInstanceId(restoredState.routineInstanceId);
       window.history.replaceState({}, document.title);
     }
