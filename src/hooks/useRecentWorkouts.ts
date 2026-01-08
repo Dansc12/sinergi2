@@ -60,6 +60,7 @@ export const useRecentWorkouts = (limit: number = 10) => {
   const { user } = useAuth();
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<{ name: string; avatar_url: string | null } | null>(null);
 
   const fetchRecentItems = useCallback(async () => {
     if (!user?.id) {
@@ -68,6 +69,20 @@ export const useRecentWorkouts = (limit: number = 10) => {
     }
 
     try {
+      // Fetch user's profile for avatar
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, avatar_url")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        setUserProfile({
+          name: [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "You",
+          avatar_url: profile.avatar_url,
+        });
+      }
+
       // Fetch recent workout logs
       const { data: workouts, error: workoutError } = await supabase
         .from("workout_logs")
@@ -174,5 +189,5 @@ export const useRecentWorkouts = (limit: number = 10) => {
     fetchRecentItems();
   }, [fetchRecentItems]);
 
-  return { recentItems, isLoading, refetch: fetchRecentItems };
+  return { recentItems, isLoading, refetch: fetchRecentItems, userProfile };
 };

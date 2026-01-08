@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useExerciseHistory } from "@/hooks/useExerciseHistory";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import { useRecentWorkouts, RecentWorkout, RecentRoutine, RecentItem } from "@/hooks/useRecentWorkouts";
+import { useSavedWorkoutsNew } from "@/hooks/useSavedWorkoutsNew";
 import WorkoutSavedCard from "@/components/workout/WorkoutSavedCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -87,7 +88,8 @@ const CreateWorkoutPage = () => {
   const restoredState = location.state as RestoredState | null;
   const { createPost } = usePosts();
   const { getLastExerciseData } = useExerciseHistory();
-  const { recentItems, isLoading: isLoadingRecent } = useRecentWorkouts(10);
+  const { recentItems, isLoading: isLoadingRecent, userProfile } = useRecentWorkouts(10);
+  const { saveWorkout, savedWorkouts, isWorkoutSaved } = useSavedWorkoutsNew();
   const { user } = useAuth();
   
   const [title, setTitle] = useState("");
@@ -114,6 +116,8 @@ const CreateWorkoutPage = () => {
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>([]);
   const [animatingExerciseIds, setAnimatingExerciseIds] = useState<string[]>([]);
   const [logDate, setLogDate] = useState<string | undefined>(restoredState?.logDate);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -735,9 +739,62 @@ const CreateWorkoutPage = () => {
           </Button>
         </div>
 
-        {/* Workout Title with Collapsible Toggle */}
+        {/* Workout Title with Collapsible Toggle and Save Button */}
         <Collapsible open={isExerciseSectionOpen} onOpenChange={setIsExerciseSectionOpen} className="mb-6">
           <div className="flex items-center gap-2 mb-4">
+            {/* Bookmark Icon - only show when exercises exist */}
+            {exercises.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (isSaved || isSaving) return;
+                  
+                  setIsSaving(true);
+                  const result = await saveWorkout({
+                    title: title || "My Workout",
+                    exercises: exercises.map(ex => ({
+                      id: ex.id,
+                      name: ex.name,
+                      category: ex.category,
+                      muscleGroup: ex.muscleGroup,
+                      notes: ex.notes,
+                      isCardio: ex.isCardio,
+                      sets: ex.sets.map(s => ({
+                        id: s.id,
+                        weight: s.weight,
+                        reps: s.reps,
+                        distance: s.distance,
+                        time: s.time,
+                        completed: s.completed,
+                        repRangeHint: s.repRangeHint,
+                      })),
+                    })),
+                    tags,
+                  });
+                  
+                  if (result) {
+                    setIsSaved(true);
+                    toast({ title: "Workout saved!", description: "You can find it in My Saved Workouts." });
+                  } else {
+                    toast({ title: "Failed to save", description: "Please try again.", variant: "destructive" });
+                  }
+                  setIsSaving(false);
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 size={18} className="animate-spin text-primary" />
+                ) : (
+                  <Bookmark 
+                    size={18} 
+                    className={isSaved ? "text-primary fill-primary" : "text-muted-foreground"} 
+                  />
+                )}
+              </Button>
+            )}
             <Input
               placeholder="Workout name"
               value={title}
@@ -805,12 +862,12 @@ const CreateWorkoutPage = () => {
                       const isWorkout = item.type === "workout";
                       const workoutItem = isWorkout ? (item as RecentWorkout) : null;
                       
-                      // Build creator object - for recent items it's always the current user
+                      // Build creator object - use userProfile for avatar
                       const creator = {
                         id: user?.id || "",
-                        name: "You",
-                        username: null,
-                        avatar_url: null,
+                        name: userProfile?.name || "You",
+                        username: null as string | null,
+                        avatar_url: userProfile?.avatar_url || null,
                       };
                       
                       // Convert exercises to the format WorkoutSavedCard expects

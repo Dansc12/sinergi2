@@ -750,6 +750,60 @@ export type Database = {
           },
         ]
       }
+      saved_workouts: {
+        Row: {
+          created_at: string
+          description: string | null
+          exercises: Json
+          id: string
+          post_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+          workout_log_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          exercises?: Json
+          id?: string
+          post_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+          workout_log_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          exercises?: Json
+          id?: string
+          post_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          workout_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_workouts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_workouts_workout_log_id_fkey"
+            columns: ["workout_log_id"]
+            isOneToOne: false
+            referencedRelation: "workout_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_routines: {
         Row: {
           created_at: string
