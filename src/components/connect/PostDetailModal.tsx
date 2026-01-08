@@ -499,7 +499,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
       <div className="space-y-4">
         {/* Cover Photo - styled like MealSavedCard expanded view */}
         {coverPhoto && (
-          <div className="relative h-40 overflow-hidden rounded-xl -mx-3 sm:-mx-4">
+          <div className="relative h-40 overflow-hidden rounded-xl sm:-mx-4">
             <img
               src={coverPhoto} 
               alt="Meal cover" 
@@ -1075,7 +1075,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           className="fixed inset-0 z-50 bg-background overflow-hidden"
           ref={containerRef}
         >
-          <ScrollArea className="h-full w-full">
+          <ScrollArea className="h-full w-full overflow-x-hidden">
             {/* Image Header - Collapsed/Cropped view */}
             {hasImages && (
               <motion.div
