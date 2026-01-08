@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown, Clock, ChevronRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,8 @@ import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseHistory } from "@/hooks/useExerciseHistory";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
+import { useRecentWorkouts, RecentWorkout, RecentRoutine, RecentItem } from "@/hooks/useRecentWorkouts";
+import { format } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,6 +86,7 @@ const CreateWorkoutPage = () => {
   const restoredState = location.state as RestoredState | null;
   const { createPost } = usePosts();
   const { getLastExerciseData } = useExerciseHistory();
+  const { recentItems, isLoading: isLoadingRecent } = useRecentWorkouts(10);
   
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -674,6 +677,23 @@ const CreateWorkoutPage = () => {
     setPendingAutofill(null);
   };
 
+  // Handler for selecting a recent workout or routine
+  const handleSelectRecentItem = (item: RecentItem) => {
+    if (item.type === "workout") {
+      const workoutItem = item as RecentWorkout;
+      const newExercises = convertWorkoutToExercises(workoutItem.exercises);
+      setExercises(newExercises);
+      setTitle(workoutItem.title);
+      toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+    } else {
+      const routineItem = item as RecentRoutine;
+      const newExercises = convertRoutineToExercises(routineItem.exercises as unknown as SavedRoutine["routine_data"]["exercises"]);
+      setExercises(newExercises);
+      setTitle(routineItem.title);
+      toast({ title: "Routine loaded!", description: `${newExercises.length} exercises added.` });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32">
       <motion.div
@@ -746,6 +766,72 @@ const CreateWorkoutPage = () => {
                 <span>Discover</span>
               </Button>
             </div>
+
+            {/* Recent Workouts Section - Only show when no exercises selected */}
+            {exercises.length === 0 && (
+              <div className="space-y-4 mt-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock size={16} />
+                  <span className="text-sm font-medium">Recent Workouts</span>
+                </div>
+                {isLoadingRecent ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : recentItems.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No recent workouts yet. Start logging workouts!
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentItems.map((item) => (
+                      <motion.button
+                        key={item.id}
+                        onClick={() => handleSelectRecentItem(item)}
+                        className="w-full text-left rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors relative overflow-hidden"
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center justify-between p-4">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/20 flex items-center justify-center">
+                              {item.type === "routine" ? (
+                                <CalendarDays size={18} className="text-primary" />
+                              ) : (
+                                <Dumbbell size={18} className="text-primary" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-foreground truncate">{item.title}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize shrink-0">
+                                  {item.type}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span>{item.exerciseCount} exercise{item.exerciseCount !== 1 ? 's' : ''}</span>
+                                {item.type === "workout" && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{(item as RecentWorkout).totalSets} sets</span>
+                                    <span>•</span>
+                                    <span>{format(new Date((item as RecentWorkout).logDate), "MMM d")}</span>
+                                  </>
+                                )}
+                                {item.type === "routine" && (item as RecentRoutine).dayOfWeek && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="capitalize">{(item as RecentRoutine).dayOfWeek}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronRight size={20} className="text-muted-foreground shrink-0" />
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </CollapsibleContent>
         </Collapsible>
         
