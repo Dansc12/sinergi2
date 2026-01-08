@@ -151,7 +151,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
     onClose();
     
-    navigate("/log-workout", {
+    navigate("/create/workout", {
       state: {
         restoredExercises: transformedExercises,
         restoredTitle: workoutTitle,
