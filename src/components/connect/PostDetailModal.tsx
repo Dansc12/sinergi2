@@ -792,14 +792,56 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
   const renderRoutineDetails = () => {
     const routineName = contentData?.routineName as string || contentData?.name as string;
-    const exercises = (contentData?.exercises as RoutineExercise[]) || [];
-    const scheduledDays = (contentData?.scheduledDays as string[]) || [];
+    const exercises = (contentData?.exercises as (RoutineExercise & { 
+      notes?: string; 
+      category?: string; 
+      muscleGroup?: string; 
+      isCardio?: boolean;
+      supersetGroupId?: string;
+    })[]) || [];
+    const scheduledDays = (contentData?.scheduledDays as string[]) || (contentData?.scheduleDays as string[]) || [];
 
-    // Group exercises by superset
-    const exercisesWithSuperset = exercises.map((ex, idx) => ({
-      ...ex,
-      originalIndex: idx,
-    }));
+    // Helper to get set label matching Log Workout style
+    const getSetLabel = (setType: string | undefined, normalSetNumber: number): string => {
+      switch (setType) {
+        case "warmup": return "W";
+        case "failure": return "F";
+        case "drop": case "dropset": return "D";
+        default: return String(normalSetNumber);
+      }
+    };
+
+    // Get styling for set type badge matching Log Workout
+    const getSetBadgeStyle = (setType: string | undefined): string => {
+      switch (setType) {
+        case "warmup": return "bg-yellow-500/20 text-yellow-600";
+        case "failure": return "bg-red-500/20 text-red-600";
+        case "drop": case "dropset": return "bg-blue-500/20 text-blue-600";
+        default: return "bg-muted text-muted-foreground";
+      }
+    };
+
+    // Calculate normal set number (only counts normal sets)
+    const getNormalSetNumber = (sets: RoutineSet[], currentIndex: number): number => {
+      let count = 0;
+      for (let i = 0; i <= currentIndex; i++) {
+        const setType = sets[i]?.type;
+        if (!setType || setType === "normal") {
+          count++;
+        }
+      }
+      return count;
+    };
+
+    // Group exercises by superset - handle both supersetGroup (number) and supersetGroupId (string)
+    const supersetGroups = new Map<string, number>();
+    let groupIndex = 0;
+    exercises.forEach(ex => {
+      const ssGroup = ex.supersetGroupId ?? (ex.supersetGroup !== undefined ? String(ex.supersetGroup) : undefined);
+      if (ssGroup !== undefined && !supersetGroups.has(ssGroup)) {
+        supersetGroups.set(ssGroup, groupIndex++);
+      }
+    });
 
     return (
       <div className="space-y-4">
@@ -813,58 +855,101 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           </div>
         )}
         
-        {exercisesWithSuperset.length > 0 && (
-          <div className="space-y-3">
-            {exercisesWithSuperset.map((exercise, idx) => {
-              const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
-              const supersetGroup = exercise.supersetGroup;
-              const supersetColor = supersetGroup !== undefined 
-                ? supersetColors[supersetGroup % supersetColors.length]
-                : null;
+        <div className="space-y-3">
+          {exercises.map((exercise, idx) => {
+            const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
+            // Get superset group key (handle both supersetGroupId and supersetGroup)
+            const ssGroupKey = exercise.supersetGroupId ?? (exercise.supersetGroup !== undefined ? String(exercise.supersetGroup) : undefined);
+            const supersetGroupIndex = ssGroupKey !== undefined 
+              ? supersetGroups.get(ssGroupKey) 
+              : undefined;
+            const supersetColor = supersetGroupIndex !== undefined 
+              ? supersetColors[supersetGroupIndex % supersetColors.length]
+              : null;
 
-              return (
-                <div 
-                  key={idx} 
-                  className={`relative bg-muted/50 rounded-xl p-4 ${supersetColor ? 'pl-6' : ''}`}
-                >
-                  {/* Superset indicator bar */}
+            return (
+              <div 
+                key={idx} 
+                className="rounded-xl bg-card border border-border overflow-hidden"
+              >
+                <div className="flex">
+                  {/* Left color bar for superset exercises */}
                   {supersetColor && (
-                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${supersetColor} rounded-l-xl`} />
+                    <div className={`w-1 ${supersetColor}`} />
                   )}
                   
-                  <p className="font-medium mb-2">{exercise.name}</p>
-                  <div className="space-y-1.5">
-                    {setsArray.length > 0 ? (
-                      setsArray.map((set, setIdx) => {
-                        const setType = set.type;
-                        const typeBadge = setType && setTypeBadges[setType];
-
-                        return (
-                          <div key={setIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                            {typeBadge ? (
-                              <span className={`w-6 h-6 rounded-full ${typeBadge.color} text-xs flex items-center justify-center font-medium`}>
-                                {typeBadge.label}
-                              </span>
-                            ) : (
-                              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">
-                                {setIdx + 1}
-                              </span>
-                            )}
-                            <span>{set.minReps}-{set.maxReps} reps</span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {typeof exercise.sets === 'number' ? exercise.sets : 0} sets × {exercise.minReps || 0}-{exercise.maxReps || 0} reps
+                  <div className="flex-1 p-4 space-y-3">
+                    {/* Exercise header - icon, name, category, muscles */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                        <Dumbbell size={18} className="text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-foreground">{exercise.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {exercise.category || "Exercise"} • {(() => {
+                            if (exercise.isCardio) return "Cardio";
+                            const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
+                            const sortedMuscles = Object.entries(config.muscleContributions)
+                              .sort(([, a], [, b]) => b - a)
+                              .map(([muscle]) => getMuscleDisplayName(muscle));
+                            return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Notes - directly below exercise header */}
+                    {exercise.notes && (
+                      <p className="text-sm text-foreground italic">
+                        {exercise.notes}
                       </p>
                     )}
+                    
+                    {/* Sets - row format */}
+                    {setsArray.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {setsArray.map((set, setIdx) => {
+                          const normalSetNumber = getNormalSetNumber(setsArray, setIdx);
+                          const setType = set.type;
+                          const setLabel = getSetLabel(setType, normalSetNumber);
+                          const badgeStyle = getSetBadgeStyle(setType);
+                          
+                          // Display reps range for routines
+                          const displayReps = set.minReps && set.maxReps 
+                            ? `${set.minReps}-${set.maxReps}`
+                            : set.minReps || set.maxReps || '0';
+                          
+                          return (
+                            <div 
+                              key={setIdx}
+                              className="flex items-center gap-3 py-1"
+                            >
+                              {/* Set type/# badge - circular matching Log Workout style */}
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                                {setLabel}
+                              </div>
+                              
+                              {/* Reps in box */}
+                              <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                                <span className="text-sm font-medium text-foreground">{displayReps}</span>
+                                <span className="text-xs text-muted-foreground">reps</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : typeof exercise.sets === 'number' ? (
+                      <p className="text-sm text-muted-foreground">
+                        {exercise.sets} sets × {exercise.minReps || 0}-{exercise.maxReps || 0} reps
+                      </p>
+                    ) : null}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
