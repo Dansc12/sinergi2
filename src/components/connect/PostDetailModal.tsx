@@ -499,8 +499,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
       <div className="space-y-4">
         {/* Cover Photo - styled like MealSavedCard expanded view */}
         {coverPhoto && (
-          <div className="relative h-40 overflow-hidden rounded-xl -mx-4">
-            <img 
+          <div className="relative h-40 overflow-hidden rounded-xl -mx-3 sm:-mx-4">
+            <img
               src={coverPhoto} 
               alt="Meal cover" 
               className="h-full w-full object-cover"
@@ -512,7 +512,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           </div>
         )}
         {/* Nutrition Summary Bar - matching MealSavedCard style */}
-        <div className="relative w-full h-14 rounded-xl overflow-hidden shadow-lg shadow-black/30">
+        <div className="relative w-full min-h-14 h-auto rounded-xl overflow-hidden shadow-lg shadow-black/30">
           {/* Liquid blob background */}
           <div className="absolute inset-0 bg-card">
             {/* Protein blob */}
@@ -606,23 +606,29 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             }}
           />
           
-          {/* Content - Mobile-first single row layout */}
-          <div className="relative z-10 flex items-center justify-between h-full px-2 sm:px-4 py-2 gap-1.5 sm:gap-3 min-w-0 w-full overflow-hidden">
-            {/* Left: Icon + Count */}
-            <div className="flex items-center gap-1 sm:gap-1.5 text-white shrink-0">
-              <Utensils size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
-              <span className="font-semibold text-xs sm:text-sm">{foods.length}</span>
+          {/* Content - Mobile-first responsive layout (prevents horizontal clipping) */}
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between px-2 sm:px-4 py-2 gap-1 sm:gap-3 min-w-0 w-full">
+            {/* Top row on mobile / Left on desktop: Icon + Count + Calories */}
+            <div className="flex items-center justify-between w-full sm:w-auto sm:justify-start gap-2 sm:gap-4 min-w-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 text-white shrink-0">
+                <Utensils size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
+                <span className="font-semibold text-xs sm:text-sm">{foods.length}</span>
+              </div>
+              {/* Calories on mobile (so it never gets cut off) */}
+              <div className="text-[11px] sm:text-sm text-white shrink-0 sm:hidden">
+                <span className="font-medium">{Math.round(totalCalories)} cal</span>
+              </div>
             </div>
-            
-            {/* Center: Macros - always visible, responsive text */}
-            <div className="flex items-center justify-center gap-1.5 sm:gap-3 text-[10px] sm:text-sm min-w-0 flex-shrink">
+
+            {/* Macros row - wraps on very small screens */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-sm min-w-0 flex-wrap">
               <span className="whitespace-nowrap" style={{ color: proteinColor }}>P {Math.round(totalProtein)}g</span>
               <span className="whitespace-nowrap" style={{ color: carbsColor }}>C {Math.round(totalCarbs)}g</span>
               <span className="whitespace-nowrap" style={{ color: fatsColor }}>F {Math.round(totalFat)}g</span>
             </div>
-            
-            {/* Right: Calories */}
-            <div className="text-[10px] sm:text-sm text-white shrink-0">
+
+            {/* Calories on desktop */}
+            <div className="hidden sm:block text-sm text-white shrink-0">
               <span className="font-medium">{Math.round(totalCalories)} cal</span>
             </div>
           </div>
