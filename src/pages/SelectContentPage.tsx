@@ -171,33 +171,31 @@ const SelectContentPage = () => {
           });
         });
 
-        // Fetch routines from scheduled_routines
-        const { data: routines } = await supabase
-          .from("scheduled_routines")
+        // Fetch routines from posts (user-created routines)
+        const { data: routinePosts } = await supabase
+          .from("posts")
           .select("*")
           .eq("user_id", user.id)
+          .eq("content_type", "routine")
           .order("created_at", { ascending: false });
 
-        // Group routines by post_id to avoid duplicates
-        const routineMap = new Map<string, typeof routines[0]>();
-        routines?.forEach((r) => {
-          if (!routineMap.has(r.routine_name)) {
-            routineMap.set(r.routine_name, r);
-          }
-        });
-
-        routineMap.forEach((r) => {
-          const data = r.routine_data as { exercises?: Array<unknown> };
+        routinePosts?.forEach((r) => {
+          const data = r.content_data as Record<string, unknown>;
+          const exercises = data.exercises as Array<{ name: string }> || [];
+          const scheduleDays = data.scheduleDays as string[] || [];
+          
           items.push({
             id: r.id,
             type: "routine",
-            title: r.routine_name,
-            subtitle: `${data.exercises?.length || 0} exercises • ${r.day_of_week}`,
+            title: (data.routineName as string) || "Routine",
+            subtitle: `${exercises.length} exercises${scheduleDays.length > 0 ? ` • ${scheduleDays.join(", ")}` : ""}`,
             data: {
-              routineName: r.routine_name,
-              exercises: data.exercises,
-              scheduleDays: [r.day_of_week],
-              recurring: r.recurring,
+              routineName: data.routineName,
+              exercises: exercises,
+              scheduleDays: scheduleDays,
+              description: data.description,
+              tags: data.tags,
+              estimatedMinutes: data.estimatedMinutes,
             },
             created_at: r.created_at,
           });
