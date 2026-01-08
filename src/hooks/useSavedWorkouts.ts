@@ -42,6 +42,21 @@ export interface SavedRoutine {
   created_at: string;
   updated_at: string;
   exerciseCount: number;
+  description?: string;
+  tags?: string[];
+  creator?: {
+    id: string;
+    name: string;
+    username: string | null;
+    avatar_url: string | null;
+  };
+}
+
+interface Creator {
+  id: string;
+  name: string;
+  username: string | null;
+  avatar_url: string | null;
 }
 
 export interface PastWorkout {
@@ -52,6 +67,9 @@ export interface PastWorkout {
   created_at: string;
   exerciseCount: number;
   totalSets: number;
+  description?: string;
+  tags?: string[];
+  creator?: Creator;
 }
 
 export interface CommunityRoutine {
@@ -116,17 +134,40 @@ export const useSavedWorkouts = () => {
 
       // Fetch the actual posts for saved routines
       const savedPostIds = (savedPostsData || []).map(sp => sp.post_id);
-      let savedRoutinePosts: { id: string; content_data: unknown; created_at: string }[] = [];
+      let savedRoutinePosts: { id: string; content_data: unknown; created_at: string; user_id: string }[] = [];
       
       if (savedPostIds.length > 0) {
         const { data: savedPosts, error: fetchError } = await supabase
           .from("posts")
-          .select("id, content_data, created_at")
+          .select("id, content_data, created_at, user_id")
           .in("id", savedPostIds);
         
         if (!fetchError && savedPosts) {
           savedRoutinePosts = savedPosts;
         }
+      }
+
+      // Fetch profiles for creators of saved routine posts
+      const savedRoutineUserIds = [...new Set(savedRoutinePosts.map(p => p.user_id))];
+      let routineCreatorMap = new Map<string, { id: string; name: string; username: string | null; avatar_url: string | null }>();
+      
+      if (savedRoutineUserIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, username, avatar_url")
+          .in("user_id", savedRoutineUserIds);
+        
+        routineCreatorMap = new Map(
+          (profiles || []).map((p) => [
+            p.user_id,
+            {
+              id: p.user_id,
+              name: [p.first_name, p.last_name].filter(Boolean).join(" ") || "Anonymous",
+              username: p.username,
+              avatar_url: p.avatar_url,
+            },
+          ])
+        );
       }
 
       // Deduplicate by routine_name (get unique routines from scheduled_routines)
@@ -151,17 +192,22 @@ export const useSavedWorkouts = () => {
         const contentData = post.content_data as Record<string, unknown>;
         const routineName = (contentData?.name as string) || (contentData?.routineName as string) || "Saved Routine";
         const exercises = (contentData?.exercises as RoutineExercise[]) || [];
+        const description = contentData?.description as string;
+        const tags = (contentData?.tags as string[]) || [];
         
         // Use post.id as unique key to avoid conflicts with scheduled_routines
         if (!uniqueRoutines.has(`saved_${post.id}`)) {
           uniqueRoutines.set(`saved_${post.id}`, {
             id: post.id,
             routine_name: routineName,
-            routine_data: { exercises, description: contentData?.description as string },
+            routine_data: { exercises, description },
             day_of_week: "",
             created_at: post.created_at,
             updated_at: post.created_at,
             exerciseCount: exercises.length,
+            description,
+            tags,
+            creator: routineCreatorMap.get(post.user_id),
           });
         }
       });
@@ -197,17 +243,40 @@ export const useSavedWorkouts = () => {
 
       // Fetch the actual posts for saved workouts
       const savedPostIds = (savedPostsData || []).map(sp => sp.post_id);
-      let savedWorkoutPosts: { id: string; content_data: unknown; created_at: string }[] = [];
+      let savedWorkoutPosts: { id: string; content_data: unknown; created_at: string; user_id: string }[] = [];
       
       if (savedPostIds.length > 0) {
         const { data: savedPosts, error: fetchError } = await supabase
           .from("posts")
-          .select("id, content_data, created_at")
+          .select("id, content_data, created_at, user_id")
           .in("id", savedPostIds);
         
         if (!fetchError && savedPosts) {
           savedWorkoutPosts = savedPosts;
         }
+      }
+
+      // Fetch profiles for creators of saved workout posts
+      const savedWorkoutUserIds = [...new Set(savedWorkoutPosts.map(p => p.user_id))];
+      let workoutCreatorMap = new Map<string, { id: string; name: string; username: string | null; avatar_url: string | null }>();
+      
+      if (savedWorkoutUserIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, username, avatar_url")
+          .in("user_id", savedWorkoutUserIds);
+        
+        workoutCreatorMap = new Map(
+          (profiles || []).map((p) => [
+            p.user_id,
+            {
+              id: p.user_id,
+              name: [p.first_name, p.last_name].filter(Boolean).join(" ") || "Anonymous",
+              username: p.username,
+              avatar_url: p.avatar_url,
+            },
+          ])
+        );
       }
 
       const workouts: PastWorkout[] = (data || []).map((w) => {
@@ -259,6 +328,8 @@ export const useSavedWorkouts = () => {
         const contentData = post.content_data as Record<string, unknown>;
         const exercises = (contentData?.exercises as WorkoutExercise[]) || [];
         const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
+        const description = contentData?.description as string;
+        const tags = (contentData?.tags as string[]) || [];
         
         let title = (contentData?.title as string) || (contentData?.name as string);
         if (!title) {
@@ -281,6 +352,9 @@ export const useSavedWorkouts = () => {
           created_at: post.created_at,
           exerciseCount: exercises.length,
           totalSets,
+          description,
+          tags,
+          creator: workoutCreatorMap.get(post.user_id),
         });
       });
 

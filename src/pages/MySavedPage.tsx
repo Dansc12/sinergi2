@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSavedWorkouts, SavedRoutine, PastWorkout } from "@/hooks/useSavedWorkouts";
 import { useUserData } from "@/hooks/useUserData";
-import WorkoutRoutineCard from "@/components/workout/WorkoutRoutineCard";
+import WorkoutSavedCard from "@/components/workout/WorkoutSavedCard";
 
 const MySavedPage = () => {
   const navigate = useNavigate();
@@ -21,8 +21,10 @@ const MySavedPage = () => {
 
   // Build creator object from current user's profile
   const currentUserCreator = {
+    id: "",
     name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "You",
-    avatar_url: profile?.avatar_url,
+    username: null as string | null,
+    avatar_url: profile?.avatar_url || null,
   };
 
   const filteredRoutines = useMemo(() => {
@@ -139,15 +141,17 @@ const MySavedPage = () => {
               </div>
             ) : (
               filteredRoutines.map((routine) => (
-                <WorkoutRoutineCard
+                <WorkoutSavedCard
                   key={routine.id}
                   title={routine.routine_name}
                   exercises={routine.routine_data?.exercises || []}
-                  creator={currentUserCreator}
+                  creator={routine.creator || currentUserCreator}
                   createdAt={routine.created_at}
                   onCopy={() => handleUseRoutine(routine)}
                   copyButtonText="Copy"
                   isRoutine
+                  tags={routine.tags}
+                  description={routine.description}
                 />
               ))
             )}
@@ -165,15 +169,17 @@ const MySavedPage = () => {
               </div>
             ) : (
               filteredWorkouts.map((workout) => (
-                <WorkoutRoutineCard
+                <WorkoutSavedCard
                   key={workout.id}
                   title={workout.title}
                   exercises={workout.exercises}
-                  creator={currentUserCreator}
+                  creator={workout.creator || currentUserCreator}
                   createdAt={workout.log_date}
                   onCopy={() => handleCopyWorkout(workout)}
                   copyButtonText="Copy"
                   isRoutine={false}
+                  tags={workout.tags}
+                  description={workout.description}
                 />
               ))
             )}
