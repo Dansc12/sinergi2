@@ -511,7 +511,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           </div>
         )}
         {/* Nutrition Summary Bar - matching MealSavedCard style */}
-        <div className="relative w-full min-h-14 h-auto rounded-xl overflow-hidden shadow-lg shadow-black/30">
+        <div className="relative w-full h-14 rounded-xl overflow-hidden shadow-lg shadow-black/30">
           {/* Liquid blob background */}
           <div className="absolute inset-0 bg-card">
             {/* Protein blob */}
@@ -605,29 +605,23 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             }}
           />
           
-          {/* Content - Mobile-first responsive layout (prevents horizontal clipping) */}
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-2 gap-1 sm:gap-3 min-w-0 w-full">
-            {/* Top row on mobile / Left on desktop: Icon + Count + Calories */}
-            <div className="flex items-center flex-wrap w-full sm:w-auto sm:justify-start gap-2 sm:gap-4 min-w-0">
-              <div className="flex items-center gap-1 sm:gap-1.5 text-white shrink-0">
-                <Utensils size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
-                <span className="font-semibold text-xs sm:text-sm">{foods.length}</span>
-              </div>
-              {/* Calories on mobile */}
-              <div className="ml-auto text-[11px] sm:text-sm text-white shrink-0 sm:hidden">
-                <span className="font-medium">{Math.round(totalCalories)} cal</span>
-              </div>
+          {/* Content - horizontal layout matching MealSavedCard NutritionSummaryBar */}
+          <div className="relative z-10 flex items-center h-full px-3 sm:px-4">
+            {/* Left: Icon + Count */}
+            <div className="flex items-center gap-1.5 sm:gap-2 text-white shrink-0">
+              <Utensils size={18} className="sm:w-5 sm:h-5" />
+              <span className="font-semibold text-sm">{foods.length}</span>
             </div>
-
-            {/* Macros row - wraps on very small screens */}
-            <div className="flex items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-sm min-w-0 flex-wrap">
+            
+            {/* Center: Macros (absolutely positioned for true centering) */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
               <span className="whitespace-nowrap" style={{ color: proteinColor }}>P {Math.round(totalProtein)}g</span>
               <span className="whitespace-nowrap" style={{ color: carbsColor }}>C {Math.round(totalCarbs)}g</span>
               <span className="whitespace-nowrap" style={{ color: fatsColor }}>F {Math.round(totalFat)}g</span>
             </div>
-
-            {/* Calories on desktop */}
-            <div className="hidden sm:block text-sm text-white shrink-0">
+            
+            {/* Right: Calories */}
+            <div className="ml-auto text-xs sm:text-sm text-white shrink-0">
               <span className="font-medium">{Math.round(totalCalories)} cal</span>
             </div>
           </div>

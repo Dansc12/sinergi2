@@ -725,8 +725,13 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
             switch (post.type) {
               case "workout":
                 return (data.title as string) || (data.name as string) || null;
-              case "meal":
-                return (data.mealType as string) || null;
+              case "meal": {
+                const mealName = (data.name as string);
+                if (mealName) return mealName;
+                const mealType = (data.mealType as string);
+                if (mealType && mealType !== "saved_meal") return mealType;
+                return "Meal";
+              }
               case "recipe":
                 return (data.title as string) || null;
               case "routine":
