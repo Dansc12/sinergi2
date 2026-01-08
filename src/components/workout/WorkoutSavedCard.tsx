@@ -45,6 +45,7 @@ interface WorkoutSavedCardProps {
   isRoutine?: boolean;
   tags?: string[];
   description?: string;
+  isUnsavedLog?: boolean; // True for logged workouts that weren't from a saved template
 }
 
 // Superset colors for workout display
@@ -67,6 +68,7 @@ const WorkoutSavedCard = ({
   isRoutine = false,
   tags = [],
   description,
+  isUnsavedLog = false,
 }: WorkoutSavedCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -146,13 +148,19 @@ const WorkoutSavedCard = ({
               exit={{ opacity: 0 }}
               className="flex items-start gap-3"
             >
-              {/* Creator's Profile Photo */}
-              <Avatar className="h-10 w-10 shrink-0">
-                <AvatarImage src={creator.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                  {getInitials(creator.name)}
-                </AvatarFallback>
-              </Avatar>
+              {/* Creator's Profile Photo or Dumbbell Icon for unsaved logs */}
+              {isUnsavedLog ? (
+                <div className="h-10 w-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Dumbbell size={18} className="text-primary" />
+                </div>
+              ) : (
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarImage src={creator.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                    {getInitials(creator.name)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
 
               {/* Content */}
               <div className="flex-1 min-w-0">
@@ -205,20 +213,26 @@ const WorkoutSavedCard = ({
                 </Button>
               </div>
 
-              {/* Profile Photo with Tags and Date */}
+              {/* Profile Photo/Dumbbell with Tags and Date */}
               <div className="flex items-start gap-3">
-                {/* Profile Avatar - 40px (h-10) */}
-                <Avatar className="h-10 w-10 shrink-0">
-                  <AvatarImage src={creator.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                    {getInitials(creator.name)}
-                  </AvatarFallback>
-                </Avatar>
+                {/* Profile Avatar or Dumbbell Icon - 40px (h-10) */}
+                {isUnsavedLog ? (
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Dumbbell size={18} className="text-primary" />
+                  </div>
+                ) : (
+                  <Avatar className="h-10 w-10 shrink-0">
+                    <AvatarImage src={creator.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                      {getInitials(creator.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
 
                 {/* Tags and Date - combined height matches avatar (40px) */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between h-10">
-                  {/* Tags */}
-                  {tags.length > 0 ? (
+                  {/* Tags - only show for saved workouts */}
+                  {!isUnsavedLog && tags.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {tags.map((tag, idx) => (
                         <span 
@@ -232,9 +246,9 @@ const WorkoutSavedCard = ({
                   ) : (
                     <div />
                   )}
-                  {/* Date */}
+                  {/* Date - for unsaved logs show "Logged on" prefix */}
                   <span className="text-xs text-muted-foreground">
-                    {formatDate(createdAt)}
+                    {isUnsavedLog ? `Logged on ${formatDate(createdAt)}` : formatDate(createdAt)}
                   </span>
                 </div>
               </div>

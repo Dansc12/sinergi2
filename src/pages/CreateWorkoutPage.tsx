@@ -802,6 +802,9 @@ const CreateWorkoutPage = () => {
                 ) : (
                   <div className="space-y-2">
                     {recentItems.map((item) => {
+                      const isWorkout = item.type === "workout";
+                      const workoutItem = isWorkout ? (item as RecentWorkout) : null;
+                      
                       // Build creator object - for recent items it's always the current user
                       const creator = {
                         id: user?.id || "",
@@ -811,7 +814,7 @@ const CreateWorkoutPage = () => {
                       };
                       
                       // Convert exercises to the format WorkoutSavedCard expects
-                      const cardExercises = item.type === "workout" 
+                      const cardExercises = isWorkout 
                         ? (item as RecentWorkout).exercises 
                         : (item as RecentRoutine).exercises.map(ex => ({
                             ...ex,
@@ -825,16 +828,21 @@ const CreateWorkoutPage = () => {
                             })),
                           }));
                       
+                      // Determine if this is an unsaved log (workout without a saved title)
+                      const isUnsavedLog = isWorkout && !workoutItem?.isSavedWorkout;
+                      
                       return (
                         <WorkoutSavedCard
                           key={item.id}
                           title={item.title}
                           exercises={cardExercises}
                           creator={creator}
-                          createdAt={item.createdAt}
+                          createdAt={isWorkout ? (item as RecentWorkout).logDate : item.createdAt}
                           onCopy={() => handleSelectRecentItem(item)}
                           copyButtonText="Copy"
                           isRoutine={item.type === "routine"}
+                          isUnsavedLog={isUnsavedLog}
+                          tags={workoutItem?.tags}
                         />
                       );
                     })}

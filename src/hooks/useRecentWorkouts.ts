@@ -40,6 +40,8 @@ export interface RecentWorkout {
   totalSets: number;
   logDate: string;
   createdAt: string;
+  isSavedWorkout: boolean; // True if this was from a saved template (has a saved title)
+  tags?: string[];
 }
 
 export interface RecentRoutine {
@@ -91,14 +93,19 @@ export const useRecentWorkouts = (limit: number = 10) => {
         const rawData = w.exercises as unknown;
         let exercises: WorkoutExercise[] = [];
         let savedTitle = "";
+        let savedTags: string[] = [];
 
         if (Array.isArray(rawData)) {
           exercises = rawData as WorkoutExercise[];
         } else if (rawData && typeof rawData === "object" && "exercises" in rawData) {
-          const wrappedData = rawData as { title?: string; exercises: WorkoutExercise[] };
+          const wrappedData = rawData as { title?: string; exercises: WorkoutExercise[]; tags?: string[] };
           exercises = wrappedData.exercises || [];
           savedTitle = wrappedData.title || "";
+          savedTags = wrappedData.tags || [];
         }
+
+        // Determine if this is a "saved" workout (has a user-defined title saved in the data)
+        const isSavedWorkout = Boolean(savedTitle);
 
         let title = savedTitle;
         if (!title) {
@@ -124,6 +131,8 @@ export const useRecentWorkouts = (limit: number = 10) => {
           totalSets,
           logDate: w.log_date,
           createdAt: w.created_at,
+          isSavedWorkout,
+          tags: savedTags,
         };
       });
 
