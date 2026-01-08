@@ -102,8 +102,12 @@ const MySavedPage = () => {
           totalSets: workout.exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0),
           tags: workout.tags,
           description: workout.description,
+          post_id: workout.post_id, // Pass post_id for original creator tracking
+          creator: workout.creator, // Pass creator info
         },
         selectedTags: workout.tags || [],
+        savedWorkoutId: workout.id, // Track that this workout is already saved
+        sourcePostId: workout.post_id, // Pass post_id for original creator
       },
     });
   };

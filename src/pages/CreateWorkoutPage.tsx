@@ -75,8 +75,10 @@ interface RestoredState {
   logDate?: string; // ISO date string for logging to a specific date
   // From MySavedPage
   selectedRoutine?: SavedRoutine;
-  selectedPastWorkout?: PastWorkout;
+  selectedPastWorkout?: PastWorkout & { post_id?: string | null; creator?: { id: string; name: string; username?: string | null; avatar_url?: string | null } };
   selectedTags?: string[];
+  savedWorkoutId?: string; // Track if copying an already-saved workout
+  sourcePostId?: string | null; // Track original creator's post
   // From DiscoverWorkoutsPage
   selectedCommunityRoutine?: CommunityRoutine;
   selectedCommunityWorkout?: CommunityWorkout;
@@ -116,9 +118,9 @@ const CreateWorkoutPage = () => {
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>([]);
   const [animatingExerciseIds, setAnimatingExerciseIds] = useState<string[]>([]);
   const [logDate, setLogDate] = useState<string | undefined>(restoredState?.logDate);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(!!restoredState?.savedWorkoutId); // Pre-set if copying a saved workout
   const [isSaving, setIsSaving] = useState(false);
-  const [sourcePostId, setSourcePostId] = useState<string | null>(null); // Track if workout came from a saved post
+  const [sourcePostId, setSourcePostId] = useState<string | null>(restoredState?.sourcePostId || null); // Track if workout came from a saved post
 
   // Get the currently selected exercise
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
@@ -207,6 +209,10 @@ const CreateWorkoutPage = () => {
         }
       } else if (restoredState.selectedPastWorkout) {
         const currentExercises = restoredState.contentData?.exercises || [];
+        // Set sourcePostId if workout came from another user's post
+        if (restoredState.selectedPastWorkout.post_id) {
+          setSourcePostId(restoredState.selectedPastWorkout.post_id);
+        }
         if (currentExercises.length > 0) {
           setPendingAutofill({ 
             type: "workout", 
