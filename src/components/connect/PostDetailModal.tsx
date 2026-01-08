@@ -1238,17 +1238,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 </div>
               </div>
 
-              {/* Tags */}
+              {/* Tags with horizontal scroll and fade */}
               {tags && tags.length > 0 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                  {tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+                <div className="relative">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-6">
+                    {tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0 max-w-[min(70vw,360px)] truncate"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                  {/* Right fade overlay */}
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
                 </div>
               )}
 
