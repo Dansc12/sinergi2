@@ -1318,22 +1318,19 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               {/* Tags */}
               {tags && tags.length > 0 && (
                 <div className="relative w-full max-w-full overflow-hidden">
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full max-w-full min-w-0">
-                    {(post.type === "routine" ? tags.slice(0, 5) : tags).map((tag, idx) => (
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full max-w-full min-w-0 pr-6">
+                    {tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0 inline-block max-w-[60vw] overflow-hidden text-ellipsis"
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0"
                         title={`#${tag}`}
                       >
                         #{tag}
                       </span>
                     ))}
-                    {post.type === "routine" && tags.length > 5 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0">
-                        +{tags.length - 5}
-                      </span>
-                    )}
                   </div>
+                  {/* Right fade overlay */}
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
                 </div>
               )}
 
