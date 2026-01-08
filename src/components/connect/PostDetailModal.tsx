@@ -359,23 +359,23 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           return (
             <div 
               key={idx} 
-              className="rounded-xl bg-card border border-border overflow-hidden"
+              className="rounded-xl bg-card border border-border overflow-hidden w-full"
             >
-              <div className="flex">
+              <div className="flex w-full min-w-0">
                 {/* Left color bar for superset exercises */}
                 {supersetColor && (
                   <div className={`w-1 ${supersetColor}`} />
                 )}
                 
-                <div className="flex-1 p-4 space-y-3">
+                <div className="flex-1 p-4 space-y-3 min-w-0 overflow-hidden">
                   {/* Exercise header - icon, name, category, muscles */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                       <Dumbbell size={18} className="text-primary" />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">{exercise.name}</h4>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-foreground truncate">{exercise.name}</h4>
+                      <p className="text-xs text-muted-foreground truncate">
                         {exercise.category || "Exercise"} • {(() => {
                           if (exercise.isCardio) return "Cardio";
                           const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
@@ -653,8 +653,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   />
                 )}
                 <div className="p-3 pt-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-primary shrink-0">
                       {(() => {
                         const servings = food.servings ?? 1;
                         const servingSize = food.servingSize || 'g';
@@ -665,14 +665,14 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                         return `${servings}${servingSize}`;
                       })()}
                     </span>
-                    <span className="font-medium text-foreground text-sm">{food.name}</span>
+                    <span className="font-medium text-foreground text-sm truncate">{food.name}</span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-xs text-foreground">{Math.round(food.calories || 0)} cal</span>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span style={{ color: proteinColor }}>P: {Math.round(p)}g</span>
-                      <span style={{ color: carbsColor }}>C: {Math.round(c)}g</span>
-                      <span style={{ color: fatsColor }}>F: {Math.round(f)}g</span>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="text-xs text-foreground shrink-0">{Math.round(food.calories || 0)} cal</span>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="whitespace-nowrap" style={{ color: proteinColor }}>P: {Math.round(p)}g</span>
+                      <span className="whitespace-nowrap" style={{ color: carbsColor }}>C: {Math.round(c)}g</span>
+                      <span className="whitespace-nowrap" style={{ color: fatsColor }}>F: {Math.round(f)}g</span>
                     </div>
                   </div>
                 </div>
@@ -832,7 +832,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${supersetColor} rounded-l-xl`} />
                   )}
                   
-                  <p className="font-medium mb-2">{exercise.name}</p>
+                  <p className="font-medium mb-2 truncate">{exercise.name}</p>
                   <div className="space-y-1.5">
                     {setsArray.length > 0 ? (
                       setsArray.map((set, setIdx) => {
@@ -1176,21 +1176,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
 
-            <div className="p-4 space-y-4 pb-safe">
+            <div className="p-4 space-y-4 pb-safe overflow-hidden">
               {/* Title row with icon and action buttons */}
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 w-full">
                 {/* Left side: Title with icon */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   {getContentTitle() && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
-                      <span className="font-semibold text-base">{getContentTitle()}</span>
+                      <span className="font-semibold text-base truncate">{getContentTitle()}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Right side: Comment and Like buttons */}
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => setShowComments(!showComments)}
                     className="flex items-center gap-1 transition-transform active:scale-90"
@@ -1240,12 +1240,12 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
               {/* Tags with horizontal scroll and fade */}
               {tags && tags.length > 0 && (
-                <div className="relative">
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-6">
+                <div className="relative w-full max-w-full overflow-hidden">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-8">
                     {tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0 max-w-[min(70vw,360px)] truncate"
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0 max-w-[60vw] truncate"
                       >
                         #{tag}
                       </span>
