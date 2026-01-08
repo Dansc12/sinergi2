@@ -1317,12 +1317,16 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
               {/* Tags */}
               {tags && tags.length > 0 && (
-                <div className="relative w-full max-w-full min-w-0 overflow-hidden">
+                <div
+                  className={`relative w-full max-w-full min-w-0 overflow-hidden ${
+                    post.type === "routine" ? "max-w-[430px] mx-auto" : ""
+                  }`}
+                >
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full max-w-full min-w-0 pr-8">
                     {tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground flex-none max-w-[70vw] truncate"
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground flex-none max-w-[min(70vw,360px)] truncate"
                         title={`#${tag}`}
                       >
                         #{tag}
