@@ -1261,7 +1261,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   {getContentTitle() && (
                     <div className="flex items-center gap-2 min-w-0">
                       {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
-                      <span className="font-semibold text-base truncate">{getContentTitle()}</span>
+                      <span className="min-w-0 flex-1 font-semibold text-base truncate">{getContentTitle()}</span>
                     </div>
                   )}
                 </div>

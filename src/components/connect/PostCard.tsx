@@ -742,69 +742,70 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
           const TypeIcon = typeIcons[post.type];
           const tags = post.tags || (post.contentData as Record<string, unknown>)?.tags as string[] | undefined;
 
-          return (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-start justify-between gap-3">
-                {/* Left side: Title with icon */}
-                <div className="flex-1 min-w-0">
-                  {contentTitle && (
-                    <div className="flex items-center gap-2">
-                      {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
-                      <span className="font-semibold text-base truncate">{contentTitle}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Right side: Comment and Like buttons */}
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
-                    onClick={() => setShowComments(!showComments)}
-                    className="flex items-center gap-1 transition-transform active:scale-90"
-                  >
-                    <MessageCircle size={24} className="text-foreground" />
-                    {commentCount > 0 && (
-                      <span className="text-sm font-medium">{commentCount}</span>
-                    )}
-                  </button>
-                  <button
-                    ref={heartButtonRef}
-                    onClick={handleLikeClick}
-                    className="flex items-center gap-1 transition-transform active:scale-90"
-                  >
-                    <Heart
-                      size={24}
-                      className={`transition-all duration-150 ease-out ${
-                        isLiked ? "fill-primary text-primary" : "text-foreground"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-              
-              {/* Tags row - full width */}
-              {tags && tags.length > 0 && (
-                <div className="relative w-full overflow-hidden h-6">
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar h-full w-full max-w-full min-w-0">
-                    {((post.type === "routine") ? tags.slice(0, 5) : tags).map((tag, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => onTagClick?.(tag)}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors whitespace-nowrap flex-shrink-0 inline-block max-w-[60vw] overflow-hidden text-ellipsis"
-                        title={`#${tag}`}
-                      >
-                        #{tag}
-                      </button>
-                    ))}
-                    {post.type === "routine" && tags.length > 5 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0">
-                        +{tags.length - 5}
-                      </span>
+            return (
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="flex items-start justify-between gap-3 min-w-0 w-full">
+                  {/* Left side: Title with icon */}
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    {contentTitle && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
+                        <span className="min-w-0 flex-1 font-semibold text-base truncate">{contentTitle}</span>
+                      </div>
                     )}
                   </div>
+
+                  {/* Right side: Comment and Like buttons */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      onClick={() => setShowComments(!showComments)}
+                      className="flex items-center gap-1 transition-transform active:scale-90"
+                    >
+                      <MessageCircle size={24} className="text-foreground" />
+                      {commentCount > 0 && (
+                        <span className="text-sm font-medium">{commentCount}</span>
+                      )}
+                    </button>
+                    <button
+                      ref={heartButtonRef}
+                      onClick={handleLikeClick}
+                      className="flex items-center gap-1 transition-transform active:scale-90"
+                    >
+                      <Heart
+                        size={24}
+                        className={`transition-all duration-150 ease-out ${
+                          isLiked ? "fill-primary text-primary" : "text-foreground"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
+
+                {/* Tags row - full width */}
+                {tags && tags.length > 0 && (
+                  <div className="relative w-full max-w-full min-w-0 overflow-hidden h-6">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar h-full w-full max-w-full min-w-0 pr-8">
+                      {((post.type === "routine") ? tags.slice(0, 5) : tags).map((tag, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => onTagClick?.(tag)}
+                          className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors flex-none max-w-[70vw] truncate"
+                          title={`#${tag}`}
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                      {post.type === "routine" && tags.length > 5 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0">
+                          +{tags.length - 5}
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+                  </div>
+                )}
+              </div>
+            );
         })()}
       </div>
 
