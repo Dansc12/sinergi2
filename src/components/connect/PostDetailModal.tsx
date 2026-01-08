@@ -367,20 +367,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   <div className={`w-1 ${supersetColor}`} />
                 )}
                 
-                <div className="flex-1 p-4 space-y-3">
+                <div className="flex-1 p-4 space-y-3 min-w-0">
                   {/* Exercise header - icon, name, category, muscles */}
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                       <Dumbbell size={18} className="text-primary" />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">{exercise.name}</h4>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-foreground truncate">{exercise.name}</h4>
+                      <p className="text-xs text-muted-foreground truncate">
                         {exercise.category || "Exercise"} • {(() => {
                           if (exercise.isCardio) return "Cardio";
                           const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
                           const sortedMuscles = Object.entries(config.muscleContributions)
                             .sort(([, a], [, b]) => b - a)
+                            .slice(0, 2) // Limit to top 2 muscles for mobile
                             .map(([muscle]) => getMuscleDisplayName(muscle));
                           return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
                         })()}
@@ -878,20 +879,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <div className={`w-1 ${supersetColor}`} />
                   )}
                   
-                  <div className="flex-1 p-4 space-y-3">
+                  <div className="flex-1 p-4 space-y-3 min-w-0">
                     {/* Exercise header - icon, name, category, muscles */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                         <Dumbbell size={18} className="text-primary" />
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-foreground">{exercise.name}</h4>
-                        <p className="text-xs text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-foreground truncate">{exercise.name}</h4>
+                        <p className="text-xs text-muted-foreground truncate">
                           {exercise.category || "Exercise"} • {(() => {
                             if (exercise.isCardio) return "Cardio";
                             const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
                             const sortedMuscles = Object.entries(config.muscleContributions)
                               .sort(([, a], [, b]) => b - a)
+                              .slice(0, 2) // Limit to top 2 muscles for mobile
                               .map(([muscle]) => getMuscleDisplayName(muscle));
                             return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
                           })()}
