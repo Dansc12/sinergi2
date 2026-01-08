@@ -1327,15 +1327,18 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
               {/* Tags */}
               {tags && tags.length > 0 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                  {tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+                <div className="relative w-full max-w-full overflow-hidden">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full max-w-full min-w-0">
+                    {tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0 inline-block max-w-[60vw] overflow-hidden text-ellipsis"
+                        title={`#${tag}`}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 

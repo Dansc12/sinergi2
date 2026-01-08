@@ -784,12 +784,13 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
               {/* Tags row - full width */}
               {tags && tags.length > 0 && (
                 <div className="relative w-full overflow-hidden h-6">
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar h-full">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar h-full w-full max-w-full min-w-0">
                     {tags.map((tag, idx) => (
                       <button
                         key={idx}
                         onClick={() => onTagClick?.(tag)}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors whitespace-nowrap flex-shrink-0"
+                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors whitespace-nowrap flex-shrink-0 inline-block max-w-[60vw] overflow-hidden text-ellipsis"
+                        title={`#${tag}`}
                       >
                         #{tag}
                       </button>
