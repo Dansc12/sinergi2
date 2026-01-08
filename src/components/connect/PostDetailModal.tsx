@@ -367,21 +367,20 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   <div className={`w-1 ${supersetColor}`} />
                 )}
                 
-                <div className="flex-1 p-4 space-y-3 min-w-0">
+                <div className="flex-1 p-4 space-y-3">
                   {/* Exercise header - icon, name, category, muscles */}
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                       <Dumbbell size={18} className="text-primary" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-foreground truncate">{exercise.name}</h4>
-                      <p className="text-xs text-muted-foreground truncate">
+                    <div>
+                      <h4 className="font-semibold text-foreground">{exercise.name}</h4>
+                      <p className="text-xs text-muted-foreground">
                         {exercise.category || "Exercise"} • {(() => {
                           if (exercise.isCardio) return "Cardio";
                           const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
                           const sortedMuscles = Object.entries(config.muscleContributions)
                             .sort(([, a], [, b]) => b - a)
-                            .slice(0, 2) // Limit to top 2 muscles for mobile
                             .map(([muscle]) => getMuscleDisplayName(muscle));
                           return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
                         })()}
@@ -412,34 +411,34 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                         return (
                           <div 
                             key={setIdx}
-                            className="flex flex-wrap items-center gap-3 py-1"
+                            className="flex items-center gap-3 py-1"
                           >
                             {/* Set type/# badge - circular matching Log Workout style */}
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle} shrink-0`}>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
                               {setLabel}
                             </div>
                             
                             {/* Weight/Distance and Reps/Time in boxes */}
                             {exercise.isCardio ? (
                               <>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 shrink-0">
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
                                   <span className="text-sm font-medium text-foreground">{distance}</span>
                                   <span className="text-xs text-muted-foreground">mi</span>
                                 </div>
                                 {set.time && (
-                                  <div className="bg-muted/30 rounded-md px-3 py-1.5 shrink-0">
+                                  <div className="bg-muted/30 rounded-md px-3 py-1.5">
                                     <span className="text-sm font-medium text-foreground">{set.time}</span>
                                   </div>
                                 )}
                               </>
                             ) : (
                               <>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 shrink-0">
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
                                   <span className="text-sm font-medium text-foreground">{weight}</span>
                                   <span className="text-xs text-muted-foreground">lbs</span>
                                 </div>
-                                <span className="text-muted-foreground shrink-0">×</span>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 shrink-0">
+                                <span className="text-muted-foreground">×</span>
+                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
                                   <span className="text-sm font-medium text-foreground">{reps}</span>
                                   <span className="text-xs text-muted-foreground">reps</span>
                                 </div>
@@ -793,155 +792,79 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
   const renderRoutineDetails = () => {
     const routineName = contentData?.routineName as string || contentData?.name as string;
-    const exercises = (contentData?.exercises as (RoutineExercise & { 
-      notes?: string; 
-      category?: string; 
-      muscleGroup?: string; 
-      isCardio?: boolean;
-      supersetGroupId?: string;
-    })[]) || [];
-    const scheduledDays = (contentData?.scheduledDays as string[]) || (contentData?.scheduleDays as string[]) || [];
+    const exercises = (contentData?.exercises as RoutineExercise[]) || [];
+    const scheduledDays = (contentData?.scheduledDays as string[]) || [];
 
-    // Helper to get set label matching Log Workout style
-    const getSetLabel = (setType: string | undefined, normalSetNumber: number): string => {
-      switch (setType) {
-        case "warmup": return "W";
-        case "failure": return "F";
-        case "drop": case "dropset": return "D";
-        default: return String(normalSetNumber);
-      }
-    };
-
-    // Get styling for set type badge matching Log Workout
-    const getSetBadgeStyle = (setType: string | undefined): string => {
-      switch (setType) {
-        case "warmup": return "bg-yellow-500/20 text-yellow-600";
-        case "failure": return "bg-red-500/20 text-red-600";
-        case "drop": case "dropset": return "bg-blue-500/20 text-blue-600";
-        default: return "bg-muted text-muted-foreground";
-      }
-    };
-
-    // Calculate normal set number (only counts normal sets)
-    const getNormalSetNumber = (sets: RoutineSet[], currentIndex: number): number => {
-      let count = 0;
-      for (let i = 0; i <= currentIndex; i++) {
-        const setType = sets[i]?.type;
-        if (!setType || setType === "normal") {
-          count++;
-        }
-      }
-      return count;
-    };
-
-    // Group exercises by superset - handle both supersetGroup (number) and supersetGroupId (string)
-    const supersetGroups = new Map<string, number>();
-    let groupIndex = 0;
-    exercises.forEach(ex => {
-      const ssGroup = ex.supersetGroupId ?? (ex.supersetGroup !== undefined ? String(ex.supersetGroup) : undefined);
-      if (ssGroup !== undefined && !supersetGroups.has(ssGroup)) {
-        supersetGroups.set(ssGroup, groupIndex++);
-      }
-    });
+    // Group exercises by superset
+    const exercisesWithSuperset = exercises.map((ex, idx) => ({
+      ...ex,
+      originalIndex: idx,
+    }));
 
     return (
       <div className="space-y-4">
-        <div className="space-y-3">
-          {exercises.map((exercise, idx) => {
-            const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
-            // Get superset group key (handle both supersetGroupId and supersetGroup)
-            const ssGroupKey = exercise.supersetGroupId ?? (exercise.supersetGroup !== undefined ? String(exercise.supersetGroup) : undefined);
-            const supersetGroupIndex = ssGroupKey !== undefined 
-              ? supersetGroups.get(ssGroupKey) 
-              : undefined;
-            const supersetColor = supersetGroupIndex !== undefined 
-              ? supersetColors[supersetGroupIndex % supersetColors.length]
-              : null;
+        {scheduledDays.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {scheduledDays.map((day, idx) => (
+              <span key={idx} className="px-3 py-1 bg-violet-500/20 text-violet-400 rounded-full text-sm">
+                {day}
+              </span>
+            ))}
+          </div>
+        )}
+        
+        {exercisesWithSuperset.length > 0 && (
+          <div className="space-y-3">
+            {exercisesWithSuperset.map((exercise, idx) => {
+              const setsArray = Array.isArray(exercise.sets) ? exercise.sets : [];
+              const supersetGroup = exercise.supersetGroup;
+              const supersetColor = supersetGroup !== undefined 
+                ? supersetColors[supersetGroup % supersetColors.length]
+                : null;
 
-            return (
-              <div 
-                key={idx} 
-                className="rounded-xl bg-card border border-border overflow-hidden"
-              >
-                <div className="flex">
-                  {/* Left color bar for superset exercises */}
+              return (
+                <div 
+                  key={idx} 
+                  className={`relative bg-muted/50 rounded-xl p-4 ${supersetColor ? 'pl-6' : ''}`}
+                >
+                  {/* Superset indicator bar */}
                   {supersetColor && (
-                    <div className={`w-1 ${supersetColor}`} />
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${supersetColor} rounded-l-xl`} />
                   )}
                   
-                  <div className="flex-1 p-4 space-y-3 min-w-0">
-                    {/* Exercise header - icon, name, category, muscles */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                        <Dumbbell size={18} className="text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-semibold text-foreground truncate">{exercise.name}</h4>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {exercise.category || "Exercise"} • {(() => {
-                            if (exercise.isCardio) return "Cardio";
-                            const config = getMuscleContributions(exercise.name, exercise.muscleGroup || "");
-                            const sortedMuscles = Object.entries(config.muscleContributions)
-                              .sort(([, a], [, b]) => b - a)
-                              .slice(0, 2) // Limit to top 2 muscles for mobile
-                              .map(([muscle]) => getMuscleDisplayName(muscle));
-                            return sortedMuscles.length > 0 ? sortedMuscles.join(", ") : exercise.muscleGroup || "General";
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Notes - directly below exercise header */}
-                    {exercise.notes && (
-                      <p className="text-sm text-foreground italic">
-                        {exercise.notes}
+                  <p className="font-medium mb-2">{exercise.name}</p>
+                  <div className="space-y-1.5">
+                    {setsArray.length > 0 ? (
+                      setsArray.map((set, setIdx) => {
+                        const setType = set.type;
+                        const typeBadge = setType && setTypeBadges[setType];
+
+                        return (
+                          <div key={setIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                            {typeBadge ? (
+                              <span className={`w-6 h-6 rounded-full ${typeBadge.color} text-xs flex items-center justify-center font-medium`}>
+                                {typeBadge.label}
+                              </span>
+                            ) : (
+                              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">
+                                {setIdx + 1}
+                              </span>
+                            )}
+                            <span>{set.minReps}-{set.maxReps} reps</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {typeof exercise.sets === 'number' ? exercise.sets : 0} sets × {exercise.minReps || 0}-{exercise.maxReps || 0} reps
                       </p>
                     )}
-                    
-                    {/* Sets - row format */}
-                    {setsArray.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {setsArray.map((set, setIdx) => {
-                          const normalSetNumber = getNormalSetNumber(setsArray, setIdx);
-                          const setType = set.type;
-                          const setLabel = getSetLabel(setType, normalSetNumber);
-                          const badgeStyle = getSetBadgeStyle(setType);
-                          
-                          // Display reps range for routines
-                          const displayReps = set.minReps && set.maxReps 
-                            ? `${set.minReps}-${set.maxReps}`
-                            : set.minReps || set.maxReps || '0';
-                          
-                          return (
-                            <div 
-                              key={setIdx}
-                              className="flex flex-wrap items-center gap-3 py-1"
-                            >
-                              {/* Set type/# badge - circular matching Log Workout style */}
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle} shrink-0`}>
-                                {setLabel}
-                              </div>
-                              
-                              {/* Reps in box */}
-                              <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5 min-w-0 max-w-full">
-                                <span className="text-sm font-medium text-foreground truncate">{displayReps}</span>
-                                <span className="text-xs text-muted-foreground shrink-0">reps</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : typeof exercise.sets === 'number' ? (
-                      <p className="text-sm text-muted-foreground">
-                        {exercise.sets} sets × {exercise.minReps || 0}-{exercise.maxReps || 0} reps
-                      </p>
-                    ) : null}
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -1127,7 +1050,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             </motion.div>
 
             {/* Bottom row - Content type/name (directly touching image) */}
-            <div className="px-4 py-2 bg-background w-full overflow-hidden">
+            <div className="px-4 py-2 bg-background w-full">
               <ContentTypePill type={post.type} title={contentTitle} noPill className="[&>span]:text-foreground [&>svg]:text-foreground/80" />
             </div>
           </div>
@@ -1143,10 +1066,10 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background h-[100dvh] w-[100vw] max-w-[100vw] overflow-x-hidden"
+          className="fixed inset-0 z-50 bg-background"
           ref={containerRef}
         >
-          <ScrollArea className="h-full w-full">
+          <ScrollArea className="h-full">
             {/* Image Header - Collapsed/Cropped view */}
             {hasImages && (
               <motion.div
@@ -1253,21 +1176,21 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
 
-            <div className="p-4 space-y-4 pb-safe overflow-x-hidden">
+            <div className="p-4 space-y-4 pb-safe">
               {/* Title row with icon and action buttons */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 min-w-0 w-full">
+              <div className="flex items-start justify-between gap-3">
                 {/* Left side: Title with icon */}
-                <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex-1 min-w-0">
                   {getContentTitle() && (
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2">
                       {TypeIcon && <TypeIcon size={20} className="text-muted-foreground shrink-0" />}
-                      <span className="min-w-0 flex-1 font-semibold text-base truncate">{getContentTitle()}</span>
+                      <span className="font-semibold text-base">{getContentTitle()}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Right side: Comment, Like, and Save buttons */}
-                <div className="flex w-full sm:w-auto flex-wrap items-center justify-end gap-2 shrink-0">
+                {/* Right side: Comment and Like buttons */}
+                <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={() => setShowComments(!showComments)}
                     className="flex items-center gap-1 transition-transform active:scale-90"
@@ -1293,7 +1216,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <Button
                       onClick={handleCopyWorkout}
                       size="sm"
-                      className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 ease-out whitespace-nowrap"
+                      className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 ease-out"
                     >
                       <Copy size={14} className="mr-1.5" />
                       Copy
@@ -1303,7 +1226,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                     <Button
                       onClick={() => toggleSave()}
                       size="sm"
-                      className={`h-8 px-3 transition-all duration-150 ease-out whitespace-nowrap ${
+                      className={`h-8 px-3 transition-all duration-150 ease-out ${
                         isSaved 
                           ? "bg-primary/20 text-primary border border-primary hover:bg-primary/30" 
                           : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -1317,24 +1240,15 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
               {/* Tags */}
               {tags && tags.length > 0 && (
-                <div
-                  className={`relative w-full max-w-full min-w-0 overflow-hidden ${
-                    post.type === "routine" ? "max-w-[430px] mx-auto" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full max-w-full min-w-0 pr-8">
-                    {tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground flex-none max-w-[min(70vw,360px)] truncate"
-                        title={`#${tag}`}
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                  {/* Right fade overlay */}
-                  <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap flex-shrink-0"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
               )}
 
