@@ -1143,7 +1143,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background h-[100dvh] w-full overflow-x-hidden"
+          className="fixed inset-0 z-50 bg-background h-[100dvh] w-[100vw] max-w-[100vw] overflow-x-hidden"
           ref={containerRef}
         >
           <ScrollArea className="h-full w-full">
