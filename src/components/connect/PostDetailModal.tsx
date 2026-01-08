@@ -411,36 +411,36 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                         return (
                           <div 
                             key={setIdx}
-                            className="flex items-center gap-3 py-1"
+                            className="flex items-center flex-wrap gap-2 sm:gap-3 py-1"
                           >
                             {/* Set type/# badge - circular matching Log Workout style */}
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-sm ${badgeStyle}`}>
+                            <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${badgeStyle}`}> 
                               {setLabel}
                             </div>
                             
                             {/* Weight/Distance and Reps/Time in boxes */}
                             {exercise.isCardio ? (
                               <>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
-                                  <span className="text-sm font-medium text-foreground">{distance}</span>
-                                  <span className="text-xs text-muted-foreground">mi</span>
+                                <div className="bg-muted/30 rounded-md px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1">
+                                  <span className="text-xs sm:text-sm font-medium text-foreground">{distance}</span>
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">mi</span>
                                 </div>
                                 {set.time && (
-                                  <div className="bg-muted/30 rounded-md px-3 py-1.5">
-                                    <span className="text-sm font-medium text-foreground">{set.time}</span>
+                                  <div className="bg-muted/30 rounded-md px-2 sm:px-3 py-1 sm:py-1.5">
+                                    <span className="text-xs sm:text-sm font-medium text-foreground">{set.time}</span>
                                   </div>
                                 )}
                               </>
                             ) : (
                               <>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
-                                  <span className="text-sm font-medium text-foreground">{weight}</span>
-                                  <span className="text-xs text-muted-foreground">lbs</span>
+                                <div className="bg-muted/30 rounded-md px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1">
+                                  <span className="text-xs sm:text-sm font-medium text-foreground">{weight}</span>
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">lbs</span>
                                 </div>
-                                <span className="text-muted-foreground">×</span>
-                                <div className="bg-muted/30 rounded-md px-3 py-1.5 flex items-center gap-1.5">
-                                  <span className="text-sm font-medium text-foreground">{reps}</span>
-                                  <span className="text-xs text-muted-foreground">reps</span>
+                                <span className="text-muted-foreground text-xs sm:text-base">×</span>
+                                <div className="bg-muted/30 rounded-md px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1">
+                                  <span className="text-xs sm:text-sm font-medium text-foreground">{reps}</span>
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">reps</span>
                                 </div>
                               </>
                             )}
@@ -846,17 +846,17 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                         const typeBadge = setType && setTypeBadges[setType];
 
                         return (
-                          <div key={setIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div key={setIdx} className="flex items-center flex-wrap gap-2 text-xs sm:text-sm text-muted-foreground min-w-0">
                             {typeBadge ? (
-                              <span className={`w-6 h-6 rounded-full ${typeBadge.color} text-xs flex items-center justify-center font-medium`}>
+                              <span className={`w-6 h-6 rounded-full ${typeBadge.color} text-xs flex items-center justify-center font-medium shrink-0`}>
                                 {typeBadge.label}
                               </span>
                             ) : (
-                              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium">
+                              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-medium shrink-0">
                                 {setIdx + 1}
                               </span>
                             )}
-                            <span>{set.minReps}-{set.maxReps} reps</span>
+                            <span className="min-w-0">{set.minReps}-{set.maxReps} reps</span>
                           </div>
                         );
                       })
@@ -972,7 +972,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             damping: 35,
             mass: 0.8
           }}
-          className="fixed inset-0 z-50 bg-background"
+          className="fixed inset-0 z-50 bg-background overflow-hidden"
           ref={containerRef}
         >
           {/* Centered content block: Header + Image + Content Type */}
