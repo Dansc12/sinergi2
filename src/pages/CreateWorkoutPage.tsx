@@ -861,9 +861,10 @@ const CreateWorkoutPage = () => {
                     {recentItems.map((item) => {
                       const isWorkout = item.type === "workout";
                       const workoutItem = isWorkout ? (item as RecentWorkout) : null;
+                      const routineItem = !isWorkout ? (item as RecentRoutine) : null;
                       
-                      // Build creator object - use userProfile for avatar
-                      const creator = {
+                      // Use creator from the item if available, otherwise fallback to current user
+                      const itemCreator = (isWorkout ? workoutItem?.creator : routineItem?.creator) || {
                         id: user?.id || "",
                         name: userProfile?.name || "You",
                         username: null as string | null,
@@ -893,7 +894,7 @@ const CreateWorkoutPage = () => {
                           key={item.id}
                           title={item.title}
                           exercises={cardExercises}
-                          creator={creator}
+                          creator={itemCreator}
                           createdAt={isWorkout ? (item as RecentWorkout).logDate : item.createdAt}
                           onCopy={() => handleSelectRecentItem(item)}
                           copyButtonText="Copy"

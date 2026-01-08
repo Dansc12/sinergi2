@@ -31,6 +31,13 @@ interface RoutineExercise {
   sets: { id: string; minReps: string; maxReps: string }[];
 }
 
+interface Creator {
+  id: string;
+  name: string;
+  username: string | null;
+  avatar_url: string | null;
+}
+
 export interface RecentWorkout {
   id: string;
   title: string;
@@ -40,8 +47,9 @@ export interface RecentWorkout {
   totalSets: number;
   logDate: string;
   createdAt: string;
-  isSavedWorkout: boolean; // True if this was from a saved template (has a saved title)
+  isSavedWorkout: boolean;
   tags?: string[];
+  creator?: Creator;
 }
 
 export interface RecentRoutine {
@@ -52,6 +60,7 @@ export interface RecentRoutine {
   exerciseCount: number;
   dayOfWeek: string;
   createdAt: string;
+  creator?: Creator;
 }
 
 export type RecentItem = RecentWorkout | RecentRoutine;
@@ -72,13 +81,25 @@ export const useRecentWorkouts = (limit: number = 10) => {
       // Fetch user's profile for avatar
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name, last_name, avatar_url")
+        .select("first_name, last_name, avatar_url, display_name")
         .eq("user_id", user.id)
         .single();
 
+      const currentUserCreator: Creator = profile ? {
+        id: user.id,
+        name: profile.display_name || [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "You",
+        username: null,
+        avatar_url: profile.avatar_url,
+      } : {
+        id: user.id,
+        name: "You",
+        username: null,
+        avatar_url: null,
+      };
+
       if (profile) {
         setUserProfile({
-          name: [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "You",
+          name: currentUserCreator.name,
           avatar_url: profile.avatar_url,
         });
       }
@@ -92,6 +113,61 @@ export const useRecentWorkouts = (limit: number = 10) => {
         .limit(limit);
 
       if (workoutError) throw workoutError;
+
+      // Fetch saved_workouts to check which workout logs have saved info (with post_id for other users' workouts)
+      const { data: savedWorkoutsData } = await supabase
+        .from("saved_workouts")
+        .select("id, workout_log_id, post_id, title, tags")
+        .eq("user_id", user.id);
+
+      // Build a map of workout_log_id -> saved workout info
+      const savedByLogId = new Map<string, { title: string; tags: string[]; post_id: string | null }>();
+      const postIdsToFetch: string[] = [];
+      
+      (savedWorkoutsData || []).forEach(sw => {
+        if (sw.workout_log_id) {
+          savedByLogId.set(sw.workout_log_id, {
+            title: sw.title,
+            tags: sw.tags || [],
+            post_id: sw.post_id,
+          });
+        }
+        if (sw.post_id) {
+          postIdsToFetch.push(sw.post_id);
+        }
+      });
+
+      // Fetch post creators for saved-from-connect workouts
+      let postCreatorMap = new Map<string, Creator>();
+      if (postIdsToFetch.length > 0) {
+        const { data: postsData } = await supabase
+          .from("posts")
+          .select("id, user_id")
+          .in("id", postIdsToFetch);
+
+        if (postsData && postsData.length > 0) {
+          const creatorUserIds = [...new Set(postsData.map(p => p.user_id))];
+          
+          const { data: creatorsData } = await supabase
+            .from("profiles")
+            .select("user_id, first_name, last_name, username, avatar_url, display_name")
+            .in("user_id", creatorUserIds);
+
+          const profileMap = new Map(creatorsData?.map(p => [p.user_id, p]));
+
+          postsData.forEach(post => {
+            const creatorProfile = profileMap.get(post.user_id);
+            if (creatorProfile) {
+              postCreatorMap.set(post.id, {
+                id: creatorProfile.user_id,
+                name: creatorProfile.display_name || [creatorProfile.first_name, creatorProfile.last_name].filter(Boolean).join(" ") || "User",
+                username: creatorProfile.username,
+                avatar_url: creatorProfile.avatar_url,
+              });
+            }
+          });
+        }
+      }
 
       // Fetch user's scheduled routines
       const { data: routines, error: routineError } = await supabase
@@ -119,8 +195,14 @@ export const useRecentWorkouts = (limit: number = 10) => {
           savedTags = wrappedData.tags || [];
         }
 
-        // Determine if this is a "saved" workout (has a user-defined title saved in the data)
-        const isSavedWorkout = Boolean(savedTitle);
+        // Check if this workout log has a saved workout entry
+        const savedInfo = savedByLogId.get(w.id);
+        if (savedInfo) {
+          savedTitle = savedInfo.title || savedTitle;
+          savedTags = savedInfo.tags.length > 0 ? savedInfo.tags : savedTags;
+        }
+
+        const isSavedWorkout = Boolean(savedTitle) || Boolean(savedInfo);
 
         let title = savedTitle;
         if (!title) {
@@ -132,6 +214,15 @@ export const useRecentWorkouts = (limit: number = 10) => {
             title = "Afternoon Workout";
           } else {
             title = "Evening Workout";
+          }
+        }
+
+        // Determine creator - if saved from a post, use post creator
+        let creator = currentUserCreator;
+        if (savedInfo?.post_id) {
+          const postCreator = postCreatorMap.get(savedInfo.post_id);
+          if (postCreator) {
+            creator = postCreator;
           }
         }
 
@@ -148,6 +239,7 @@ export const useRecentWorkouts = (limit: number = 10) => {
           createdAt: w.created_at,
           isSavedWorkout,
           tags: savedTags,
+          creator,
         };
       });
 
@@ -166,6 +258,7 @@ export const useRecentWorkouts = (limit: number = 10) => {
             exerciseCount: exercises.length,
             dayOfWeek: r.day_of_week,
             createdAt: r.created_at,
+            creator: currentUserCreator,
           });
         }
       });
