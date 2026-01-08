@@ -1255,7 +1255,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
             <div className="p-4 space-y-4 pb-safe overflow-x-hidden">
               {/* Title row with icon and action buttons */}
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-3 min-w-0">
                 {/* Left side: Title with icon */}
                 <div className="flex-1 min-w-0">
                   {getContentTitle() && (
@@ -1267,7 +1267,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                 </div>
 
                 {/* Right side: Comment and Like buttons */}
-                <div className="flex items-center gap-3 flex-wrap justify-end">
+                <div className="flex items-center gap-3 flex-wrap justify-end shrink-0">
                   <button
                     onClick={() => setShowComments(!showComments)}
                     className="flex items-center gap-1 transition-transform active:scale-90"
