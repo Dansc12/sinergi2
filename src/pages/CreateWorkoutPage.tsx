@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Dumbbell, Plus, Trash2, Check, Bookmark, Compass, Loader2, ChevronDown, ChevronUp, X, MoreVertical, ArrowUpDown, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,11 +11,13 @@ import { CameraCapture, PhotoChoiceDialog } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import PhotoGallerySheet from "@/components/PhotoGallerySheet";
 import AutofillConfirmDialog from "@/components/workout/AutofillConfirmDialog";
-import { SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout } from "@/hooks/useSavedWorkouts";
+import { SavedRoutine, PastWorkout, CommunityRoutine, CommunityWorkout, useSavedWorkouts } from "@/hooks/useSavedWorkouts";
 import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseHistory } from "@/hooks/useExerciseHistory";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
+import WorkoutRoutineCard from "@/components/workout/WorkoutRoutineCard";
+import { useUserData } from "@/hooks/useUserData";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,6 +85,8 @@ const CreateWorkoutPage = () => {
   const restoredState = location.state as RestoredState | null;
   const { createPost } = usePosts();
   const { getLastExerciseData } = useExerciseHistory();
+  const { pastWorkouts, savedRoutines, isLoading: isLoadingWorkouts } = useSavedWorkouts();
+  const { profile } = useUserData();
   
   const [title, setTitle] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -928,12 +932,89 @@ const CreateWorkoutPage = () => {
           </motion.div>
         )}
 
-        {/* Empty State */}
+        {/* Recent Workouts - Show when no exercises added */}
         {exercises.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <Dumbbell size={48} className="mb-4 opacity-50" />
-            <p className="text-lg font-medium">No exercises yet</p>
-            <p className="text-sm">Search and add exercises above</p>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+              <Clock size={18} />
+              <span className="font-medium">Recent Workouts</span>
+            </div>
+            
+            {isLoadingWorkouts ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <p className="text-sm">Loading...</p>
+              </div>
+            ) : [...pastWorkouts, ...savedRoutines.map(r => ({
+              id: r.id,
+              title: r.routine_name,
+              exercises: r.routine_data?.exercises || [],
+              log_date: r.created_at,
+              created_at: r.created_at,
+              exerciseCount: r.exerciseCount,
+              totalSets: 0,
+              isRoutine: true,
+            }))].slice(0, 10).length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <Dumbbell size={48} className="mb-4 opacity-50" />
+                <p className="text-lg font-medium">No exercises yet</p>
+                <p className="text-sm">Search and add exercises above</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {[...pastWorkouts.map(w => ({ ...w, isRoutine: false })), ...savedRoutines.map(r => ({
+                  id: r.id,
+                  title: r.routine_name,
+                  exercises: r.routine_data?.exercises || [],
+                  log_date: r.created_at,
+                  created_at: r.created_at,
+                  exerciseCount: r.exerciseCount,
+                  totalSets: 0,
+                  isRoutine: true,
+                }))]
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .slice(0, 10)
+                  .map((item) => (
+                    <WorkoutRoutineCard
+                      key={item.id}
+                      title={item.title}
+                      exercises={item.exercises as any}
+                      creator={{
+                        name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "You",
+                        avatar_url: profile?.avatar_url,
+                      }}
+                      createdAt={item.isRoutine ? item.created_at : item.log_date}
+                      onCopy={() => {
+                        if (item.isRoutine) {
+                          const routine = savedRoutines.find(r => r.id === item.id);
+                          if (routine) {
+                            const newExercises = convertRoutineToExercises(routine.routine_data.exercises);
+                            setExercises(newExercises);
+                            setTitle(routine.routine_name);
+                            if (newExercises.length > 0) {
+                              setSelectedExerciseId(newExercises[0].id);
+                            }
+                            toast({ title: "Routine loaded!", description: `${newExercises.length} exercises added.` });
+                          }
+                        } else {
+                          const workout = pastWorkouts.find(w => w.id === item.id);
+                          if (workout) {
+                            const newExercises = convertWorkoutToExercises(workout.exercises);
+                            setExercises(newExercises);
+                            setTitle(workout.title);
+                            if (newExercises.length > 0) {
+                              setSelectedExerciseId(newExercises[0].id);
+                            }
+                            toast({ title: "Workout loaded!", description: `${newExercises.length} exercises added.` });
+                          }
+                        }
+                      }}
+                      copyButtonText="Copy"
+                      isRoutine={item.isRoutine}
+                    />
+                  ))}
+              </div>
+            )}
           </div>
         )}
       </motion.div>
