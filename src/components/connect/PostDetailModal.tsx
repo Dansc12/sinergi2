@@ -1255,8 +1255,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
 
             <div className="p-4 space-y-4 pb-safe overflow-x-hidden">
               {/* Title row with icon and action buttons */}
-              <div className="flex items-center justify-between gap-3 min-w-0 w-full">
-                {/* Left side: Title with icon - must shrink */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 min-w-0 w-full">
+                {/* Left side: Title with icon */}
                 <div className="flex-1 min-w-0 overflow-hidden">
                   {getContentTitle() && (
                     <div className="flex items-center gap-2 min-w-0">
@@ -1266,8 +1266,8 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   )}
                 </div>
 
-                {/* Right side: Comment, Like, and Save buttons - never shrink */}
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Right side: Comment, Like, and Save buttons */}
+                <div className="flex w-full sm:w-auto flex-wrap items-center justify-end gap-2 shrink-0">
                   <button
                     onClick={() => setShowComments(!showComments)}
                     className="flex items-center gap-1 transition-transform active:scale-90"
