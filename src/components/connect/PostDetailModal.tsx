@@ -606,23 +606,29 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
             }}
           />
           
-          {/* Content */}
-          <div className="relative z-10 flex items-center justify-between h-full px-4 gap-2">
-            {/* Left: Icon + Count */}
-            <div className="flex items-center gap-2 text-white shrink-0">
-              <Utensils size={20} />
-              <span className="font-semibold">{foods.length}</span>
+          {/* Content - Mobile-first responsive layout */}
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between h-full px-3 sm:px-4 py-2 sm:py-0 gap-1 sm:gap-2 min-w-0 w-full overflow-hidden">
+            {/* Top row on mobile / Left on desktop: Icon + Count + Calories */}
+            <div className="flex items-center justify-between w-full sm:w-auto sm:justify-start gap-2 sm:gap-4 min-w-0">
+              <div className="flex items-center gap-1.5 text-white shrink-0">
+                <Utensils size={18} className="shrink-0" />
+                <span className="font-semibold text-sm">{foods.length}</span>
+              </div>
+              {/* Calories - shown on top row mobile, right side desktop */}
+              <div className="text-sm text-white shrink-0 sm:hidden">
+                <span className="font-medium">{Math.round(totalCalories)} cal</span>
+              </div>
             </div>
             
-            {/* Center: Macros */}
-            <div className="flex items-center gap-2 text-sm min-w-0">
+            {/* Bottom row on mobile / Center on desktop: Macros */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm min-w-0 flex-wrap">
               <span className="whitespace-nowrap" style={{ color: proteinColor }}>P {Math.round(totalProtein)}g</span>
               <span className="whitespace-nowrap" style={{ color: carbsColor }}>C {Math.round(totalCarbs)}g</span>
               <span className="whitespace-nowrap" style={{ color: fatsColor }}>F {Math.round(totalFat)}g</span>
             </div>
             
-            {/* Right: Calories */}
-            <div className="text-sm text-white shrink-0">
+            {/* Right: Calories - hidden on mobile, shown on desktop */}
+            <div className="hidden sm:block text-sm text-white shrink-0">
               <span>{Math.round(totalCalories)} cal</span>
             </div>
           </div>
@@ -725,23 +731,23 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           </div>
         )}
         
-        {/* Macro summary */}
-        <div className="grid grid-cols-4 gap-2 bg-rose-500/10 rounded-xl p-4">
-          <div className="text-center">
-            <p className="text-xl font-bold">{Math.round(totalCalories)}</p>
-            <p className="text-xs text-muted-foreground">cal</p>
+        {/* Macro summary - responsive grid */}
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 bg-rose-500/10 rounded-xl p-3 sm:p-4 w-full min-w-0 overflow-hidden">
+          <div className="text-center min-w-0">
+            <p className="text-base sm:text-xl font-bold truncate">{Math.round(totalCalories)}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">cal</p>
           </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-primary">{Math.round(totalProtein)}g</p>
-            <p className="text-xs text-muted-foreground">protein</p>
+          <div className="text-center min-w-0">
+            <p className="text-base sm:text-xl font-bold text-primary truncate">{Math.round(totalProtein)}g</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">protein</p>
           </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-success">{Math.round(totalCarbs)}g</p>
-            <p className="text-xs text-muted-foreground">carbs</p>
+          <div className="text-center min-w-0">
+            <p className="text-base sm:text-xl font-bold text-success truncate">{Math.round(totalCarbs)}g</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">carbs</p>
           </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-amber-500">{Math.round(totalFat)}g</p>
-            <p className="text-xs text-muted-foreground">fat</p>
+          <div className="text-center min-w-0">
+            <p className="text-base sm:text-xl font-bold text-amber-500 truncate">{Math.round(totalFat)}g</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">fat</p>
           </div>
         </div>
         
@@ -1176,7 +1182,7 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
               </div>
             )}
 
-            <div className="p-4 space-y-4 pb-safe overflow-hidden">
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-safe overflow-hidden w-full max-w-full">
               {/* Title row with icon and action buttons */}
               <div className="flex items-start justify-between gap-3 w-full">
                 {/* Left side: Title with icon */}
