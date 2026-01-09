@@ -14,18 +14,30 @@ const LoadingFeedSkeleton = () => (
   </div>
 );
 
-const ErrorState = ({ onRetry }: { onRetry: () => void }) => (
+const ErrorState = ({ onRetry, message }: { onRetry: () => void; message?: string }) => (
   <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
     <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
       <RefreshCw size={32} className="text-destructive" />
     </div>
     <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
     <p className="text-muted-foreground text-sm max-w-[280px] mb-4">
-      We couldn't load the feed. Please try again.
+      {message || "We couldn't load the feed. Please try again."}
     </p>
     <Button onClick={onRetry} variant="outline" className="gap-2">
       <RefreshCw size={16} />
       Retry
+    </Button>
+  </div>
+);
+
+const LoadMoreError = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="flex flex-col items-center py-6 px-4 text-center">
+    <p className="text-muted-foreground text-sm mb-3">
+      Failed to load more posts
+    </p>
+    <Button onClick={onRetry} variant="outline" size="sm" className="gap-2">
+      <RefreshCw size={14} />
+      Try again
     </Button>
   </div>
 );
@@ -135,6 +147,7 @@ const DiscoverPage = () => {
     loadMore, 
     updatePostCounts,
     refresh,
+    retryLoadMore,
     error,
     hasFetchedOnce,
   } = usePaginatedPosts(filters);
@@ -201,9 +214,9 @@ const DiscoverPage = () => {
       return <LoadingFeedSkeleton />;
     }
 
-    // Show error state with retry option
-    if (error) {
-      return <ErrorState onRetry={refresh} />;
+    // Show error state with retry option (only if no posts loaded yet)
+    if (error && posts.length === 0) {
+      return <ErrorState onRetry={refresh} message={error.message} />;
     }
     
     // Only show empty state after we've fetched at least once
@@ -223,15 +236,20 @@ const DiscoverPage = () => {
         {/* Load more trigger - invisible element that triggers loading when scrolled into view */}
         <div ref={loadMoreTriggerRef} className="h-1" />
         
-        {/* Loading indicator */}
+        {/* Loading indicator or error for load more */}
         {isLoadingMore && (
           <div className="flex justify-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         )}
         
+        {/* Error when loading more posts */}
+        {error && posts.length > 0 && !isLoadingMore && (
+          <LoadMoreError onRetry={retryLoadMore} />
+        )}
+        
         {/* End of feed message */}
-        {!hasMore && posts.length > 0 && (
+        {!hasMore && !error && posts.length > 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">You're all caught up!</p>
           </div>
