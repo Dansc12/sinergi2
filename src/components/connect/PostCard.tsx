@@ -142,11 +142,11 @@ const ContentCarousel = ({
 
   const renderItem = (item: CarouselItem) => {
     if (item.type === 'image') {
+      const originalUrl = item.content as string;
+      
       // Optimize image URL for Supabase storage
-      const optimizeImageUrl = (url: string): string => {
-        // Check if it's a Supabase storage URL
+      const getOptimizedUrl = (url: string): string => {
         if (url.includes('/storage/v1/object/')) {
-          // Convert to render endpoint with optimization params
           const renderUrl = url.replace('/storage/v1/object/', '/storage/v1/render/image/');
           const separator = renderUrl.includes('?') ? '&' : '?';
           return `${renderUrl}${separator}width=800&quality=80`;
@@ -154,14 +154,22 @@ const ContentCarousel = ({
         return url;
       };
       
+      const optimizedUrl = getOptimizedUrl(originalUrl);
+      
       return (
         <div className="w-full h-full bg-muted">
           <img
-            src={optimizeImageUrl(item.content as string)}
+            src={optimizedUrl}
             alt="Post"
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
+            onError={(e) => {
+              // Fallback to original URL if optimized version fails
+              if (e.currentTarget.src !== originalUrl) {
+                e.currentTarget.src = originalUrl;
+              }
+            }}
           />
         </div>
       );

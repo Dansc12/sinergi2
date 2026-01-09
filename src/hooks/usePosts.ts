@@ -4,6 +4,7 @@ import { useAuth } from "./useAuth";
 import { useSetMuscleVolume } from "./useSetMuscleVolume";
 import { Json } from "@/integrations/supabase/types";
 import { format, addWeeks, addMonths, addDays, isBefore, startOfDay } from "date-fns";
+import { uploadImagesIfNeeded } from "@/lib/imageUpload";
 
 export interface Post {
   id: string;
@@ -141,6 +142,9 @@ export const usePosts = () => {
   }) => {
     if (!user) throw new Error("Not authenticated");
 
+    // Upload images to storage if they're base64
+    const uploadedImages = await uploadImagesIfNeeded(user.id, postData.images);
+
     // If this is a meal, also save to meal_logs table
     if (postData.content_type === "meal") {
       const mealData = postData.content_data;
@@ -205,7 +209,7 @@ export const usePosts = () => {
           user_id: user.id,
           exercises: exercisesWithMeta as unknown as Json,
           notes: (workoutData.notes as string) || null,
-          photos: postData.images || [],
+          photos: uploadedImages,
           duration_seconds: (workoutData.durationSeconds as number) || null,
           log_date: logDate,
         })
@@ -283,7 +287,7 @@ export const usePosts = () => {
         content_type: postData.content_type,
         content_data: finalContentData as Json,
         description: postData.description || null,
-        images: postData.images || [],
+        images: uploadedImages,
         visibility: postData.visibility,
       })
       .select()
