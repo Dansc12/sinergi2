@@ -1083,6 +1083,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_paginated_posts: {
+        Args: {
+          p_cursor_created_at?: string
+          p_cursor_id?: string
+          p_limit?: number
+          p_types?: string[]
+          p_user_id: string
+          p_visibility?: string
+        }
+        Returns: {
+          author_avatar_url: string
+          author_first_name: string
+          author_username: string
+          comment_count: number
+          content_data: Json
+          content_type: string
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          like_count: number
+          user_id: string
+          viewer_has_liked: boolean
+          visibility: string
+        }[]
+      }
       get_user_stats: { Args: { target_user_id: string }; Returns: Json }
     }
     Enums: {

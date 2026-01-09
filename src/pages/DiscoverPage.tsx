@@ -46,6 +46,9 @@ interface PostData {
   contentData: unknown;
   hasDescription: boolean;
   createdAt: string;
+  likeCount: number;
+  commentCount: number;
+  viewerHasLiked: boolean;
 }
 
 const transformPost = (post: FeedPost): PostData => ({
@@ -63,11 +66,20 @@ const transformPost = (post: FeedPost): PostData => ({
   contentData: post.content_data,
   hasDescription: !!post.description,
   createdAt: post.created_at,
+  likeCount: post.like_count,
+  commentCount: post.comment_count,
+  viewerHasLiked: post.viewer_has_liked,
 });
 
+interface MemoizedPostCardProps {
+  post: PostData;
+  onTagClick: (tag: string) => void;
+  onCountChange: (postId: string, updates: { like_count?: number; comment_count?: number; viewer_has_liked?: boolean }) => void;
+}
+
 // Memoized post card to prevent unnecessary re-renders
-const MemoizedPostCard = memo(({ post, onTagClick }: { post: PostData; onTagClick: (tag: string) => void }) => (
-  <PostCard post={post} onTagClick={onTagClick} />
+const MemoizedPostCard = memo(({ post, onTagClick, onCountChange }: MemoizedPostCardProps) => (
+  <PostCard post={post} onTagClick={onTagClick} onCountChange={onCountChange} />
 ));
 MemoizedPostCard.displayName = "MemoizedPostCard";
 
@@ -75,7 +87,12 @@ const DiscoverPage = () => {
   const [filters, setFilters] = useState<PostFilters>({ types: [], visibility: "all", searchQuery: "" });
   const [searchInput, setSearchInput] = useState("");
   
-  const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePaginatedPosts(filters);
+  const { posts, isLoading, isLoadingMore, hasMore, loadMore, updatePostCounts } = usePaginatedPosts(filters);
+  
+  // Callback to update post counts from PostCard
+  const handleCountChange = useCallback((postId: string, updates: { like_count?: number; comment_count?: number; viewer_has_liked?: boolean }) => {
+    updatePostCounts(postId, updates);
+  }, [updatePostCounts]);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(isLoadingMore);
@@ -159,7 +176,7 @@ const DiscoverPage = () => {
     return (
       <>
         {feedPosts.map((post) => (
-          <MemoizedPostCard key={post.id} post={post} onTagClick={handleTagClick} />
+          <MemoizedPostCard key={post.id} post={post} onTagClick={handleTagClick} onCountChange={handleCountChange} />
         ))}
         
         {/* Load more trigger - invisible element that triggers loading when scrolled into view */}
