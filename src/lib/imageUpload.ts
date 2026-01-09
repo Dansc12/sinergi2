@@ -156,3 +156,37 @@ export const getOptimizedImageUrl = (url: string, width = 800, quality = 80): st
   }
   return url;
 };
+
+/**
+ * Generates a low-quality placeholder URL for progressive loading.
+ * Returns a tiny blurred version for Supabase images, null for external URLs.
+ */
+export const getPlaceholderUrl = (url: string): string | null => {
+  if (url.includes("/storage/v1/object/")) {
+    const renderUrl = url.replace("/storage/v1/object/", "/storage/v1/render/image/");
+    const separator = renderUrl.includes("?") ? "&" : "?";
+    // Very small image for blur placeholder
+    return `${renderUrl}${separator}width=40&quality=20`;
+  }
+  return null;
+};
+
+/**
+ * Checks if a URL is a Supabase storage URL that supports transformations.
+ */
+export const isStorageUrl = (url: string): boolean => {
+  return url.includes("/storage/v1/object/");
+};
+
+/**
+ * Gets dimensions for responsive image loading based on container width.
+ */
+export const getResponsiveWidth = (containerWidth?: number): number => {
+  if (!containerWidth) return 800;
+  
+  // Use 2x for retina displays, capped at reasonable sizes
+  const targetWidth = Math.min(containerWidth * 2, 1600);
+  
+  // Round to nearest 100 for better caching
+  return Math.ceil(targetWidth / 100) * 100;
+};

@@ -229,3 +229,13 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(270 91% 65%);
 }
+
+/* Skeleton shimmer animation for lazy loading */
+@keyframes skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  animation: skeleton-shimmer 1.5s infinite;
+}
