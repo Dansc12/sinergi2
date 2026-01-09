@@ -105,7 +105,7 @@ export const FoodSearchInput = ({
       try {
         // Call USDA API directly instead of through Edge Function
         const USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search";
-        const USDA_API_KEY = "DEMO_KEY"; // Free demo key with rate limits
+        const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY || "DEMO_KEY"; // Free demo key with rate limits
         
         const response = await fetch(
           `${USDA_API_URL}?api_key=${USDA_API_KEY}&query=${encodeURIComponent(value)}&pageSize=50&dataType=Foundation,SR Legacy`,
@@ -162,7 +162,7 @@ export const FoodSearchInput = ({
             };
 
             // Parse serving size into value and unit
-            const servingSizeValue = food.servingSize ? parseFloat(food.servingSize) : 100;
+            const servingSizeValue = food.servingSize || 100;
             const servingSizeUnit = food.servingSizeUnit || 'g';
             const servingDescription = food.householdServingFullText || 
               (food.servingSize ? `${food.servingSize} ${servingSizeUnit}` : '100 g');
