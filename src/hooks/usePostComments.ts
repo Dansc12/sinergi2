@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -15,12 +15,27 @@ export interface Comment {
   } | null;
 }
 
-export const usePostComments = (postId: string) => {
+interface UsePostCommentsOptions {
+  initialCommentCount?: number;
+  onCountChange?: (commentCount: number) => void;
+}
+
+export const usePostComments = (
+  postId: string,
+  options?: UsePostCommentsOptions
+) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
+  const [commentCount, setCommentCount] = useState(options?.initialCommentCount ?? 0);
 
+  // Lazy fetch comments - only called when user expands comments
   const fetchComments = useCallback(async () => {
+    if (hasFetched) return; // Don't re-fetch if already loaded
+    
+    setIsLoading(true);
+    
     const { data: commentsData, error } = await supabase
       .from("post_comments")
       .select("*")
@@ -35,52 +50,38 @@ export const usePostComments = (postId: string) => {
 
     // Fetch profiles for commenters
     const userIds = [...new Set(commentsData?.map((c) => c.user_id) || [])];
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("user_id, first_name, username, avatar_url")
-      .in("user_id", userIds);
+    
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, username, avatar_url")
+        .in("user_id", userIds);
 
-    const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]));
+      const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]));
 
-    const commentsWithProfiles: Comment[] =
-      commentsData?.map((comment) => ({
-        ...comment,
-        profile: profileMap.get(comment.user_id) || null,
-      })) || [];
+      const commentsWithProfiles: Comment[] =
+        commentsData?.map((comment) => ({
+          ...comment,
+          profile: profileMap.get(comment.user_id) || null,
+        })) || [];
 
-    setComments(commentsWithProfiles);
+      setComments(commentsWithProfiles);
+      setCommentCount(commentsWithProfiles.length);
+    } else {
+      setComments([]);
+    }
+    
+    setHasFetched(true);
     setIsLoading(false);
-  }, [postId]);
+  }, [postId, hasFetched]);
 
-  useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
-
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel(`comments-${postId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "post_comments",
-          filter: `post_id=eq.${postId}`,
-        },
-        () => {
-          fetchComments();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [postId, fetchComments]);
-
-  const addComment = async (content: string) => {
+  const addComment = useCallback(async (content: string) => {
     if (!user || !content.trim()) return null;
+
+    // Optimistic update for count
+    const newCount = commentCount + 1;
+    setCommentCount(newCount);
+    options?.onCountChange?.(newCount);
 
     const { data, error } = await supabase
       .from("post_comments")
@@ -94,13 +95,35 @@ export const usePostComments = (postId: string) => {
 
     if (error) {
       console.error("Error adding comment:", error);
+      // Revert count on error
+      setCommentCount(commentCount);
+      options?.onCountChange?.(commentCount);
       return null;
     }
 
-    return data;
-  };
+    // Add comment to local state with profile
+    const newComment: Comment = {
+      ...data,
+      profile: null, // Will be fetched or we can get current user's profile
+    };
 
-  const deleteComment = async (commentId: string) => {
+    // Fetch current user's profile for the new comment
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("first_name, username, avatar_url")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileData) {
+      newComment.profile = profileData;
+    }
+
+    setComments(prev => [...prev, newComment]);
+
+    return data;
+  }, [user, postId, commentCount, options]);
+
+  const deleteComment = useCallback(async (commentId: string) => {
     const { error } = await supabase
       .from("post_comments")
       .delete()
@@ -111,15 +134,29 @@ export const usePostComments = (postId: string) => {
       return false;
     }
 
+    // Update local state
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    const newCount = Math.max(0, commentCount - 1);
+    setCommentCount(newCount);
+    options?.onCountChange?.(newCount);
+
     return true;
-  };
+  }, [commentCount, options]);
+
+  // Reset state when needed (e.g., for modal close)
+  const reset = useCallback(() => {
+    setComments([]);
+    setHasFetched(false);
+  }, []);
 
   return {
     comments,
-    commentCount: comments.length,
+    commentCount,
     isLoading,
+    hasFetched,
     addComment,
     deleteComment,
-    refreshComments: fetchComments,
+    fetchComments,
+    reset,
   };
 };

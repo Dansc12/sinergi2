@@ -64,6 +64,9 @@ export interface PostData {
   hasDescription?: boolean;
   createdAt?: string;
   tags?: string[];
+  likeCount?: number;
+  commentCount?: number;
+  viewerHasLiked?: boolean;
 }
 
 // Map content types to their icons
@@ -80,6 +83,7 @@ interface PostCardProps {
   post: PostData;
   onPostClick?: (post: PostData) => void;
   onTagClick?: (tag: string) => void;
+  onCountChange?: (postId: string, updates: { like_count?: number; comment_count?: number; viewer_has_liked?: boolean }) => void;
 }
 
 // Unified content carousel that can display images and summary cards
@@ -138,12 +142,26 @@ const ContentCarousel = ({
 
   const renderItem = (item: CarouselItem) => {
     if (item.type === 'image') {
+      // Optimize image URL for Supabase storage
+      const optimizeImageUrl = (url: string): string => {
+        // Check if it's a Supabase storage URL
+        if (url.includes('/storage/v1/object/')) {
+          // Convert to render endpoint with optimization params
+          const renderUrl = url.replace('/storage/v1/object/', '/storage/v1/render/image/');
+          const separator = renderUrl.includes('?') ? '&' : '?';
+          return `${renderUrl}${separator}width=800&quality=80`;
+        }
+        return url;
+      };
+      
       return (
         <div className="w-full h-full bg-muted">
           <img
-            src={item.content as string}
+            src={optimizeImageUrl(item.content as string)}
             alt="Post"
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       );
@@ -568,7 +586,7 @@ const GroupSummaryCard = ({ contentData, coverPhoto }: { contentData: GroupConte
   );
 };
 
-export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
+export const PostCard = ({ post, onPostClick, onTagClick, onCountChange }: PostCardProps) => {
   const navigate = useNavigate();
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const [showComments, setShowComments] = useState(false);
@@ -577,7 +595,31 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
   const cardRef = useRef<HTMLElement>(null);
   const heartButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const { isLiked, likeCount, toggleLike } = usePostReactions(post.id);
+  // Use reactions hook with initial values from feed (no fetch on mount)
+  const { isLiked, likeCount, toggleLike } = usePostReactions(post.id, {
+    initialLikeCount: post.likeCount ?? 0,
+    initialIsLiked: post.viewerHasLiked ?? false,
+    onCountChange: (newCount, newIsLiked) => {
+      onCountChange?.(post.id, { like_count: newCount, viewer_has_liked: newIsLiked });
+    },
+  });
+  
+  // Use comments hook with initial count (lazy fetch)
+  const { comments, commentCount, addComment, fetchComments, isLoading: commentsLoading } = usePostComments(post.id, {
+    initialCommentCount: post.commentCount ?? 0,
+    onCountChange: (newCount) => {
+      onCountChange?.(post.id, { comment_count: newCount });
+    },
+  });
+  
+  // Fetch comments when user expands comments section
+  const handleToggleComments = useCallback(() => {
+    const newShowComments = !showComments;
+    setShowComments(newShowComments);
+    if (newShowComments) {
+      fetchComments();
+    }
+  }, [showComments, fetchComments]);
   
   const handleCardClick = () => {
     if (onPostClick) {
@@ -594,7 +636,7 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
     }
   };
 
-  const { comments, commentCount, addComment } = usePostComments(post.id);
+  
 
   const showFloatingHeart = useCallback(
     (originX?: number, originY?: number) => {
@@ -763,7 +805,7 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
                 {/* Right side: Comment and Like buttons */}
                 <div className="flex items-center gap-3 shrink-0">
                   <button
-                    onClick={() => setShowComments(!showComments)}
+                    onClick={handleToggleComments}
                     className="flex items-center gap-1 transition-transform active:scale-90"
                   >
                     <MessageCircle size={24} className="text-foreground" />
@@ -820,7 +862,7 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
       <div className="px-4 pb-4">
         {commentCount > 0 && !showComments && (
           <button
-            onClick={() => setShowComments(true)}
+            onClick={handleToggleComments}
             className="text-sm text-muted-foreground"
           >
             View all {commentCount} comment{commentCount > 1 ? "s" : ""}
@@ -835,8 +877,15 @@ export const PostCard = ({ post, onPostClick, onTagClick }: PostCardProps) => {
               exit={{ opacity: 0, height: 0 }}
               className="space-y-3"
             >
+              {/* Loading indicator */}
+              {commentsLoading && (
+                <div className="flex justify-center py-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                </div>
+              )}
+              
               {/* Comment list */}
-              {comments.map((comment) => (
+              {!commentsLoading && comments.map((comment) => (
                 <div key={comment.id} className="flex gap-2">
                   <Avatar className="w-7 h-7">
                     <AvatarImage src={comment.profile?.avatar_url || undefined} />

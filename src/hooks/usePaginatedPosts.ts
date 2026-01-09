@@ -12,6 +12,9 @@ export interface FeedPost {
   images: string[] | null;
   visibility: string;
   created_at: string;
+  like_count: number;
+  comment_count: number;
+  viewer_has_liked: boolean;
   profile?: {
     first_name: string | null;
     username: string | null;
@@ -55,31 +58,18 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     fetchingRef.current = true;
 
     try {
-      let query = supabase
-        .from("posts")
-        .select("id, user_id, content_type, content_data, description, images, visibility, created_at")
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(PAGE_SIZE);
-
-      // Apply visibility filter
-      if (filters?.visibility === "friends") {
-        query = query.eq("visibility", "friends");
-      } else {
-        query = query.neq("visibility", "private");
-      }
-
-      // Apply type filter
-      if (filters?.types && filters.types.length > 0) {
-        query = query.in("content_type", filters.types);
-      }
-
-      // Cursor-based pagination
-      if (cursor) {
-        query = query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);
-      }
-
-      const { data: postsData, error: postsError } = await query;
+      // Use the RPC function to get posts with counts in a single query
+      const { data: postsData, error: postsError } = await supabase.rpc(
+        "get_paginated_posts",
+        {
+          p_user_id: user.id,
+          p_visibility: filters?.visibility || "all",
+          p_types: filters?.types && filters.types.length > 0 ? filters.types : null,
+          p_cursor_created_at: cursor?.created_at || null,
+          p_cursor_id: cursor?.id || null,
+          p_limit: PAGE_SIZE,
+        }
+      );
 
       if (postsError) throw postsError;
 
@@ -104,18 +94,39 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
       // Check if we have more posts
       setHasMore(postsData.length === PAGE_SIZE);
 
-      // Fetch profiles for post authors
-      const userIds = [...new Set(postsData.map(p => p.user_id))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, first_name, username, avatar_url")
-        .in("user_id", userIds);
-
-      const profileMap = new Map(profilesData?.map(p => [p.user_id, p]));
-
-      const postsWithProfiles: FeedPost[] = postsData.map(post => ({
-        ...post,
-        profile: profileMap.get(post.user_id) || null,
+      // Transform the RPC response to FeedPost format
+      const postsWithProfiles: FeedPost[] = postsData.map((post: {
+        id: string;
+        user_id: string;
+        content_type: string;
+        content_data: Json;
+        description: string | null;
+        images: string[] | null;
+        visibility: string;
+        created_at: string;
+        like_count: number;
+        comment_count: number;
+        viewer_has_liked: boolean;
+        author_first_name: string | null;
+        author_username: string | null;
+        author_avatar_url: string | null;
+      }) => ({
+        id: post.id,
+        user_id: post.user_id,
+        content_type: post.content_type,
+        content_data: post.content_data,
+        description: post.description,
+        images: post.images,
+        visibility: post.visibility,
+        created_at: post.created_at,
+        like_count: Number(post.like_count) || 0,
+        comment_count: Number(post.comment_count) || 0,
+        viewer_has_liked: post.viewer_has_liked || false,
+        profile: {
+          first_name: post.author_first_name,
+          username: post.author_username,
+          avatar_url: post.author_avatar_url,
+        },
       }));
 
       if (cursor) {
@@ -211,7 +222,7 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
           table: "posts",
         },
         async (payload) => {
-          const newPost = payload.new as FeedPost;
+          const newPost = payload.new as { id: string; user_id: string; visibility: string; content_type: string; content_data: Json; description: string | null; images: string[] | null; created_at: string };
           
           if (newPost.visibility === "private" && newPost.user_id !== user.id) {
             return;
@@ -225,6 +236,9 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
 
           const postWithProfile: FeedPost = {
             ...newPost,
+            like_count: 0,
+            comment_count: 0,
+            viewer_has_liked: false,
             profile: profileData || null,
           };
 
@@ -250,6 +264,13 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     };
   }, [user]);
 
+  // Update post counts when reactions/comments change (optimistic updates from PostCard)
+  const updatePostCounts = useCallback((postId: string, updates: { like_count?: number; comment_count?: number; viewer_has_liked?: boolean }) => {
+    setPosts(prev => prev.map(p => 
+      p.id === postId ? { ...p, ...updates } : p
+    ));
+  }, []);
+
   const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore || fetchingRef.current) return;
     
@@ -272,5 +293,6 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     hasMore,
     loadMore,
     refresh,
+    updatePostCounts,
   };
 };

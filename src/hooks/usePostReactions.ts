@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -10,95 +10,73 @@ export interface Reaction {
   created_at: string;
 }
 
-export const usePostReactions = (postId: string) => {
+interface UsePostReactionsOptions {
+  initialLikeCount?: number;
+  initialIsLiked?: boolean;
+  onCountChange?: (likeCount: number, isLiked: boolean) => void;
+}
+
+export const usePostReactions = (
+  postId: string,
+  options?: UsePostReactionsOptions
+) => {
   const { user } = useAuth();
-  const [reactions, setReactions] = useState<Reaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(options?.initialIsLiked ?? false);
+  const [likeCount, setLikeCount] = useState(options?.initialLikeCount ?? 0);
+  const [isToggling, setIsToggling] = useState(false);
 
-  const fetchReactions = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("post_reactions")
-      .select("*")
-      .eq("post_id", postId);
+  // Toggle like with optimistic update
+  const toggleLike = useCallback(async () => {
+    if (!user || isToggling) return;
 
-    if (!error && data) {
-      setReactions(data);
-    }
-    setIsLoading(false);
-  }, [postId]);
+    setIsToggling(true);
+    const wasLiked = isLiked;
+    const prevCount = likeCount;
 
-  useEffect(() => {
-    fetchReactions();
-  }, [fetchReactions]);
+    // Optimistic update
+    const newIsLiked = !wasLiked;
+    const newCount = wasLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
+    setIsLiked(newIsLiked);
+    setLikeCount(newCount);
+    options?.onCountChange?.(newCount, newIsLiked);
 
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel(`reactions-${postId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "post_reactions",
-          filter: `post_id=eq.${postId}`,
-        },
-        () => {
-          fetchReactions();
-        }
-      )
-      .subscribe();
+    try {
+      if (wasLiked) {
+        // Remove like - find and delete
+        const { error } = await supabase
+          .from("post_reactions")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", user.id)
+          .eq("emoji", "❤️");
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [postId, fetchReactions]);
+        if (error) throw error;
+      } else {
+        // Add like
+        const { error } = await supabase.from("post_reactions").insert({
+          post_id: postId,
+          user_id: user.id,
+          emoji: "❤️",
+        });
 
-  // Toggle like - add if not liked, remove if already liked
-  const toggleLike = async () => {
-    if (!user) return;
-
-    const existingLike = reactions.find(
-      (r) => r.user_id === user.id && r.emoji === "❤️"
-    );
-
-    if (existingLike) {
-      // Remove like
-      const { error } = await supabase
-        .from("post_reactions")
-        .delete()
-        .eq("id", existingLike.id);
-
-      if (error) {
-        console.error("Error removing like:", error);
+        if (error) throw error;
       }
-    } else {
-      // Add like
-      const { error } = await supabase.from("post_reactions").insert({
-        post_id: postId,
-        user_id: user.id,
-        emoji: "❤️",
-      });
-
-      if (error) {
-        console.error("Error adding like:", error);
-      }
+    } catch (error) {
+      // Revert on error
+      console.error("Error toggling like:", error);
+      setIsLiked(wasLiked);
+      setLikeCount(prevCount);
+      options?.onCountChange?.(prevCount, wasLiked);
+    } finally {
+      setIsToggling(false);
     }
-  };
-
-  // Check if current user has liked
-  const isLiked = reactions.some(
-    (r) => r.user_id === user?.id && r.emoji === "❤️"
-  );
-
-  // Total like count
-  const likeCount = reactions.filter((r) => r.emoji === "❤️").length;
+  }, [user, postId, isLiked, likeCount, isToggling, options]);
 
   return {
-    reactions,
     isLiked,
     likeCount,
-    isLoading,
+    isLoading: false, // No longer loading on mount
     toggleLike,
+    isToggling,
   };
 };
