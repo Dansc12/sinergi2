@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow, format } from "date-fns";
-import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell, Utensils, Copy } from "lucide-react";
+import { X, BookOpen, Calendar, Users, Check, Heart, MessageCircle, Send, Dumbbell, Utensils, Copy, Image } from "lucide-react";
 import { useSavedPosts } from "@/hooks/useSavedPosts";
 import { getMuscleContributions, getMuscleDisplayName } from "@/lib/muscleContributions";
 import { useGroupJoin } from "@/hooks/useGroupJoin";
@@ -1171,111 +1171,32 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
           ref={containerRef}
         >
           <div className="h-full w-screen max-w-screen overflow-y-auto overflow-x-hidden">
-            {/* Image Header - Collapsed/Cropped view */}
-            {hasImages && (
-              <motion.div
-                className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing"
-                style={{ 
-                  height: collapsedHeight,
-                }}
-                drag="y"
-                dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.3}
-                onDrag={handleVerticalDrag}
-                onDragEnd={handleDragEnd}
-              >
-                {/* Image - fixed height, scales slightly during drag for visual feedback */}
-                <motion.div
-                  className="flex w-full absolute top-0 left-0"
-                  style={{ height: collapsedImageHeight }}
-                  animate={{
-                    scale: 1 + (dragOffset / 800),
-                    y: dragOffset * 0.15,
-                  }}
-                  transition={{ type: "tween", duration: 0 }}
-                >
-                  {post.images?.[0] && (
-                    <div className="w-full h-full flex-shrink-0">
-                      <img
-                        src={post.images[0]}
-                        alt="Post image"
-                        className="w-full h-full object-cover object-center"
-                        draggable={false}
-                      />
-                    </div>
-                  )}
-                </motion.div>
-
-                {/* Gradient overlay for text legibility */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
-
-                {/* Top overlay - Profile and Close button with safe area */}
-                <div
-                  className="absolute top-0 left-0 right-0 pt-safe px-4 pb-4 flex items-start justify-between z-20"
-                  style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
-                >
-                  {/* Profile info */}
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 border-2 border-white/30">
-                      <AvatarImage src={post.user.avatar} />
-                      <AvatarFallback className="bg-muted">
-                        {post.user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-semibold text-sm text-white drop-shadow-md">
-                          {post.user.name}
-                        </p>
-                        <span className="text-sm text-white/80 drop-shadow-md">
-                          {post.user.handle}
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/70 drop-shadow-md">
-                        {formattedDate}
-                      </p>
-                    </div>
+            {/* Header - Profile info and close button */}
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10 border border-border">
+                  <AvatarImage src={post.user.avatar} />
+                  <AvatarFallback className="bg-muted">
+                    {post.user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-sm">{post.user.name}</p>
+                    <span className="text-sm text-muted-foreground">
+                      {post.user.handle}
+                    </span>
                   </div>
-
-                  {/* Close button */}
-                  <button
-                    onClick={onClose}
-                    className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors z-10"
-                  >
-                    <X size={20} className="text-white" />
-                  </button>
+                  <p className="text-xs text-muted-foreground">{formattedDate}</p>
                 </div>
-              </motion.div>
-            )}
-
-            {/* No images header - show profile info differently */}
-            {!hasImages && (
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10 border border-border">
-                    <AvatarImage src={post.user.avatar} />
-                    <AvatarFallback className="bg-muted">
-                      {post.user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-semibold text-sm">{post.user.name}</p>
-                      <span className="text-sm text-muted-foreground">
-                        {post.user.handle}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{formattedDate}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-                >
-                  <X size={20} />
-                </button>
               </div>
-            )}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-safe overflow-hidden w-screen max-w-screen overflow-x-hidden min-w-0 box-border">
               {/* Title row with icon and action buttons */}
@@ -1290,8 +1211,20 @@ export const PostDetailModal = ({ open, onClose, post }: PostDetailModalProps) =
                   )}
                 </div>
 
-                {/* Right side: Comment and Like buttons */}
+                {/* Right side: Images, Comment and Like buttons */}
                 <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  {/* Images button */}
+                  {hasImages && (
+                    <button
+                      onClick={() => setImageExpanded(true)}
+                      className="flex items-center gap-0.5 sm:gap-1 transition-transform active:scale-90"
+                    >
+                      <Image size={20} className="text-foreground sm:w-6 sm:h-6" />
+                      {post.images && post.images.length > 1 && (
+                        <span className="text-xs sm:text-sm font-medium">{post.images.length}</span>
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowComments(!showComments)}
                     className="flex items-center gap-0.5 sm:gap-1 transition-transform active:scale-90"
