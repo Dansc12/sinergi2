@@ -10,6 +10,8 @@ export interface FeedPost {
   content_data: Json;
   description: string | null;
   images: string[] | null;
+  first_image_url: string | null;
+  image_count: number;
   visibility: string;
   created_at: string;
   like_count: number;
@@ -35,6 +37,9 @@ export interface PostFilters {
 }
 
 const PAGE_SIZE = 15;
+const FETCH_TIMEOUT_MS = 10000; // 10 second timeout
+const RETRY_DELAY_MS = 2000; // 2 second retry delay
+const MAX_RETRIES = 1;
 
 // Simple in-memory cache to prevent empty flicker on navigation
 const feedCache = new Map<string, { posts: FeedPost[]; cursor: Cursor | null; timestamp: number }>();
@@ -46,6 +51,21 @@ const getCacheKey = (filters?: PostFilters): string => {
     visibility: filters?.visibility || "all",
     imagesOnly: filters?.imagesOnly ?? false,
   });
+};
+
+// Helper to delay execution
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Fetch full images for a post when needed (for detail modal)
+export const fetchPostImages = async (postId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("images")
+    .eq("id", postId)
+    .maybeSingle();
+  
+  if (error || !data) return [];
+  return data.images || [];
 };
 
 export const usePaginatedPosts = (filters?: PostFilters) => {
@@ -78,29 +98,16 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     };
   }, []);
 
-  const fetchPosts = useCallback(async (cursor?: Cursor) => {
-    if (authLoading || !user) {
-      if (!authLoading && !user) {
-        if (mountedRef.current) {
-          setPosts([]);
-          setIsLoading(false);
-          setHasFetchedOnce(true);
-        }
-      }
-      return;
-    }
-
-    // Prevent multiple simultaneous fetches
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    setError(null);
-
+  const fetchPostsWithRetry = useCallback(async (cursor?: Cursor, retryCount = 0): Promise<void> => {
     try {
-      // Use the RPC function to get posts with counts in a single query
+      // Create abort controller for timeout
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
+      
       const { data: postsData, error: postsError } = await supabase.rpc(
         "get_paginated_posts",
         {
-          p_user_id: user.id,
+          p_user_id: user!.id,
           p_visibility: filters?.visibility || "all",
           p_types: filters?.types && filters.types.length > 0 ? filters.types : null,
           p_cursor_created_at: cursor?.created_at || null,
@@ -108,7 +115,9 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
           p_limit: PAGE_SIZE,
           p_images_only: filters?.imagesOnly ?? false,
         }
-      );
+      ).abortSignal(abortController.signal);
+      
+      clearTimeout(timeoutId);
 
       if (postsError) throw postsError;
 
@@ -119,10 +128,6 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
         if (!cursor) {
           setPosts([]);
         }
-        setIsLoading(false);
-        setIsLoadingMore(false);
-        setHasFetchedOnce(true);
-        fetchingRef.current = false;
         return;
       }
 
@@ -136,7 +141,7 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
       // Check if we have more posts
       setHasMore(postsData.length === PAGE_SIZE);
 
-      // Transform the RPC response to FeedPost format
+      // Transform the RPC response to FeedPost format with optimized image data
       const postsWithProfiles: FeedPost[] = postsData.map((post: {
         id: string;
         user_id: string;
@@ -152,24 +157,30 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
         author_first_name: string | null;
         author_username: string | null;
         author_avatar_url: string | null;
-      }) => ({
-        id: post.id,
-        user_id: post.user_id,
-        content_type: post.content_type,
-        content_data: post.content_data,
-        description: post.description,
-        images: post.images,
-        visibility: post.visibility,
-        created_at: post.created_at,
-        like_count: Number(post.like_count) || 0,
-        comment_count: Number(post.comment_count) || 0,
-        viewer_has_liked: post.viewer_has_liked || false,
-        profile: {
-          first_name: post.author_first_name,
-          username: post.author_username,
-          avatar_url: post.author_avatar_url,
-        },
-      }));
+      }) => {
+        const images = post.images || [];
+        return {
+          id: post.id,
+          user_id: post.user_id,
+          content_type: post.content_type,
+          content_data: post.content_data,
+          description: post.description,
+          // Keep images for backward compatibility but optimize
+          images: images.length > 0 ? [images[0]] : null,
+          first_image_url: images[0] || null,
+          image_count: images.length,
+          visibility: post.visibility,
+          created_at: post.created_at,
+          like_count: Number(post.like_count) || 0,
+          comment_count: Number(post.comment_count) || 0,
+          viewer_has_liked: post.viewer_has_liked || false,
+          profile: {
+            first_name: post.author_first_name,
+            username: post.author_username,
+            avatar_url: post.author_avatar_url,
+          },
+        };
+      });
 
       if (cursor) {
         // Append to existing posts, avoiding duplicates
@@ -201,11 +212,48 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
       }
       
       setHasFetchedOnce(true);
+      setError(null);
     } catch (err) {
-      console.error("Error fetching posts:", err);
-      if (mountedRef.current) {
-        setError(err instanceof Error ? err : new Error("Failed to fetch posts"));
+      console.error(`Error fetching posts (attempt ${retryCount + 1}):`, err);
+      
+      // Retry logic
+      if (retryCount < MAX_RETRIES && mountedRef.current) {
+        console.log(`Retrying in ${RETRY_DELAY_MS}ms...`);
+        await delay(RETRY_DELAY_MS);
+        if (mountedRef.current) {
+          return fetchPostsWithRetry(cursor, retryCount + 1);
+        }
       }
+      
+      // All retries failed
+      if (mountedRef.current) {
+        const errorMessage = err instanceof Error && err.message.includes('timeout')
+          ? "Feed took too long to load. Please try again."
+          : "Failed to load posts. Please try again.";
+        setError(new Error(errorMessage));
+      }
+    }
+  }, [user, filters?.types, filters?.visibility, filters?.imagesOnly]);
+
+  const fetchPosts = useCallback(async (cursor?: Cursor) => {
+    if (authLoading || !user) {
+      if (!authLoading && !user) {
+        if (mountedRef.current) {
+          setPosts([]);
+          setIsLoading(false);
+          setHasFetchedOnce(true);
+        }
+      }
+      return;
+    }
+
+    // Prevent multiple simultaneous fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    setError(null);
+
+    try {
+      await fetchPostsWithRetry(cursor);
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
@@ -213,7 +261,7 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
       }
       fetchingRef.current = false;
     }
-  }, [user, authLoading, filters?.types, filters?.visibility, filters?.imagesOnly]);
+  }, [user, authLoading, fetchPostsWithRetry]);
 
   // Filter posts locally based on search query
   const filteredPosts = posts.filter(post => {
@@ -317,8 +365,12 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
             .eq("user_id", newPost.user_id)
             .single();
 
+          const images = newPost.images || [];
           const postWithProfile: FeedPost = {
             ...newPost,
+            first_image_url: images[0] || null,
+            image_count: images.length,
+            images: images.length > 0 ? [images[0]] : null,
             like_count: 0,
             comment_count: 0,
             viewer_has_liked: false,
@@ -395,8 +447,16 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     setPosts([]);
     setIsLoading(true);
     setHasFetchedOnce(false);
+    setError(null);
     fetchPosts();
   }, [fetchPosts, filters]);
+
+  // Retry failed load more
+  const retryLoadMore = useCallback(() => {
+    setError(null);
+    setIsLoadingMore(true);
+    fetchPosts(cursorRef.current || undefined);
+  }, [fetchPosts]);
 
   return {
     posts: filteredPosts,
@@ -405,6 +465,7 @@ export const usePaginatedPosts = (filters?: PostFilters) => {
     hasMore,
     loadMore,
     refresh,
+    retryLoadMore,
     updatePostCounts,
     error,
     hasFetchedOnce,
