@@ -9,7 +9,7 @@ import { usePostReactions } from "@/hooks/usePostReactions";
 import { usePostComments } from "@/hooks/usePostComments";
 import { formatDistanceToNow } from "date-fns";
 import { PostDetailModal } from "./PostDetailModal";
-import { getOptimizedImageUrl } from "@/lib/imageUpload";
+import { LazyImage } from "@/components/LazyImage";
 
 interface FloatingEmoji {
   id: number;
@@ -141,27 +141,25 @@ const ContentCarousel = ({
     }
   };
 
-  const renderItem = (item: CarouselItem) => {
+  const renderItem = (item: CarouselItem, index: number, currentIndex: number) => {
     if (item.type === 'image') {
-      const originalUrl = item.content as string;
-      const optimizedUrl = getOptimizedImageUrl(originalUrl, 800, 80);
+      const imageUrl = item.content as string;
+      // Only render images that are within 1 slide of current (for performance)
+      const shouldRender = Math.abs(index - currentIndex) <= 1;
+      
+      if (!shouldRender) {
+        return <div className="w-full h-full bg-muted" />;
+      }
       
       return (
-        <div className="w-full h-full bg-muted">
-          <img
-            src={optimizedUrl}
-            alt="Post"
-            className="w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              // Fallback to original URL if optimized version fails
-              if (e.currentTarget.src !== originalUrl) {
-                e.currentTarget.src = originalUrl;
-              }
-            }}
-          />
-        </div>
+        <LazyImage
+          src={imageUrl}
+          alt="Post"
+          className="w-full h-full object-cover"
+          width={800}
+          quality={80}
+          unloadWhenHidden={true}
+        />
       );
     } else {
       return (
@@ -195,7 +193,7 @@ const ContentCarousel = ({
         >
           {items.map((item, idx) => (
             <div key={idx} className="w-full h-full flex-shrink-0">
-              {renderItem(item)}
+              {renderItem(item, idx, currentIndex)}
             </div>
           ))}
         </motion.div>
