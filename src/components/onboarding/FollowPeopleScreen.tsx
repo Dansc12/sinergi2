@@ -47,8 +47,7 @@ export function FollowPeopleScreen() {
       const { data: usersData, error } = await supabase
         .from('profiles')
         .select('user_id, display_name, username, avatar_url, bio')
-        .neq('user_id', user.id)
-        .eq('onboarding_completed', true);
+        .neq('user_id', user.id);
 
       if (error) throw error;
       setUsers(usersData || []);
