@@ -191,7 +191,7 @@ export const FoodSearchInput = ({
             };
 
             // Parse serving size into value and unit
-            const servingSizeValue = food.servingSize ? parseFloat(food.servingSize) : 100;
+            const servingSizeValue = food.servingSize || 100;
             const servingSizeUnit = food.servingSizeUnit || 'g';
             const servingDescription = food.householdServingFullText || 
               (food.servingSize ? `${food.servingSize} ${servingSizeUnit}` : '100 g');

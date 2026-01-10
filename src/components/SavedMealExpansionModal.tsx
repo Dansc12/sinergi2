@@ -223,7 +223,7 @@ export const SavedMealExpansionModal = ({
               protein: getNutrient('protein') || getNutrient('1003'),
               carbs: getNutrient('carbohydrate') || getNutrient('1005'),
               fats: getNutrient('fat') || getNutrient('1004'),
-              servingSizeValue: usdaFood.servingSize ? parseFloat(usdaFood.servingSize) : 100,
+              servingSizeValue: usdaFood.servingSize || 100,
               servingSizeUnit: usdaFood.servingSizeUnit || 'g',
             };
 
