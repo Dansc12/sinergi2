@@ -138,6 +138,16 @@ const AuthPage = () => {
         }
 
         toast.success("Welcome back!");
+
+        // Navigate after successful login
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          const profile = await ensureProfile(session.user);
+          navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -157,6 +167,16 @@ const AuthPage = () => {
         }
 
         toast.success("Account created! Let's set up your profile.");
+
+        // Navigate after successful signup
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          const profile = await ensureProfile(session.user);
+          navigate(profile.onboarding_completed ? "/" : "/onboarding", { replace: true });
+        }
       }
     } catch (error: any) {
       toast.error("Something went wrong. Please try again.");
