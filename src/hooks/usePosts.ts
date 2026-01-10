@@ -175,7 +175,7 @@ export const usePosts = () => {
         ? new Date(postData.logDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0];
 
-      await supabase
+      const { error: mealError } = await supabase
         .from("meal_logs")
         .insert({
           user_id: user.id,
@@ -187,6 +187,8 @@ export const usePosts = () => {
           total_fat: mealData.totalFats as number,
           log_date: logDate,
         });
+
+      if (mealError) throw mealError;
     }
 
     // If this is a workout, also save to workout_logs table
