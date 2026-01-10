@@ -2,8 +2,33 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { SavedMealFood } from "@/components/FoodSearchInput";
+
+// USDA FoodData Central API
+const USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search";
+// DEMO_KEY is a free public API key provided by USDA for demo/testing purposes
+// For production, consider using environment variables or a proper API key
+const USDA_API_KEY = "DEMO_KEY";
+
+// USDA API response types
+interface USDANutrient {
+  nutrientNumber?: string;
+  nutrientName?: string;
+  value?: number;
+  unitName?: string;
+}
+
+interface USDAFood {
+  fdcId: number;
+  description: string;
+  servingSize?: number;
+  servingSizeUnit?: string;
+  foodNutrients?: USDANutrient[];
+}
+
+interface USDASearchResponse {
+  foods?: USDAFood[];
+}
 
 interface ExpandedFood extends SavedMealFood {
   adjustedQuantity: number;
@@ -142,13 +167,67 @@ export const SavedMealExpansionModal = ({
       const resolved = await Promise.all(
         initialExpanded.map(async (f) => {
           try {
-            const { data, error } = await supabase.functions.invoke("search-foods", {
-              body: { query: f.name },
-            });
-            if (error) throw error;
+            const response = await fetch(
+              `${USDA_API_URL}?api_key=${USDA_API_KEY}&query=${encodeURIComponent(f.name)}&pageSize=50&dataType=Foundation,SR Legacy`,
+              {
+                method: 'GET',
+              }
+            );
 
-            const usda = (data?.foods || []).find((x: any) => x && x.isCustom === false);
-            if (!usda) return f;
+            if (!response.ok) {
+              console.error('USDA API error:', response.status);
+              return f;
+            }
+
+            const data: USDASearchResponse = await response.json();
+            const foods = data.foods || [];
+            
+            // Find USDA food (non-custom)
+            const usdaFood = foods.find((food: USDAFood) => {
+              const nutrients = food.foodNutrients || [];
+              const hasNutrients = nutrients.length > 0;
+              return hasNutrients && food.description?.toLowerCase().includes(f.name.toLowerCase());
+            });
+            
+            if (!usdaFood) return f;
+
+            // Extract nutrients
+            const nutrients = usdaFood.foodNutrients || [];
+            
+            const getNutrient = (nameOrNumber: string): number | null => {
+              const needle = nameOrNumber.toLowerCase();
+              const nutrient = nutrients.find((n: USDANutrient) =>
+                String(n.nutrientNumber) === nameOrNumber ||
+                n.nutrientName?.toLowerCase().includes(needle)
+              );
+              if (nutrient?.value == null) return null;
+              return Math.round(Number(nutrient.value));
+            };
+
+            const getEnergyKcal = (): number => {
+              const kcal = nutrients.find((n: USDANutrient) =>
+                String(n.nutrientNumber) === "1008" ||
+                (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kcal")
+              );
+              if (kcal?.value != null) return Number(kcal.value);
+
+              const kj = nutrients.find((n: USDANutrient) =>
+                String(n.nutrientNumber) === "1062" ||
+                (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kj")
+              );
+              if (kj?.value != null) return Number(kj.value) / 4.184;
+
+              return 0;
+            };
+
+            const usda = {
+              calories: getEnergyKcal(),
+              protein: getNutrient('protein') ?? getNutrient('1003') ?? 0,
+              carbs: getNutrient('carbohydrate') ?? getNutrient('1005') ?? 0,
+              fats: getNutrient('fat') ?? getNutrient('1004') ?? 0,
+              servingSizeValue: usdaFood.servingSize || 100,
+              servingSizeUnit: usdaFood.servingSizeUnit || 'g',
+            };
 
             const refQty = Number(usda.servingSizeValue) || 100;
             const refUnit = clampUnit(String(usda.servingSizeUnit || "g"));

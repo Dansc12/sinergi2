@@ -2,7 +2,35 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Plus, Utensils } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
+// USDA FoodData Central API
+const USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search";
+// DEMO_KEY is a free public API key provided by USDA for demo/testing purposes
+// For production, consider using environment variables or a proper API key
+const USDA_API_KEY = "DEMO_KEY";
+
+// USDA API response types
+interface USDANutrient {
+  nutrientNumber?: string;
+  nutrientName?: string;
+  value?: number;
+  unitName?: string;
+}
+
+interface USDAFood {
+  fdcId: number;
+  description: string;
+  brandName?: string;
+  brandOwner?: string;
+  servingSize?: number;
+  servingSizeUnit?: string;
+  householdServingFullText?: string;
+  foodNutrients?: USDANutrient[];
+}
+
+interface USDASearchResponse {
+  foods?: USDAFood[];
+}
 
 export interface SavedMealFood {
   id: string;
@@ -57,6 +85,35 @@ export const FoodSearchInput = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
+  // Rank foods based on search term relevance
+  const rankFoods = (foods: FoodItem[], searchTerm: string): FoodItem[] => {
+    const lowerSearch = searchTerm.toLowerCase().trim();
+    
+    return foods.sort((a, b) => {
+      const aDesc = a.description.toLowerCase();
+      const bDesc = b.description.toLowerCase();
+      
+      // Priority 0: Custom foods first
+      if (a.isCustom && !b.isCustom) return -1;
+      if (b.isCustom && !a.isCustom) return 1;
+      
+      // Priority 1: Exact match
+      const aExact = aDesc === lowerSearch;
+      const bExact = bDesc === lowerSearch;
+      if (aExact && !bExact) return -1;
+      if (bExact && !aExact) return 1;
+      
+      // Priority 2: Starts with search term
+      const aStarts = aDesc.startsWith(lowerSearch);
+      const bStarts = bDesc.startsWith(lowerSearch);
+      if (aStarts && !bStarts) return -1;
+      if (bStarts && !aStarts) return 1;
+      
+      // Priority 3: Sort by description length (shorter = more relevant)
+      return aDesc.length - bDesc.length;
+    });
+  };
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -81,13 +138,91 @@ export const FoodSearchInput = ({
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.functions.invoke('search-foods', {
-          body: { query: value },
-        });
+        const response = await fetch(
+          `${USDA_API_URL}?api_key=${USDA_API_KEY}&query=${encodeURIComponent(value)}&pageSize=50&dataType=Foundation,SR Legacy`,
+          {
+            method: 'GET',
+          }
+        );
 
-        if (error) throw error;
+        if (!response.ok) {
+          console.error('USDA API error:', response.status);
+          throw new Error('Failed to search foods');
+        }
 
-        setResults(data?.foods || []);
+        const data: USDASearchResponse = await response.json();
+        const lowerQuery = value.toLowerCase().trim();
+        
+        let foods: FoodItem[] = (data.foods || [])
+          // Filter: description must contain the search term
+          .filter((food: USDAFood) => 
+            food.description?.toLowerCase().includes(lowerQuery)
+          )
+          .map((food: USDAFood) => {
+            // Extract nutrients from the food data
+            const nutrients = food.foodNutrients || [];
+            
+            const getNutrient = (nameOrNumber: string): number | null => {
+              const needle = nameOrNumber.toLowerCase();
+              const nutrient = nutrients.find((n: USDANutrient) =>
+                String(n.nutrientNumber) === nameOrNumber ||
+                n.nutrientName?.toLowerCase().includes(needle)
+              );
+              if (nutrient?.value == null) return null;
+              return Math.round(Number(nutrient.value));
+            };
+
+            // Get energy in kcal (prefer nutrientNumber 1008)
+            const getEnergyKcal = (): number => {
+              const kcal = nutrients.find((n: USDANutrient) =>
+                String(n.nutrientNumber) === "1008" ||
+                (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kcal")
+              );
+              if (kcal?.value != null) return Math.round(Number(kcal.value));
+
+              const kj = nutrients.find((n: USDANutrient) =>
+                String(n.nutrientNumber) === "1062" ||
+                (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kj")
+              );
+              if (kj?.value != null) return Math.round(Number(kj.value) / 4.184);
+
+              const anyEnergyKcal = nutrients.find((n: USDANutrient) =>
+                n.nutrientName?.toLowerCase().includes("energy") && String(n.unitName).toLowerCase() === "kcal"
+              );
+              if (anyEnergyKcal?.value != null) return Math.round(Number(anyEnergyKcal.value));
+              
+              return 0;
+            };
+
+            // Parse serving size into value and unit
+            const servingSizeValue = food.servingSize || 100;
+            const servingSizeUnit = food.servingSizeUnit || 'g';
+            const servingDescription = food.householdServingFullText || 
+              (food.servingSize ? `${food.servingSize} ${servingSizeUnit}` : '100 g');
+
+            return {
+              fdcId: food.fdcId,
+              description: food.description,
+              brandName: food.brandName || food.brandOwner,
+              calories: getEnergyKcal(),
+              protein: getNutrient('protein') ?? getNutrient('1003') ?? 0,
+              carbs: getNutrient('carbohydrate') ?? getNutrient('1005') ?? 0,
+              fats: getNutrient('fat') ?? getNutrient('1004') ?? 0,
+              servingSize: servingDescription,
+              servingSizeValue: servingSizeValue,
+              servingSizeUnit: servingSizeUnit,
+              isCustom: false,
+              baseUnit: 'g',
+            };
+          });
+
+        // Rank results by relevance
+        foods = rankFoods(foods, value);
+        
+        // Limit to 15 results
+        foods = foods.slice(0, 15);
+
+        setResults(foods);
         setIsOpen(true);
       } catch (err) {
         console.error('Food search error:', err);
