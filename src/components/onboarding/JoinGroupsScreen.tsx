@@ -39,11 +39,10 @@ export function JoinGroupsScreen() {
 
   const fetchGroups = async () => {
     try {
-      // Fetch ALL public system groups (no limit)
+      // Fetch ALL public groups (no limit)
       const { data: groupsData, error } = await supabase
         .from('groups')
         .select('id, name, description, avatar_url')
-        .eq('is_system', true)
         .eq('visibility', 'public');
 
       if (error) throw error;
