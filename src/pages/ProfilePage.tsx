@@ -15,10 +15,10 @@ interface UserProfile {
   hobbies: string[] | null;
 }
 
-const postsEmptyState = { 
-  title: "No posts yet", 
-  description: "Share your fitness journey with the community", 
-  action: "Create Post" 
+const postsEmptyState = {
+  title: "No posts yet",
+  description: "Share your fitness journey with the community",
+  action: "Create Post",
 };
 
 function BioSection({ bio }: { bio: string }) {
@@ -37,36 +37,32 @@ function BioSection({ bio }: { bio: string }) {
 
   return (
     <div className="mb-4">
-      <p 
+      <p
         ref={bioRef}
-        className={`text-muted-foreground text-sm whitespace-pre-line ${!isExpanded ? 'line-clamp-2' : ''}`}
+        className={`text-muted-foreground text-sm whitespace-pre-line ${!isExpanded ? "line-clamp-2" : ""}`}
       >
         {bio}
       </p>
       {isTruncated && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-primary text-sm font-medium mt-1"
-        >
-          {isExpanded ? 'Show less' : 'Show more'}
+        <button onClick={() => setIsExpanded(!isExpanded)} className="text-primary text-sm font-medium mt-1">
+          {isExpanded ? "Show less" : "Show more"}
         </button>
       )}
     </div>
   );
 }
 
-
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [streakCount, setStreakCount] = useState(0);
-  
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [stats, setStats] = useState({
     meals: 0,
     days: 0,
-    workouts: 0
+    workouts: 0,
   });
 
   useEffect(() => {
@@ -75,26 +71,25 @@ const ProfilePage = () => {
 
   const fetchProfileData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/auth');
+        navigate("/auth");
         return;
       }
 
       // Fetch profile data
       const { data: profileData } = await supabase
-        .from('profiles')
-        .select('display_name, first_name, last_name, username, bio, avatar_url, hobbies')
-        .eq('user_id', user.id)
+        .from("profiles")
+        .select("display_name, first_name, last_name, username, bio, avatar_url, hobbies")
+        .eq("user_id", user.id)
         .single();
 
       // Auto-populate display_name from first/last name if not set
       if (profileData && !profileData.display_name && (profileData.first_name || profileData.last_name)) {
-        const autoDisplayName = [profileData.first_name, profileData.last_name].filter(Boolean).join(' ');
-        await supabase
-          .from('profiles')
-          .update({ display_name: autoDisplayName })
-          .eq('user_id', user.id);
+        const autoDisplayName = [profileData.first_name, profileData.last_name].filter(Boolean).join(" ");
+        await supabase.from("profiles").update({ display_name: autoDisplayName }).eq("user_id", user.id);
         profileData.display_name = autoDisplayName;
       }
 
@@ -104,57 +99,55 @@ const ProfilePage = () => {
 
       // Fetch streak data
       const { data: streakData } = await supabase
-        .from('user_streaks')
-        .select('current_streak')
-        .eq('user_id', user.id)
+        .from("user_streaks")
+        .select("current_streak")
+        .eq("user_id", user.id)
         .maybeSingle();
 
       setStreakCount(streakData?.current_streak || 0);
 
-
       // Fetch stats
       const { count: mealsCount } = await supabase
-        .from('meal_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .from("meal_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
 
       const { count: workoutsCount } = await supabase
-        .from('workout_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .from("workout_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
 
       // Calculate days since first activity
       const { data: firstMeal } = await supabase
-        .from('meal_logs')
-        .select('created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
+        .from("meal_logs")
+        .select("created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const { data: firstWorkout } = await supabase
-        .from('workout_logs')
-        .select('created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
+        .from("workout_logs")
+        .select("created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       let daysActive = 0;
       const dates = [firstMeal?.created_at, firstWorkout?.created_at].filter(Boolean);
       if (dates.length > 0) {
-        const earliest = new Date(Math.min(...dates.map(d => new Date(d!).getTime())));
+        const earliest = new Date(Math.min(...dates.map((d) => new Date(d!).getTime())));
         daysActive = Math.floor((Date.now() - earliest.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       }
 
       setStats({
         meals: mealsCount || 0,
         days: daysActive,
-        workouts: workoutsCount || 0
+        workouts: workoutsCount || 0,
       });
-
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
     }
@@ -206,13 +199,11 @@ const ProfilePage = () => {
                 <Camera size={32} className="text-muted-foreground" />
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex flex-col justify-start flex-1">
               <h2 className="text-xl font-bold">{displayName}</h2>
-              {profile?.username && (
-                <p className="text-muted-foreground text-sm mb-2">@{profile.username}</p>
-              )}
-              
+              {profile?.username && <p className="text-muted-foreground text-sm mb-2">@{profile.username}</p>}
+
               {/* Stats - Instagram style */}
               <div className="flex gap-8">
                 <div className="text-center">
@@ -237,7 +228,7 @@ const ProfilePage = () => {
               <Flame size={14} />
               <span>{streakCount}</span>
             </div>
-            
+
             {interests.length > 0 && (
               <div className="relative flex-1 min-w-0 overflow-hidden h-6">
                 <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
@@ -262,10 +253,7 @@ const ProfilePage = () => {
 
         {/* Posts Grid */}
         <div className="grid grid-cols-2 gap-1">
-          <ProfilePostsGrid
-            onEmptyAction={handleCreatePost}
-            emptyState={postsEmptyState}
-          />
+          <ProfilePostsGrid onEmptyAction={handleCreatePost} emptyState={postsEmptyState} />
         </div>
       </div>
 
