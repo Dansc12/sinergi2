@@ -32,7 +32,7 @@ export const usePosts = () => {
     if (authLoading) {
       return; // Wait for auth to resolve
     }
-    
+
     if (!user) {
       setPosts([]);
       setIsLoading(false);
@@ -50,18 +50,19 @@ export const usePosts = () => {
       if (postsError) throw postsError;
 
       // Fetch profiles separately for all post authors
-      const userIds = [...new Set(postsData?.map(p => p.user_id) || [])];
+      const userIds = [...new Set(postsData?.map((p) => p.user_id) || [])];
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("user_id, first_name, username, avatar_url")
         .in("user_id", userIds);
 
-      const profileMap = new Map(profilesData?.map(p => [p.user_id, p]));
-      
-      const postsWithProfiles: Post[] = postsData?.map(post => ({
-        ...post,
-        profile: profileMap.get(post.user_id) || null
-      })) || [];
+      const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]));
+
+      const postsWithProfiles: Post[] =
+        postsData?.map((post) => ({
+          ...post,
+          profile: profileMap.get(post.user_id) || null,
+        })) || [];
 
       setPosts(postsWithProfiles);
     } catch (err) {
@@ -90,7 +91,7 @@ export const usePosts = () => {
         },
         async (payload) => {
           const newPost = payload.new as Post;
-          
+
           // Only add if not private (RLS should handle this, but double check)
           if (newPost.visibility === "private" && newPost.user_id !== user.id) {
             return;
@@ -109,7 +110,7 @@ export const usePosts = () => {
           };
 
           setPosts((prev) => [postWithProfile, ...prev]);
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -121,7 +122,7 @@ export const usePosts = () => {
         (payload) => {
           const deletedId = (payload.old as { id: string }).id;
           setPosts((prev) => prev.filter((p) => p.id !== deletedId));
-        }
+        },
       )
       .subscribe();
 
@@ -146,19 +147,20 @@ export const usePosts = () => {
     // If this is a meal, also save to meal_logs table
     if (postData.content_type === "meal") {
       const mealData = postData.content_data;
-      const foods = (mealData.foods as Array<{
-        id: string;
-        name: string;
-        calories: number;
-        protein: number;
-        carbs: number;
-        fats: number;
-        servings?: number;
-        servingSize?: string;
-      }>) || [];
+      const foods =
+        (mealData.foods as Array<{
+          id: string;
+          name: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fats: number;
+          servings?: number;
+          servingSize?: string;
+        }>) || [];
 
       // Transform foods to match meal_logs schema (fats -> fat)
-      const transformedFoods = foods.map(f => ({
+      const transformedFoods = foods.map((f) => ({
         name: f.name,
         servings: f.servings || 1,
         servingSize: f.servingSize || "serving",
@@ -169,24 +171,43 @@ export const usePosts = () => {
       }));
 
       // Calculate log_date from provided logDate or use current date
-      const logDate = postData.logDate 
-        ? new Date(postData.logDate).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
+      const logDate = postData.logDate
+        ? new Date(postData.logDate).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
 
-      const { error: mealError } = await supabase
-        .from("meal_logs")
-        .insert({
-          user_id: user.id,
-          meal_type: mealData.mealType as string,
-          foods: transformedFoods,
-          total_calories: mealData.totalCalories as number,
-          total_protein: mealData.totalProtein as number,
-          total_carbs: mealData.totalCarbs as number,
-          total_fat: mealData.totalFats as number,
-          log_date: logDate,
-        });
+      const { error: mealError } = await supabase.from("meal_logs").insert({
+        user_id: user.id,
+        meal_type: mealData.mealType as string,
+        foods: transformedFoods,
+        total_calories: mealData.totalCalories as number,
+        total_protein: mealData.totalProtein as number,
+        total_carbs: mealData.totalCarbs as number,
+        total_fat: mealData.totalFats as number,
+        log_date: logDate,
+      });
 
       if (mealError) throw mealError;
+    }
+
+    // If this is a workout, also save to workout_logs table
+    if (postData.content_type === "workout") {
+      const workoutData = postData.content_data;
+
+      // Calculate log_date from provided logDate or use current date
+      const logDate = postData.logDate
+        ? new Date(postData.logDate).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
+
+      const { error: workoutError } = await supabase.from("workout_logs").insert({
+        user_id: user.id,
+        exercises: workoutData.exercises as Json,
+        duration_seconds: (workoutData.durationSeconds as number) || null,
+        notes: (workoutData.notes as string) || null,
+        photos: uploadedImages || null,
+        log_date: logDate,
+      });
+
+      if (workoutError) throw workoutError;
     }
 
     // If this is a group, create the group first and get the ID
@@ -194,8 +215,14 @@ export const usePosts = () => {
     if (postData.content_type === "group") {
       const groupData = postData.content_data;
       const groupName = (groupData.name as string) || "Unnamed Group";
-      const groupSlug = groupName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
-      
+      const groupSlug =
+        groupName
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "") +
+        "-" +
+        Date.now();
+
       const { data: newGroup, error: groupError } = await supabase
         .from("groups")
         .insert({
@@ -213,19 +240,15 @@ export const usePosts = () => {
       groupId = newGroup.id;
 
       // Add creator as group member with admin role
-      await supabase
-        .from("group_members")
-        .insert({
-          group_id: groupId,
-          user_id: user.id,
-          role: "admin",
-        });
+      await supabase.from("group_members").insert({
+        group_id: groupId,
+        user_id: user.id,
+        role: "admin",
+      });
     }
 
     // Include groupId in content_data for group posts
-    const finalContentData = groupId
-      ? { ...postData.content_data, groupId }
-      : postData.content_data;
+    const finalContentData = groupId ? { ...postData.content_data, groupId } : postData.content_data;
 
     // Create post
     const { data, error } = await supabase
@@ -249,10 +272,10 @@ export const usePosts = () => {
       const selectedDays = routineData.selectedDays as Record<string, { selected: boolean; time: string }>;
       const recurring = (routineData.recurring as string) || "none";
       const routineName = (routineData.name as string) || "Workout Routine";
-      
+
       // Check if any days are selected
-      const hasSelectedDays = selectedDays && Object.values(selectedDays).some(d => d.selected);
-      
+      const hasSelectedDays = selectedDays && Object.values(selectedDays).some((d) => d.selected);
+
       if (hasSelectedDays) {
         await createScheduledRoutineEntries(
           user.id,
@@ -270,7 +293,7 @@ export const usePosts = () => {
             description: routineData.description as string,
           },
           selectedDays,
-          recurring
+          recurring,
         );
       }
     }
@@ -295,7 +318,7 @@ export const usePosts = () => {
       description?: string;
     },
     selectedDays: Record<string, { selected: boolean; time: string }>,
-    recurring: string
+    recurring: string,
   ) => {
     try {
       // Calculate end date based on recurring option
@@ -394,18 +417,18 @@ export const usePosts = () => {
       for (const routine of routines || []) {
         const routineEndDate = routine.end_date ? new Date(routine.end_date) : endPeriod;
         const targetDayIndex = dayMapping[routine.day_of_week];
-        
+
         if (targetDayIndex === undefined) continue;
 
         let currentDate = today;
-        
+
         while (currentDate.getDay() !== targetDayIndex) {
           currentDate = addDays(currentDate, 1);
         }
 
         while (isBefore(currentDate, routineEndDate) && isBefore(currentDate, endPeriod)) {
           const dateStr = format(currentDate, "yyyy-MM-dd");
-          
+
           instancesToInsert.push({
             scheduled_routine_id: routine.id,
             user_id: userId,
@@ -420,12 +443,10 @@ export const usePosts = () => {
 
       // Batch insert all instances at once, ignoring duplicates
       if (instancesToInsert.length > 0) {
-        await supabase
-          .from("routine_instances")
-          .upsert(instancesToInsert, { 
-            onConflict: "scheduled_routine_id,scheduled_date",
-            ignoreDuplicates: true 
-          });
+        await supabase.from("routine_instances").upsert(instancesToInsert, {
+          onConflict: "scheduled_routine_id,scheduled_date",
+          ignoreDuplicates: true,
+        });
       }
     } catch (err) {
       console.error("Error generating routine instances:", err);
