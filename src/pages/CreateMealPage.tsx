@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { FoodSearchInput, FoodItem, SavedMealFood } from "@/components/FoodSearchInput";
+import { FoodSearchInput } from "@/components/FoodSearchInput";
+import type { FoodItem, SavedMealFood } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
 import { SavedMealExpansionModal } from "@/components/SavedMealExpansionModal";
 import { AddCustomFoodModal } from "@/components/AddCustomFoodModal";
