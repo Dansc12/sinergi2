@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRecentFoods } from "@/hooks/useRecentFoods";
 import { usePosts } from "@/hooks/usePosts";
-import BarcodeScannerComponent from "react-qr-barcode-scanner";
+
 interface SelectedFood {
   id: string;
   name: string;
