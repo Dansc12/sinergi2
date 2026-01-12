@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, Plus, Utensils } from "lucide-react";
+import { Search, Loader2, Plus } from "lucide-react";
 
-// Type definitions
+// Type definitions (exported at definition)
 export interface SavedMealFood {
   id: string;
   name: string;
@@ -44,7 +44,7 @@ interface FoodSearchInputProps {
   placeholder?: string;
 }
 
-// Component
+// Component (exported at declaration)
 export const FoodSearchInput = ({
   value,
   onChange,
@@ -58,26 +58,21 @@ export const FoodSearchInput = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // Rank foods based on search term relevance
   const rankFoods = (foods: FoodItem[], searchTerm: string): FoodItem[] => {
     const lowerSearch = searchTerm.toLowerCase().trim();
     return foods.sort((a, b) => {
       const aDesc = a.description.toLowerCase();
       const bDesc = b.description.toLowerCase();
-      // Custom first
       if (a.isCustom && !b.isCustom) return -1;
       if (b.isCustom && !a.isCustom) return 1;
-      // Exact match
       const aExact = aDesc === lowerSearch;
       const bExact = bDesc === lowerSearch;
       if (aExact && !bExact) return -1;
       if (bExact && !aExact) return 1;
-      // Starts with term
       const aStarts = aDesc.startsWith(lowerSearch);
       const bStarts = bDesc.startsWith(lowerSearch);
       if (aStarts && !bStarts) return -1;
       if (bStarts && !aStarts) return 1;
-      // By length
       return aDesc.length - bDesc.length;
     });
   };
@@ -94,13 +89,11 @@ export const FoodSearchInput = ({
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
     if (value.trim().length < 3) {
       setResults([]);
       setIsOpen(false);
       return;
     }
-
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
@@ -230,7 +223,3 @@ export const FoodSearchInput = ({
     </div>
   );
 };
-
-// Export types and component for use elsewhere
-export type { FoodItem, SavedMealFood };
-export { FoodSearchInput };
