@@ -123,7 +123,7 @@ export const FoodSearchInput = ({
       clearTimeout(debounceRef.current);
     }
 
-    if (value.trim().length < 2) {
+    if (value.trim().length < 3) {
       setResults([]);
       setIsOpen(false);
       return;
@@ -141,84 +141,32 @@ export const FoodSearchInput = ({
         });
 
         if (!response.ok) {
-          console.error("USDA API error:", response.status);
+          console.error("API error:", response.status);
           throw new Error("Failed to search foods");
         }
 
-        const data: USDASearchResponse = await response.json();
-        const lowerQuery = value.toLowerCase().trim();
+        // The API returns an array of normalized objects
+        const resultsFromApi = await response.json();
 
-        let foods: FoodItem[] = (data.foods || [])
-          // Filter: description must contain the search term
-          .filter((food: USDAFood) => food.description?.toLowerCase().includes(lowerQuery))
-          .map((food: USDAFood) => {
-            // Extract nutrients from the food data
-            const nutrients = food.foodNutrients || [];
+        // Map OFF-normalized data to your FoodItem type
+        const foods: FoodItem[] = (resultsFromApi || []).map((item: any) => ({
+          // Use external_id for ID (there is no fdcId in OFF)
+          fdcId: item.external_id,
+          description: item.name,
+          brandName: item.brand,
+          calories: item.nutrients_per_100g?.calories ?? 0,
+          protein: item.nutrients_per_100g?.protein ?? 0,
+          carbs: item.nutrients_per_100g?.carbs ?? 0,
+          fats: item.nutrients_per_100g?.fat ?? 0,
+          // Use the serving suggestion field OFF provides, fallback to "100 g"
+          servingSize: item.serving_suggestion ?? "100 g",
+          servingSizeValue: undefined,
+          servingSizeUnit: undefined,
+          isCustom: false,
+          baseUnit: "g",
+        }));
 
-            const getNutrient = (nameOrNumber: string): number | null => {
-              const needle = nameOrNumber.toLowerCase();
-              const nutrient = nutrients.find(
-                (n: USDANutrient) =>
-                  String(n.nutrientNumber) === nameOrNumber || n.nutrientName?.toLowerCase().includes(needle),
-              );
-              if (nutrient?.value == null) return null;
-              return Math.round(Number(nutrient.value));
-            };
-
-            // Get energy in kcal (prefer nutrientNumber 1008)
-            const getEnergyKcal = (): number => {
-              const kcal = nutrients.find(
-                (n: USDANutrient) =>
-                  String(n.nutrientNumber) === "1008" ||
-                  (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kcal"),
-              );
-              if (kcal?.value != null) return Math.round(Number(kcal.value));
-
-              const kj = nutrients.find(
-                (n: USDANutrient) =>
-                  String(n.nutrientNumber) === "1062" ||
-                  (n.nutrientName?.toLowerCase() === "energy" && String(n.unitName).toLowerCase() === "kj"),
-              );
-              if (kj?.value != null) return Math.round(Number(kj.value) / 4.184);
-
-              const anyEnergyKcal = nutrients.find(
-                (n: USDANutrient) =>
-                  n.nutrientName?.toLowerCase().includes("energy") && String(n.unitName).toLowerCase() === "kcal",
-              );
-              if (anyEnergyKcal?.value != null) return Math.round(Number(anyEnergyKcal.value));
-
-              return 0;
-            };
-
-            // Parse serving size into value and unit
-            const servingSizeValue = food.servingSize || 100;
-            const servingSizeUnit = food.servingSizeUnit || "g";
-            const servingDescription =
-              food.householdServingFullText || (food.servingSize ? `${food.servingSize} ${servingSizeUnit}` : "100 g");
-
-            return {
-              fdcId: food.fdcId,
-              description: food.description,
-              brandName: food.brandName || food.brandOwner,
-              calories: getEnergyKcal(),
-              protein: getNutrient("protein") ?? getNutrient("1003") ?? 0,
-              carbs: getNutrient("carbohydrate") ?? getNutrient("1005") ?? 0,
-              fats: getNutrient("fat") ?? getNutrient("1004") ?? 0,
-              servingSize: servingDescription,
-              servingSizeValue: servingSizeValue,
-              servingSizeUnit: servingSizeUnit,
-              isCustom: false,
-              baseUnit: "g",
-            };
-          });
-
-        // Rank results by relevance
-        foods = rankFoods(foods, value);
-
-        // Limit to 15 results
-        foods = foods.slice(0, 15);
-
-        setResults(foods);
+        setResults(rankFoods(foods, value).slice(0, 15));
         setIsOpen(true);
       } catch (err) {
         console.error("Food search error:", err);
@@ -226,7 +174,7 @@ export const FoodSearchInput = ({
       } finally {
         setIsLoading(false);
       }
-    }, 300);
+    }, 600);
 
     return () => {
       if (debounceRef.current) {
