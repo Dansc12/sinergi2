@@ -435,6 +435,20 @@ const CreateMealPage = () => {
           />
         </div>
 
+        <div className="mb-4 flex gap-2 items-center">
+          <FoodSearchInput
+            value={searchValue}
+            onChange={setSearchValue}
+            onSelect={handleFoodSelect}
+            onAddCustom={handleAddCustomFood}
+            placeholder="Search for a food..."
+          />
+          <Button onClick={() => setShowScanner(true)}>
+            <Camera size={18} style={{ marginRight: 6 }} />
+            Scan Barcode
+          </Button>
+        </div>
+
         {/* My Saved & Discover Buttons */}
         <div className="flex gap-3 mb-6">
           <Button
