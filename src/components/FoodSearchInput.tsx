@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Loader2, ChefHat, Compass, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { FoodSearchInput, FoodItem, SavedMealFood } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
 import { SavedMealExpansionModal } from "@/components/SavedMealExpansionModal";
 import { AddCustomFoodModal } from "@/components/AddCustomFoodModal";
@@ -32,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { useRecentFoods } from "@/hooks/useRecentFoods";
 import { usePosts } from "@/hooks/usePosts";
-import BarcodeScanner from "@/components/BarcodeScanner"; // <-- Import your Quagga-based scanner
 
 // ... keep all your interfaces and custom hooks as is
 
