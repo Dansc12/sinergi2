@@ -3,29 +3,6 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Plus, Utensils } from "lucide-react";
 
-// USDA API response types
-interface USDANutrient {
-  nutrientNumber?: string;
-  nutrientName?: string;
-  value?: number;
-  unitName?: string;
-}
-
-interface USDAFood {
-  fdcId: number;
-  description: string;
-  brandName?: string;
-  brandOwner?: string;
-  servingSize?: number;
-  servingSizeUnit?: string;
-  householdServingFullText?: string;
-  foodNutrients?: USDANutrient[];
-}
-
-interface USDASearchResponse {
-  foods?: USDAFood[];
-}
-
 export interface SavedMealFood {
   id: string;
   name: string;
@@ -313,7 +290,7 @@ export const FoodSearchInput = ({
                   );
                 })
               : !onAddCustom &&
-                value.trim().length >= 2 &&
+                value.trim().length >= 3 &&
                 !isLoading && <div className="px-4 py-3 text-sm text-muted-foreground text-center">No foods found</div>}
           </motion.div>
         )}
