@@ -94,7 +94,8 @@ const CreateMealPage = () => {
     setFoodFromBarcode(null);
     const resp = await fetch(`https://tfpknxjrefqnkcxsyvhl.supabase.co/functions/v1/search-foods?barcode=${barcode}`, {
       headers: {
-        Authorization: "Bearer YOUR_SUPABASE_ANON_KEY",
+        Authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcGtueGpyZWZxbmtjeHN5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODg1NDAsImV4cCI6MjA4MzU2NDU0MH0.9MVhZ5xEmA4HrXdX38m6wlGd89Z2YFfsypdQEWgmy98",
       },
     });
     const data = await resp.json();
