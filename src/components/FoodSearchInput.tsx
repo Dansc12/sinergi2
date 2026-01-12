@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Utensils, X, Camera, ChevronRight, Clock, Loader2, ChefHat, Compass, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { FoodSearchInput, FoodItem, SavedMealFood } from "@/components/FoodSearchInput";
 import { FoodDetailModal } from "@/components/FoodDetailModal";
 import { SavedMealExpansionModal } from "@/components/SavedMealExpansionModal";
 import { AddCustomFoodModal } from "@/components/AddCustomFoodModal";
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRecentFoods } from "@/hooks/useRecentFoods";
 import { usePosts } from "@/hooks/usePosts";
+import BarcodeScanner from "@/components/BarcodeScanner"; // <-- Import your Quagga-based scanner
 
 // ... keep all your interfaces and custom hooks as is
 
@@ -69,13 +71,6 @@ const CreateMealPage = () => {
 
         {/* --- Food Search and Barcode Scanner UI --- */}
         <div className="mb-4 flex gap-2 items-start">
-          <FoodSearchInput
-            value={searchValue}
-            onChange={setSearchValue}
-            onSelect={handleFoodSelect}
-            onAddCustom={handleAddCustomFood}
-            placeholder="Search for a food..."
-          />
           <Button onClick={() => setShowScanner(true)} type="button" className="h-12">
             <Camera size={18} style={{ marginRight: 6 }} />
             Scan Barcode
