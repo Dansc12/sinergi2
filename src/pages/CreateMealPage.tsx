@@ -46,7 +46,6 @@ import {
 import { useRecentFoods } from "@/hooks/useRecentFoods";
 import { usePosts } from "@/hooks/usePosts";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import { X } from "lucide-react";
 interface SelectedFood {
   id: string;
   name: string;
@@ -1449,8 +1448,6 @@ const CreateMealPage = () => {
                 fetchFoodByBarcode(barcode);
               }}
               onClose={() => setShowScanner(false)}
-              // If your BarcodeScanner supports className or style props for sizing:
-              className="w-full h-full object-cover"
             />
           </div>
           {/* Optional: loading state or error could be overlayed here */}
