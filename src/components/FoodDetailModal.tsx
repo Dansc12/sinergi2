@@ -18,6 +18,7 @@ export interface FoodItem {
   servingSizeUnit?: string;
   isCustom?: boolean;
   baseUnit?: string; // 'g' or 'oz' for custom foods
+  basis?: string;
 }
 
 interface FoodDetailModalProps {
