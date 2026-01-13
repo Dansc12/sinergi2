@@ -23,7 +23,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, onClose }) 
           locator: { patchSize: "medium", halfSample: true },
           numOfWorkers: navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4,
           decoder: {
-            readers: ["ean_reader", "upc_reader", "code_128_reader"],
+            readers: [
+              "ean_reader", // Most common food barcodes
+              "upc_reader", // US barcodes
+              "code_128_reader", // Sometimes used
+            ],
           },
         },
         (err) => {
@@ -40,6 +44,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, onClose }) 
     }
 
     function handleDetected(result: any) {
+      // Stop scanning after first detection
       const code = result.codeResult.code;
       onDetected(code);
       Quagga.stop();
@@ -49,48 +54,40 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, onClose }) 
       Quagga.offDetected(handleDetected);
       Quagga.stop();
     };
+    // eslint-disable-next-line
   }, []);
 
   return (
     <div
       ref={scannerRef}
       style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
+        position: "relative",
+        width: 400,
+        height: 300,
+        border: "2px solid #333",
+        margin: "0 auto",
         background: "#222",
-        overflow: "hidden",
       }}
     >
       <button
         type="button"
         style={{
           position: "absolute",
-          top: 20,
-          left: 20,
+          top: 10,
+          right: 10,
           zIndex: 2,
-          background: "transparent",
-          border: "none",
-          borderRadius: "50%",
-          width: 40,
-          height: 40,
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 24,
-          boxShadow: "0 1px 6px #2228",
+          background: "#fff",
+          border: "1px solid #aaa",
+          borderRadius: 4,
+          padding: "5px 10px",
           cursor: "pointer",
         }}
         onClick={() => {
           Quagga.stop();
           onClose();
         }}
-        aria-label="Close"
       >
-        &#10005;
+        Close
       </button>
     </div>
   );
