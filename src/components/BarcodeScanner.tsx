@@ -68,28 +68,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, onClose }) 
         margin: "0 auto",
         background: "#222",
       }}
-    >
-      <button
-        type="button"
-        style={{
-          position: "absolute",
-          top: 10,
-          right: 10,
-          zIndex: 2,
-          background: "#fff",
-          border: "1px solid #aaa",
-          borderRadius: 4,
-          padding: "5px 10px",
-          cursor: "pointer",
-        }}
-        onClick={() => {
-          Quagga.stop();
-          onClose();
-        }}
-      >
-        Close
-      </button>
-    </div>
+    ></div>
   );
 };
 export default BarcodeScanner;
