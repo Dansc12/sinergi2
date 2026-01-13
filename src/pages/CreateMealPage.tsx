@@ -477,7 +477,6 @@ const CreateMealPage = () => {
           </div>
         </div>
 
-        {/* Food Search */}
         <div className="mb-4 flex gap-2 items-center">
           <FoodSearchInput
             value={searchValue}
@@ -486,9 +485,14 @@ const CreateMealPage = () => {
             onAddCustom={handleAddCustomFood}
             placeholder="Search for a food..."
           />
-          <Button onClick={() => setShowScanner(true)}>
-            <Camera size={18} style={{ marginRight: 6 }} />
-            Scan Barcode
+          <Button
+            onClick={() => setShowScanner(true)}
+            variant="ghost"
+            size="icon"
+            className="ml-2 h-10 w-10 flex items-center justify-center rounded-full"
+            aria-label="Scan Barcode"
+          >
+            <Camera size={22} />
           </Button>
         </div>
 
