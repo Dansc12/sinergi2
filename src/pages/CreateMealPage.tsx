@@ -165,6 +165,7 @@ const CreateMealPage = () => {
 
   useEffect(() => {
     if (foodFromBarcode && foodFromBarcode.name) {
+      console.log("foodFromBarcode", foodFromBarcode);
       const { quantity, unit } = parseServingSize(foodFromBarcode.serving_suggestion);
       const ALLOWED_UNITS = ["g", "ml", "oz", "lb", "cup"];
       // Only use allowed units, else fall back to grams
