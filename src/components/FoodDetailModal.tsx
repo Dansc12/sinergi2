@@ -18,7 +18,6 @@ export interface FoodItem {
   servingSizeUnit?: string;
   isCustom?: boolean;
   baseUnit?: string; // 'g' or 'oz' for custom foods
-  basis?: string;
 }
 
 interface FoodDetailModalProps {
@@ -113,7 +112,8 @@ export const FoodDetailModal = ({
   const displayFood = cachedFood;
   const isCustomFood = displayFood?.isCustom || false;
   const baseUnit = displayFood?.baseUnit || "g";
-  const isUSDA = !isCustomFood;
+  const isPerServing = displayFood?.basis === "per_serving";
+  const isUSDA = !isCustomFood && !isPerServing;
 
   // Determine default quantity based on unit
   const getDefaultQuantity = (unit: string): number => {
@@ -499,6 +499,9 @@ export const FoodDetailModal = ({
                             <span className="text-2xl font-bold text-white tracking-tight">{adjustedCalories}</span>
                           )}
                           <span className="text-base font-medium text-white/80">cal</span>
+                          <span className="text-xs font-medium text-white/60 ml-1">
+                            {displayFood?.basis === "per_serving" ? "/ serving" : "/ 100g"}
+                          </span>
                         </div>
 
                         {/* Macros - Right */}
