@@ -163,6 +163,27 @@ const CreateMealPage = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (foodFromBarcode && foodFromBarcode.name) {
+      const { quantity, unit } = parseServingSize(foodFromBarcode.serving_suggestion);
+      const food: FoodItem = {
+        fdcId: foodFromBarcode.external_id || Date.now(),
+        description: foodFromBarcode.name,
+        brandName: foodFromBarcode.brand,
+        calories: foodFromBarcode.nutrients_per_100g?.calories ?? 0,
+        protein: foodFromBarcode.nutrients_per_100g?.protein ?? 0,
+        carbs: foodFromBarcode.nutrients_per_100g?.carbs ?? 0,
+        fats: foodFromBarcode.nutrients_per_100g?.fat ?? 0,
+        servingSize: foodFromBarcode.serving_suggestion || `${quantity} ${unit}`,
+        isCustom: false,
+        baseUnit: unit,
+      };
+      handleFoodSelect(food, quantity, unit);
+      setFoodFromBarcode(null); // Prevent repeat popup
+      setBarcodeResult(null);
+    }
+  }, [foodFromBarcode]);
+
   function parseServingSize(servingSuggestion: string | undefined): { quantity: number; unit: string } {
     if (!servingSuggestion) return { quantity: 100, unit: "g" };
     // Try "56 g", "1 cup", etc.
