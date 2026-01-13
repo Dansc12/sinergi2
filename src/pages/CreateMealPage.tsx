@@ -1401,6 +1401,7 @@ const CreateMealPage = () => {
             <BarcodeScanner
               onDetected={(barcode) => {
                 setShowScanner(false);
+                setBarcodeResult(barcode);
                 fetchFoodByBarcode(barcode);
               }}
               onClose={() => setShowScanner(false)}
