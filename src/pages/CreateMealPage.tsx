@@ -1440,7 +1440,7 @@ const CreateMealPage = () => {
             <div style={{ width: 40 }} />
           </div>
           {/* Camera Livefeed Fullscreen */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full h-full">
             <BarcodeScanner
               onDetected={(barcode) => {
                 setShowScanner(false);
