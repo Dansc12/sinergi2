@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Camera, X, ChevronDown, ChevronUp, Loader2, Utensils, Trash2 } from "lucide-react";
+import { ArrowLeft, Camera, X, ChevronDown, ChevronUp, Loader2, Utensils, Trash2, Barcode } from "lucide-react";
+import BarcodeScanner from "@/components/BarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,6 +68,11 @@ const CreateRecipePage = () => {
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [isDetailsSectionOpen, setIsDetailsSectionOpen] = useState(true);
 
+  // Barcode scanner state
+  const [showScanner, setShowScanner] = useState(false);
+  const [barcodeResult, setBarcodeResult] = useState<string | null>(null);
+  const [foodFromBarcode, setFoodFromBarcode] = useState<any>(null);
+
   // Food search state
   const [ingredientSearchValue, setIngredientSearchValue] = useState("");
   const [selectedFood, setSelectedFood] = useState<FoodDetailItem | null>(null);
@@ -95,6 +101,70 @@ const CreateRecipePage = () => {
       window.history.replaceState({}, document.title);
     }
   }, []);
+
+  // Function to fetch food using barcode
+  const fetchFoodByBarcode = async (barcode: string) => {
+    setFoodFromBarcode(null);
+    const resp = await fetch(`https://tfpknxjrefqnkcxsyvhl.supabase.co/functions/v1/search-foods?barcode=${barcode}`, {
+      headers: {
+        Authorization:
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcGtueGpyZWZxbmtjeHN5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODg1NDAsImV4cCI6MjA4MzU2NDU0MH0.9MVhZ5xEmA4HrXdX38m6wlGd89Z2YFfsypdQEWgmy98",
+      },
+    });
+    const data = await resp.json();
+    setFoodFromBarcode(data);
+  };
+
+  function parseServingSize(servingSuggestion: string | undefined): { quantity: number; unit: string } {
+    const ALLOWED_UNITS = ["g", "ml", "oz", "lb", "cup"];
+    if (!servingSuggestion) return { quantity: 100, unit: "g" };
+
+    // Try to extract "(61g)" or "(61 g)"
+    const matchParen = servingSuggestion.match(/\(([\d.]+)\s*([a-zA-Z]+)\)/);
+    if (matchParen) {
+      const unit = matchParen[2].toLowerCase();
+      return {
+        quantity: ALLOWED_UNITS.includes(unit) ? parseFloat(matchParen[1]) : 100,
+        unit: ALLOWED_UNITS.includes(unit) ? unit : "g",
+      };
+    }
+    // Try to extract "61g", "61 g", "1 cup"
+    const match = servingSuggestion.match(/([\d.]+)\s*([a-zA-Z]+)/);
+    if (match) {
+      const unit = match[2].toLowerCase();
+      return {
+        quantity: ALLOWED_UNITS.includes(unit) ? parseFloat(match[1]) : 100,
+        unit: ALLOWED_UNITS.includes(unit) ? unit : "g",
+      };
+    }
+    return { quantity: 100, unit: "g" };
+  }
+
+  // Handle barcode food detection
+  useEffect(() => {
+    if (foodFromBarcode && foodFromBarcode.name) {
+      const { quantity, unit } = parseServingSize(foodFromBarcode.serving_suggestion);
+      const ALLOWED_UNITS = ["g", "ml", "oz", "lb", "cup"];
+      const finalUnit = ALLOWED_UNITS.includes(unit) ? unit : "g";
+      const finalQuantity = ALLOWED_UNITS.includes(unit) ? quantity : 100;
+
+      const food: FoodItem = {
+        fdcId: foodFromBarcode.external_id || Date.now(),
+        description: foodFromBarcode.name,
+        brandName: foodFromBarcode.brand,
+        calories: foodFromBarcode.nutrients_per_100g?.calories ?? 0,
+        protein: foodFromBarcode.nutrients_per_100g?.protein ?? 0,
+        carbs: foodFromBarcode.nutrients_per_100g?.carbs ?? 0,
+        fats: foodFromBarcode.nutrients_per_100g?.fat ?? 0,
+        servingSize: foodFromBarcode.serving_suggestion || `${finalQuantity} ${finalUnit}`,
+        isCustom: false,
+        baseUnit: finalUnit,
+      };
+      handleIngredientSelect(food);
+      setFoodFromBarcode(null);
+      setBarcodeResult(null);
+    }
+  }, [foodFromBarcode]);
 
   // Calculate totals
   const totalCalories = ingredients.reduce((sum, i) => sum + i.calories, 0);
@@ -514,7 +584,7 @@ const CreateRecipePage = () => {
         })()}
 
         {/* Ingredient Search */}
-        <div className="mb-6">
+        <div className="mb-4">
           <FoodSearchInput
             value={ingredientSearchValue}
             onChange={setIngredientSearchValue}
@@ -522,6 +592,58 @@ const CreateRecipePage = () => {
             placeholder="Search for ingredients to add..."
           />
         </div>
+
+        {/* Scan Barcode Button */}
+        <div className="mb-4">
+          <Button
+            variant="outline"
+            className="w-full gap-2 h-12 rounded-xl border-border bg-card hover:bg-muted hover:border-primary/30 transition-colors"
+            onClick={() => setShowScanner(true)}
+            aria-label="Scan Barcode"
+          >
+            <Barcode size={18} className="text-primary" />
+            <span>Scan Barcode</span>
+          </Button>
+        </div>
+
+        {barcodeResult && (
+          <div className="mb-3 p-3 rounded-xl border bg-card">
+            <div className="text-xs text-muted-foreground mb-1">
+              Scanned barcode: <span className="font-mono">{barcodeResult}</span>
+            </div>
+            {foodFromBarcode === null && <div className="text-sm">Loading food...</div>}
+            {foodFromBarcode && foodFromBarcode.not_found && (
+              <div className="text-destructive">No food found for this barcode.</div>
+            )}
+            {foodFromBarcode && foodFromBarcode.name && (
+              <div>
+                <div className="font-bold text-lg mb-1">
+                  {foodFromBarcode.name} {foodFromBarcode.brand && <span>({foodFromBarcode.brand})</span>}
+                </div>
+                {foodFromBarcode.image_url && (
+                  <img src={foodFromBarcode.image_url} alt={foodFromBarcode.name} width={100} className="mb-2" />
+                )}
+                <div>
+                  <span>
+                    Calories: {foodFromBarcode.nutrients_per_100g?.calories ?? "?"}
+                    {foodFromBarcode.nutrients_per_100g?.basis === "per_serving" ? " cal / serving" : " cal / 100g"}
+                  </span>
+                  <br />
+                  <span>Protein: {foodFromBarcode.nutrients_per_100g?.protein ?? "?"}g</span>
+                  <br />
+                  <span>Carbs: {foodFromBarcode.nutrients_per_100g?.carbs ?? "?"}g</span>
+                  <br />
+                  <span>Fat: {foodFromBarcode.nutrients_per_100g?.fat ?? "?"}g</span>
+                  <br />
+                  {foodFromBarcode.serving_suggestion && <span>Serving: {foodFromBarcode.serving_suggestion}</span>}
+                </div>
+              </div>
+            )}
+            {foodFromBarcode && foodFromBarcode.error && (
+              <div className="text-destructive">Something went wrong fetching food details.</div>
+            )}
+          </div>
+        )}
 
         {/* Ingredients Section */}
         <div className="mb-6">
@@ -662,6 +784,35 @@ const CreateRecipePage = () => {
         }}
         onConfirm={handleFoodConfirm}
       />
+
+      {/* Barcode Scanner Modal */}
+      {showScanner && (
+        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+          {/* Top bar with only X */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
+            <button
+              onClick={() => setShowScanner(false)}
+              className="text-white hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center"
+              aria-label="Close"
+            >
+              <X size={24} />
+            </button>
+            {/* Empty right side for symmetry */}
+            <div style={{ width: 40 }} />
+          </div>
+          {/* Centered, responsive scanner box */}
+          <div className="relative w-[92vw] max-w-[430px] h-[62vw] max-h-[420px] rounded-2xl bg-[#222] shadow-2xl flex items-center justify-center">
+            <BarcodeScanner
+              onDetected={(barcode) => {
+                setShowScanner(false);
+                setBarcodeResult(barcode);
+                fetchFoodByBarcode(barcode);
+              }}
+              onClose={() => setShowScanner(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Back Confirmation Dialog */}
       <AnimatePresence>
