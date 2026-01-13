@@ -478,16 +478,6 @@ const CreateMealPage = () => {
         </div>
 
         {/* Food Search */}
-        <div className="mb-4">
-          <FoodSearchInput
-            value={searchValue}
-            onChange={setSearchValue}
-            onSelect={handleFoodSelect}
-            onAddCustom={handleAddCustomFood}
-            placeholder="Search for a food..."
-          />
-        </div>
-
         <div className="mb-4 flex gap-2 items-center">
           <FoodSearchInput
             value={searchValue}
@@ -1429,7 +1419,6 @@ const CreateMealPage = () => {
             </div>
           );
         })()}
-
       {showScanner && (
         <div
           style={{
@@ -1438,45 +1427,39 @@ const CreateMealPage = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.93)",
+            background: "rgba(0,0,0,0.85)",
             zIndex: 2000,
             display: "flex",
-            alignItems: "stretch",
-            justifyContent: "stretch",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <BarcodeScanner
-            onDetected={(barcode) => {
-              setShowScanner(false);
-              setBarcodeResult(barcode);
-              fetchFoodByBarcode(barcode);
-            }}
-            onClose={() => setShowScanner(false)}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          <button
-            aria-label="Close"
-            onClick={() => setShowScanner(false)}
+          <div
             style={{
-              position: "fixed",
-              top: 14,
-              right: 20,
-              zIndex: 2100,
-              background: "rgba(0,0,0,0.72)",
-              border: "none",
-              color: "#fff",
-              borderRadius: "100%",
-              width: 40,
-              height: 40,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
-              cursor: "pointer",
+              maxWidth: 420,
+              width: "90%",
+              background: "#222",
+              borderRadius: 12,
+              boxShadow: "0 2px 22px #0008",
+              position: "relative",
             }}
           >
-            <X size={26} />
-          </button>
+            <BarcodeScanner
+              onDetected={(barcode) => {
+                setShowScanner(false);
+                setBarcodeResult(barcode);
+                fetchFoodByBarcode(barcode);
+              }}
+              onClose={() => setShowScanner(false)}
+            />
+            <Button
+              variant="outline"
+              style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}
+              onClick={() => setShowScanner(false)}
+            >
+              Close
+            </Button>
+          </div>
         </div>
       )}
 
