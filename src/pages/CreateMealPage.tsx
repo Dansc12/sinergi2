@@ -1424,6 +1424,7 @@ const CreateMealPage = () => {
             </div>
           );
         })()}
+
       {showScanner && (
         <div
           style={{
@@ -1432,39 +1433,45 @@ const CreateMealPage = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.85)",
+            background: "rgba(0,0,0,0.93)",
             zIndex: 2000,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            alignItems: "stretch",
+            justifyContent: "stretch",
           }}
         >
-          <div
+          <BarcodeScanner
+            onDetected={(barcode) => {
+              setShowScanner(false);
+              setBarcodeResult(barcode);
+              fetchFoodByBarcode(barcode);
+            }}
+            onClose={() => setShowScanner(false)}
+            // Optionally: add style={{ width: "100%", height: "100%" }} if BarcodeScanner supports it
+          />
+          <button
+            aria-label="Close"
+            onClick={() => setShowScanner(false)}
             style={{
-              maxWidth: 420,
-              width: "90%",
-              background: "#222",
-              borderRadius: 12,
-              boxShadow: "0 2px 22px #0008",
-              position: "relative",
+              position: "fixed",
+              top: 14,
+              right: 20,
+              zIndex: 2100,
+              background: "rgba(0,0,0,0.72)",
+              border: "none",
+              color: "#fff",
+              borderRadius: "100%",
+              width: 40,
+              height: 40,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 20,
+              cursor: "pointer",
             }}
           >
-            <BarcodeScanner
-              onDetected={(barcode) => {
-                setShowScanner(false);
-                setBarcodeResult(barcode);
-                fetchFoodByBarcode(barcode);
-              }}
-              onClose={() => setShowScanner(false)}
-            />
-            <Button
-              variant="outline"
-              style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}
-              onClick={() => setShowScanner(false)}
-            >
-              Close
-            </Button>
-          </div>
+            <X size={26} />
+          </button>
         </div>
       )}
 
