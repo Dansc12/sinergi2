@@ -1447,7 +1447,7 @@ const CreateMealPage = () => {
               fetchFoodByBarcode(barcode);
             }}
             onClose={() => setShowScanner(false)}
-            // Optionally: add style={{ width: "100%", height: "100%" }} if BarcodeScanner supports it
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
           <button
             aria-label="Close"
