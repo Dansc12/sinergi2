@@ -61,12 +61,13 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, onClose }) 
     <div
       ref={scannerRef}
       style={{
-        position: "relative",
-        width: 400,
-        height: 300,
-        border: "2px solid #333",
-        margin: "0 auto",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
         background: "#222",
+        overflow: "hidden",
       }}
     >
       <button
