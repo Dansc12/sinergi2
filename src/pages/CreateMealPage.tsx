@@ -1446,6 +1446,7 @@ const CreateMealPage = () => {
                 setShowScanner(false);
                 setBarcodeResult(barcode);
                 fetchFoodByBarcode(barcode);
+                style={{ width: "100%", height: "100%" }}
               }}
               onClose={() => setShowScanner(false)}
             />
