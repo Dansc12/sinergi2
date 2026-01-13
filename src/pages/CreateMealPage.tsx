@@ -1376,6 +1376,42 @@ const CreateMealPage = () => {
             >
               Close
             </Button>
+
+            {barcodeResult && (
+              <div className="mb-3 p-3 rounded-xl border bg-card">
+                <div className="text-xs text-muted-foreground mb-1">
+                  Scanned barcode: <span className="font-mono">{barcodeResult}</span>
+                </div>
+                {foodFromBarcode === null && <div className="text-sm">Loading food...</div>}
+                {foodFromBarcode && foodFromBarcode.not_found && (
+                  <div className="text-destructive">No food found for this barcode.</div>
+                )}
+                {foodFromBarcode && foodFromBarcode.name && (
+                  <div>
+                    <div className="font-bold text-lg mb-1">
+                      {foodFromBarcode.name} {foodFromBarcode.brand && <span>({foodFromBarcode.brand})</span>}
+                    </div>
+                    {foodFromBarcode.image_url && (
+                      <img src={foodFromBarcode.image_url} alt={foodFromBarcode.name} width={100} className="mb-2" />
+                    )}
+                    <div>
+                      <span>Calories: {foodFromBarcode.nutrients_per_100g?.calories ?? "?"} cal / 100g</span>
+                      <br />
+                      <span>Protein: {foodFromBarcode.nutrients_per_100g?.protein ?? "?"}g</span>
+                      <br />
+                      <span>Carbs: {foodFromBarcode.nutrients_per_100g?.carbs ?? "?"}g</span>
+                      <br />
+                      <span>Fat: {foodFromBarcode.nutrients_per_100g?.fat ?? "?"}g</span>
+                      <br />
+                      {foodFromBarcode.serving_suggestion && <span>Serving: {foodFromBarcode.serving_suggestion}</span>}
+                    </div>
+                  </div>
+                )}
+                {foodFromBarcode && foodFromBarcode.error && (
+                  <div className="text-destructive">Something went wrong fetching food details.</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
