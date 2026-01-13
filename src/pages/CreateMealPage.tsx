@@ -181,6 +181,7 @@ const CreateMealPage = () => {
         carbs: foodFromBarcode.nutrients_per_100g?.carbs ?? 0,
         fats: foodFromBarcode.nutrients_per_100g?.fat ?? 0,
         servingSize: foodFromBarcode.serving_suggestion || `${finalQuantity} ${finalUnit}`,
+        basis: foodFromBarcode.nutrients_per_100g?.basis ?? "per_100g",
         isCustom: false,
         baseUnit: finalUnit,
       };
