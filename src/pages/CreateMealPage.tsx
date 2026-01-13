@@ -477,17 +477,6 @@ const CreateMealPage = () => {
           </div>
         </div>
 
-        {/* Food Search */}
-        <div className="mb-4">
-          <FoodSearchInput
-            value={searchValue}
-            onChange={setSearchValue}
-            onSelect={handleFoodSelect}
-            onAddCustom={handleAddCustomFood}
-            placeholder="Search for a food..."
-          />
-        </div>
-
         <div className="mb-4 flex gap-2 items-center">
           <FoodSearchInput
             value={searchValue}
