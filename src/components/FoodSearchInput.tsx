@@ -63,25 +63,20 @@ export const FoodSearchInput = ({
     const lowerSearch = searchTerm.toLowerCase().trim();
 
     function score(food: FoodItem): number {
-      const desc = food.description.toLowerCase();
+      const desc = food.description?.toLowerCase() || "";
 
-      // Highest priority: exact match
+      // Highest: Exact match
       if (desc === lowerSearch) return 10000;
-      // Next: starts with
-      if (desc.startsWith(lowerSearch)) return 9000;
-      // Next: full word match in name
-      if (desc.split(/\b/).includes(lowerSearch)) return 8000;
-      // Next: contains as substring
+      // Full word match (e.g. "chicken" in "large chicken breast")
+      if (desc.split(/[\s,()./]+/).includes(lowerSearch)) return 9000;
+      // Starts with
+      if (desc.startsWith(lowerSearch)) return 8000;
+      // Contains (but not full word)
       if (desc.includes(lowerSearch)) return 7000;
-      // Brand or parenthetical match is nice, but lower priority
+      // Brand name match (lower score)
       if (food.brandName && food.brandName.toLowerCase().includes(lowerSearch)) return 6000;
-      if (food.description.match(new RegExp(`\\b${lowerSearch}\\b`, "i"))) return 5000;
-
-      // Penalty: longer names, far-off words
-      let penalty = desc.length;
-      // bonus if description is short (single food, not branded)
-      if (desc.length < 15) penalty -= 10;
-      return 100 - penalty;
+      // Shorter names slightly preferred
+      return 5000 - desc.length;
     }
 
     return [...foods].sort((a, b) => score(b) - score(a));
