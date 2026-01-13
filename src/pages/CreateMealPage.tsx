@@ -1442,7 +1442,6 @@ const CreateMealPage = () => {
           {/* Centered, responsive scanner box */}
           <div className="relative w-[92vw] max-w-[430px] h-[62vw] max-h-[420px] rounded-2xl bg-[#222] shadow-2xl flex items-center justify-center">
             <BarcodeScanner
-              style={{ width: "100%", height: "100%" }}
               onDetected={(barcode) => {
                 setShowScanner(false);
                 setBarcodeResult(barcode);
