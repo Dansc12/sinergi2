@@ -19,12 +19,7 @@ const contentLabels: Record<string, string> = {
 
 const TIMER_DURATION = 5000; // 5 seconds
 
-const CreationCongratsPopup = ({
-  isVisible,
-  contentType,
-  onDismiss,
-  onPost,
-}: CreationCongratsPopupProps) => {
+const CreationCongratsPopup = ({ isVisible, contentType, onDismiss, onPost }: CreationCongratsPopupProps) => {
   const [visible, setVisible] = useState(isVisible);
   const [progress, setProgress] = useState(100);
   const startTimeRef = useRef<number>(0);
@@ -37,12 +32,12 @@ const CreationCongratsPopup = ({
       setVisible(true);
       setProgress(100);
       hasStartedRef.current = false;
-      
+
       // Cancel any existing animation
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      
+
       // Use requestAnimationFrame to get initial timestamp and start smoothly
       const initFrame = requestAnimationFrame((initialTime) => {
         if (hasStartedRef.current) return;
@@ -111,19 +106,15 @@ const CreationCongratsPopup = ({
                 transition={{ duration: 0.05 }}
               />
             </div>
-            
+
             <div className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                   <PartyPopper size={20} className="text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground">
-                    {contentLabels[contentType]} Saved!
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Would you like to share it with your friends?
-                  </p>
+                  <h3 className="font-semibold text-foreground">{contentLabels[contentType]} Saved!</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">Want to share this?</p>
                 </div>
                 <button
                   onClick={handleDismiss}
@@ -133,19 +124,10 @@ const CreationCongratsPopup = ({
                 </button>
               </div>
               <div className="flex gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDismiss}
-                  className="flex-1"
-                >
+                <Button variant="outline" size="sm" onClick={handleDismiss} className="flex-1">
                   Dismiss
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handlePost}
-                  className="flex-1 gap-2"
-                >
+                <Button size="sm" onClick={handlePost} className="flex-1 gap-2">
                   <Share2 size={16} />
                   Post
                 </Button>
