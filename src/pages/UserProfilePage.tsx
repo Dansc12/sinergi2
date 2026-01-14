@@ -158,7 +158,7 @@ const UserProfilePage = () => {
             </Avatar>
 
             <div className="flex flex-col justify-start flex-1">
-              <h2 className="text-xl font-bold">{display}</h2>
+              <h2 className="text-xl font-bold">{displayName}</h2>
               {profile.username && <p className="text-muted-foreground text-sm mb-2">@{profile.username}</p>}
 
               {/* Stats - Instagram style */}
