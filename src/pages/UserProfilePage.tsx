@@ -41,11 +41,10 @@ const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState<ContentTab>("posts");
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [friendsCount, setFriendsCount] = useState(0);
   const [streakCount, setStreakCount] = useState(0);
   const [stats, setStats] = useState({ meals: 0, days: 0, workouts: 0 });
 
-  const { status, isFriend, sendFriendRequest, acceptFriendRequest, currentUserId } = useFollow(userId || null);
+  const { isFollowing, isLoading, follow, unfollow } = useFollow(userId || null);
   const isOwnProfile = currentUserId === userId;
 
   useEffect(() => {
@@ -89,8 +88,6 @@ const UserProfilePage = () => {
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
         .eq("status", "accepted");
 
-      setFriendsCount(friendsAccepted || 0);
-
       // Fetch stats using database function that bypasses RLS for counting
       const { data: statsData } = await supabase.rpc("get_user_stats", { target_user_id: userId });
 
@@ -131,7 +128,6 @@ const UserProfilePage = () => {
   }
 
   const displayName = profile.first_name || "User";
-  const fullName = isFriend && profile.last_name ? `${profile.first_name} ${profile.last_name}` : displayName;
   const userBio = profile.bio || "";
   const avatarUrl = profile.avatar_url;
   const interests = profile.hobbies || [];
@@ -208,29 +204,27 @@ const UserProfilePage = () => {
           {/* Bio */}
           {userBio && <p className="text-muted-foreground text-sm mb-4">{userBio}</p>}
 
-          {/* Friend Status / Actions */}
+          {/* Follow Status / Actions */}
           <div className="flex items-center gap-3 mb-4">
-            {isFriend ? (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Users size={14} />
-                <span>{friendsCount} friends</span>
-              </div>
-            ) : status === "none" ? (
-              <Button variant="outline" size="sm" onClick={sendFriendRequest} className="gap-1">
-                <UserPlus size={16} />
-                Send Friend Request
-              </Button>
-            ) : status === "pending_sent" ? (
-              <Button variant="outline" size="sm" disabled className="gap-1">
-                <Check size={16} />
-                Request Sent
-              </Button>
-            ) : status === "pending_received" ? (
-              <Button size="sm" onClick={acceptFriendRequest} className="gap-1">
-                <Check size={16} />
-                Accept Request
-              </Button>
-            ) : null}
+            <Button
+              variant={isFollowing ? "secondary" : "outline"}
+              size="sm"
+              disabled={isLoading}
+              onClick={isFollowing ? unfollow : follow}
+              className="gap-1"
+            >
+              {isFollowing ? (
+                <>
+                  <Check size={16} />
+                  Following
+                </>
+              ) : (
+                <>
+                  <UserPlus size={16} />
+                  Follow
+                </>
+              )}
+            </Button>
 
             <Button variant="outline" size="sm" onClick={handleMessage} className="gap-1">
               <MessageCircle size={16} />
@@ -272,7 +266,7 @@ const UserProfilePage = () => {
               userId={userId}
               emptyState={{
                 title: "No posts yet",
-                description: isFriend
+                description: isFollowing
                   ? `${displayName} hasn't shared any posts yet`
                   : `${displayName} hasn't shared any public posts yet`,
                 action: "",
@@ -282,10 +276,10 @@ const UserProfilePage = () => {
             <ProfileContentFeed
               contentType={activeTab as "workouts" | "meals" | "recipes" | "routines"}
               userId={userId}
-              visibility={isFriend ? "friends" : "public"}
+              visibility={isFollowing ? "followers" : "public"}
               emptyState={{
                 title: `No ${activeTab} yet`,
-                description: isFriend
+                description: isFollowing
                   ? `${displayName} hasn't shared any ${activeTab} yet`
                   : `${displayName} hasn't shared any public ${activeTab} yet`,
                 action: "",
