@@ -6,36 +6,21 @@ import {
   Image,
   X,
   Globe,
-  Users,
   Camera,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   Loader2,
-  Tag,
-  Plus,
-  HelpCircle,
   Utensils,
   Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { CameraCapture } from "@/components/CameraCapture";
 import { usePhotoPicker } from "@/hooks/useCamera";
 import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-
-type Visibility = "public" | "friends" | "private" | "direct" | null;
 
 interface LocationState {
   contentType: string;
@@ -43,125 +28,33 @@ interface LocationState {
   images?: string[];
   returnTo?: string;
   routineInstanceId?: string;
-  directShareGroups?: string[];
-  directShareUsers?: string[];
-  directShareGroupNames?: string[];
-  directShareUserNames?: string[];
-  visibility?: Visibility;
 }
-
-const visibilityOptions = [
-  { value: "public" as Visibility, label: "Public", icon: Globe, description: "Share with everyone" },
-  { value: "friends" as Visibility, label: "Friends Only", icon: Users, description: "Share with friends" },
-  {
-    value: "direct" as Visibility,
-    label: "Send Directly",
-    icon: Send,
-    description: "Send to specific people or groups",
-  },
-];
 
 const SharePostScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
   const { createPost } = usePosts();
-  console.log("Share screen state:", state);
-  console.log("Title:", state?.contentData?.title);
-  console.log("Tags:", state?.contentData?.tags);
 
   const isPostType = state?.contentType === "post";
   const fromSelection = (state as LocationState & { fromSelection?: boolean })?.fromSelection;
 
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>(state?.visibility ?? null);
   const [images, setImages] = useState<string[]>(state?.images || []);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Direct share state
-  const [directShareGroups, setDirectShareGroups] = useState<string[]>(state?.directShareGroups || []);
-  const [directShareUsers, setDirectShareUsers] = useState<string[]>(state?.directShareUsers || []);
-  const [directShareGroupNames, setDirectShareGroupNames] = useState<string[]>(state?.directShareGroupNames || []);
-  const [directShareUserNames, setDirectShareUserNames] = useState<string[]>(state?.directShareUserNames || []);
-
-  // Update direct share state and visibility when returning from selection screen
-  useEffect(() => {
-    if (state?.directShareGroups) setDirectShareGroups(state.directShareGroups);
-    if (state?.directShareUsers) setDirectShareUsers(state.directShareUsers);
-    if (state?.directShareGroupNames) setDirectShareGroupNames(state.directShareGroupNames);
-    if (state?.directShareUserNames) setDirectShareUserNames(state.directShareUserNames);
-    if (state?.visibility !== undefined) setVisibility(state.visibility);
-  }, [
-    state?.directShareGroups,
-    state?.directShareUsers,
-    state?.directShareGroupNames,
-    state?.directShareUserNames,
-    state?.visibility,
-  ]);
-
-  // Workout-specific state
+  // Content titles (read-only, just for display)
   const isWorkout = state?.contentType === "workout";
-  const [workoutTitle, setWorkoutTitle] = useState((state?.contentData?.title as string) || "");
-  const [workoutTags, setWorkoutTags] = useState<string[]>((state?.contentData?.tags as string[]) || []);
-  const [newTag, setNewTag] = useState("");
-  const [showTagsInfo, setShowTagsInfo] = useState(false);
-
-  // Saved Meal-specific state
   const isSavedMeal = state?.contentType === "meal";
-  const [mealTitle, setMealTitle] = useState((state?.contentData?.name as string) || "");
-  const [mealTags, setMealTags] = useState<string[]>((state?.contentData?.tags as string[]) || []);
-  const [newMealTag, setNewMealTag] = useState("");
-  const [showMealTagsInfo, setShowMealTagsInfo] = useState(false);
-
-  // Recipe-specific state
   const isRecipe = state?.contentType === "recipe";
-  const [recipeTitle, setRecipeTitle] = useState((state?.contentData?.title as string) || "");
-  const [recipeTags, setRecipeTags] = useState<string[]>((state?.contentData?.tags as string[]) || []);
-  const [newRecipeTag, setNewRecipeTag] = useState("");
-  const [showRecipeTagsInfo, setShowRecipeTagsInfo] = useState(false);
-
-  // Routine-specific state
   const isRoutine = state?.contentType === "routine";
-  const [routineTitle, setRoutineTitle] = useState((state?.contentData?.routineName as string) || "");
-  const [routineTags, setRoutineTags] = useState<string[]>((state?.contentData?.tags as string[]) || []);
-  const [newRoutineTag, setNewRoutineTag] = useState("");
-  const [showRoutineTagsInfo, setShowRoutineTagsInfo] = useState(false);
 
-  // Get auto-generated name for placeholder - show it as editable default value
-  const getAutoGeneratedPlaceholder = () => {
-    return "Give your workout a unique name...";
-  };
-
-  // Initialize workout title with the auto-generated name if user hasn't customized it
-  const originalTitle = state?.contentData?.title as string;
-  const isOriginalAutoGenerated =
-    originalTitle &&
-    ["Morning Workout", "Afternoon Workout", "Evening Workout", "Night Workout", "Untitled Workout"].some(
-      (name) => originalTitle.toLowerCase().trim() === name.toLowerCase(),
-    );
-
-  // Auto-generated workout names that should require a custom name
-  const autoGeneratedNames = [
-    "Morning Workout",
-    "Afternoon Workout",
-    "Evening Workout",
-    "Night Workout",
-    "Untitled Workout",
-    "",
-  ];
-
-  const isAutoGeneratedName = autoGeneratedNames.some(
-    (name) => workoutTitle.toLowerCase().trim() === name.toLowerCase(),
-  );
-
-  // Auto-generated meal names that should require a custom name
-  const autoGeneratedMealNames = ["Saved Meal", "Untitled Meal", ""];
-
-  const isAutoGeneratedMealName = autoGeneratedMealNames.some(
-    (name) => mealTitle.toLowerCase().trim() === name.toLowerCase(),
-  );
+  const workoutTitle = (state?.contentData?.title as string) || "";
+  const mealTitle = (state?.contentData?.name as string) || "";
+  const recipeTitle = (state?.contentData?.title as string) || "";
+  const routineTitle = (state?.contentData?.routineName as string) || "";
 
   const { inputRef, openPicker, handleFileChange } = usePhotoPicker((urls) => {
     setImages([...images, ...urls]);
@@ -181,54 +74,6 @@ const SharePostScreen = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const addTag = () => {
-    const trimmedTag = newTag.trim().toLowerCase();
-    if (trimmedTag && !workoutTags.includes(trimmedTag) && workoutTags.length < 5) {
-      setWorkoutTags([...workoutTags, trimmedTag]);
-      setNewTag("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setWorkoutTags(workoutTags.filter((tag) => tag !== tagToRemove));
-  };
-
-  const addMealTag = () => {
-    const trimmedTag = newMealTag.trim().toLowerCase();
-    if (trimmedTag && !mealTags.includes(trimmedTag) && mealTags.length < 5) {
-      setMealTags([...mealTags, trimmedTag]);
-      setNewMealTag("");
-    }
-  };
-
-  const removeMealTag = (tagToRemove: string) => {
-    setMealTags(mealTags.filter((tag) => tag !== tagToRemove));
-  };
-
-  const addRecipeTag = () => {
-    const trimmedTag = newRecipeTag.trim().toLowerCase();
-    if (trimmedTag && !recipeTags.includes(trimmedTag) && recipeTags.length < 5) {
-      setRecipeTags([...recipeTags, trimmedTag]);
-      setNewRecipeTag("");
-    }
-  };
-
-  const removeRecipeTag = (tagToRemove: string) => {
-    setRecipeTags(recipeTags.filter((tag) => tag !== tagToRemove));
-  };
-
-  const addRoutineTag = () => {
-    const trimmedTag = newRoutineTag.trim().toLowerCase();
-    if (trimmedTag && !routineTags.includes(trimmedTag) && routineTags.length < 5) {
-      setRoutineTags([...routineTags, trimmedTag]);
-      setNewRoutineTag("");
-    }
-  };
-
-  const removeRoutineTag = (tagToRemove: string) => {
-    setRoutineTags(routineTags.filter((tag) => tag !== tagToRemove));
-  };
-
   const handleSubmit = async () => {
     const contentTypeLabels: Record<string, string> = {
       workout: "Workout",
@@ -241,180 +86,19 @@ const SharePostScreen = () => {
 
     const label = contentTypeLabels[state?.contentType || "post"] || "Post";
 
-    // Check if user has selected any visibility option
-    const hasAnySelection = isSharing || hasDirectRecipients;
-
-    if (!hasAnySelection) {
-      toast({
-        title: "Select visibility",
-        description: "Please choose how you'd like to share this content.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validation for workouts when sharing (not private)
-    if (isWorkout && hasAnySelection) {
-      if (!workoutTitle.trim() || isAutoGeneratedName) {
-        toast({
-          title: "Workout name required",
-          description: "Please give your workout a custom name before sharing.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (workoutTags.length === 0) {
-        toast({
-          title: "Tags required",
-          description: "Please add at least one tag to help others find your workout.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    // Validation for saved meals when sharing (not private)
-    if (isSavedMeal && hasAnySelection) {
-      if (!mealTitle.trim() || isAutoGeneratedMealName) {
-        toast({
-          title: "Meal name required",
-          description: "Please give your meal a custom name before sharing.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (mealTags.length === 0) {
-        toast({
-          title: "Tags required",
-          description: "Please add at least one tag to help others find your meal.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     setIsSubmitting(true);
     try {
-      // For workouts, include the updated title and tags in content_data
-      let contentData = state?.contentData || {};
-      if (isWorkout) {
-        contentData = { ...contentData, title: workoutTitle, tags: workoutTags };
-      } else if (isSavedMeal) {
-        // Include coverPhoto explicitly in content_data so it can be retrieved when saved
-        const coverPhoto = images.length > 0 ? images[0] : (state?.contentData?.coverPhotoUrl as string | undefined);
-        contentData = { ...contentData, name: mealTitle, tags: mealTags, coverPhoto };
-      } else if (isRecipe) {
-        contentData = { ...contentData, title: recipeTitle, tags: recipeTags };
-      } else if (isRoutine) {
-        contentData = { ...contentData, routineName: routineTitle, tags: routineTags };
-      }
+      // Use original content_data without mutation
+      const contentData = state?.contentData || {};
 
-      // Update the original creation with the modified name/tags
-      const originalId = state?.contentData?.id as string | undefined;
-      if (originalId) {
-        if (isWorkout) {
-          // Update workout_logs with the new title (stored in exercises JSON or notes)
-          const { data: existingWorkout } = await supabase
-            .from("workout_logs")
-            .select("exercises")
-            .eq("id", originalId)
-            .single();
-
-          if (existingWorkout) {
-            // Store title and tags in the exercises JSON structure
-            const updatedExercises = {
-              ...(typeof existingWorkout.exercises === "object" ? existingWorkout.exercises : {}),
-              _metadata: { title: workoutTitle, tags: workoutTags },
-            };
-            await supabase.from("workout_logs").update({ exercises: updatedExercises }).eq("id", originalId);
-          }
-        } else if (isSavedMeal || isRecipe) {
-          // Update the saved_meal post with new name/tags
-          const postId = state?.contentData?.postId as string | undefined;
-          if (postId) {
-            const { data: existingPost } = await supabase
-              .from("posts")
-              .select("content_data")
-              .eq("id", postId)
-              .single();
-
-            if (existingPost) {
-              const existingData = existingPost.content_data as Record<string, unknown>;
-              const updatedData = isSavedMeal
-                ? { ...existingData, name: mealTitle, tags: mealTags }
-                : { ...existingData, title: recipeTitle, tags: recipeTags };
-              await supabase.from("posts").update({ content_data: updatedData }).eq("id", postId);
-            }
-          }
-        } else if (isRoutine) {
-          // Update scheduled_routines with the new name/tags
-          const routineIds = state?.contentData?.routineIds as string[] | undefined;
-          if (routineIds && routineIds.length > 0) {
-            const { data: existingRoutine } = await supabase
-              .from("scheduled_routines")
-              .select("routine_data")
-              .eq("id", routineIds[0])
-              .single();
-
-            if (existingRoutine) {
-              const existingData = existingRoutine.routine_data as Record<string, unknown>;
-              const updatedData = { ...existingData, tags: routineTags };
-
-              // Update all routine entries with the new name and tags
-              for (const routineId of routineIds) {
-                await supabase
-                  .from("scheduled_routines")
-                  .update({
-                    routine_name: routineTitle,
-                    routine_data: updatedData,
-                  })
-                  .eq("id", routineId);
-              }
-            }
-          }
-        }
-      }
-
-      // Create post if sharing publicly or with friends or directly
-      let postId: string | undefined;
-      if (visibility === "public" || visibility === "friends" || hasDirectRecipients) {
-        const post = await createPost({
-          content_type: state?.contentType || "post",
-          content_data: contentData,
-          description: description || undefined,
-          images: images,
-          visibility: hasDirectRecipients && !isSharing ? "private" : visibility || "private",
-        });
-        postId = post?.id;
-      }
-
-      // Handle direct sharing to groups and users
-      if ((directShareGroups.length > 0 || directShareUsers.length > 0) && postId) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          // Create shared_posts entries for each group
-          for (const groupId of directShareGroups) {
-            await supabase.from("shared_posts").insert({
-              post_id: postId,
-              sender_id: user.id,
-              recipient_group_id: groupId,
-              message: description || null,
-            });
-          }
-
-          // Create shared_posts entries for each user
-          for (const userId of directShareUsers) {
-            await supabase.from("shared_posts").insert({
-              post_id: postId,
-              sender_id: user.id,
-              recipient_user_id: userId,
-              message: description || null,
-            });
-          }
-        }
-      }
+      // Create post with visibility always public
+      await createPost({
+        content_type: state?.contentType || "post",
+        content_data: contentData,
+        description: description || undefined,
+        images: images,
+        visibility: "public",
+      });
 
       // If this workout was from a routine, mark the instance as completed
       if (state?.routineInstanceId && state?.contentType === "workout") {
@@ -427,24 +111,9 @@ const SharePostScreen = () => {
           .eq("id", state.routineInstanceId);
       }
 
-      // Show appropriate toast message
-      const hasDirectShare = directShareGroups.length > 0 || directShareUsers.length > 0;
-      const hasFeedShare = visibility === "public" || visibility === "friends";
-
-      let toastMessage = "";
-      if (hasDirectShare && hasFeedShare) {
-        toastMessage = `Shared to feed and sent directly!`;
-      } else if (hasDirectShare) {
-        toastMessage = `Sent to ${directShareGroups.length + directShareUsers.length} recipient(s)!`;
-      } else if (visibility === "private") {
-        toastMessage = `Your ${label.toLowerCase()} has been saved privately.`;
-      } else {
-        toastMessage = `Your ${label.toLowerCase()} is now live.`;
-      }
-
       toast({
         title: `${label} shared!`,
-        description: toastMessage,
+        description: `Your ${label.toLowerCase()} is now live.`,
       });
       navigate("/");
     } catch (error) {
@@ -483,15 +152,6 @@ const SharePostScreen = () => {
     return labels[state?.contentType || "post"] || "Post";
   };
 
-  const getCurrentVisibilityOption = () => {
-    if (!visibility) return null;
-    return visibilityOptions.find((opt) => opt.value === visibility) || null;
-  };
-
-  const hasDirectRecipients = directShareGroups.length > 0 || directShareUsers.length > 0;
-  const isSharing = visibility === "public" || visibility === "friends";
-  const showDescription = true; // Always show caption section
-
   // Render content details based on content type
   const renderContentDetails = () => {
     const data = state?.contentData;
@@ -501,135 +161,15 @@ const SharePostScreen = () => {
       case "workout":
         return (
           <div className="space-y-4">
-            {/* Workout Name - Inside details for workouts being shared */}
-            {(isSharing || hasDirectRecipients) && (
+            {/* Workout Name - Read-only */}
+            {workoutTitle && (
               <div className="space-y-2">
-                <Label htmlFor="workoutTitleDetails" className="flex items-center gap-2 text-sm">
-                  Workout Name
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="workoutTitleDetails"
-                  placeholder={getAutoGeneratedPlaceholder()}
-                  value={workoutTitle}
-                  onChange={(e) => setWorkoutTitle(e.target.value)}
-                />
+                <Label className="text-sm text-muted-foreground">Workout Name</Label>
+                <p className="text-foreground font-medium">{workoutTitle}</p>
               </div>
             )}
 
-            {/* Tags - Inside details for workouts being shared */}
-            {(isSharing || hasDirectRecipients) && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm">
-                  <Tag size={14} />
-                  <button
-                    type="button"
-                    onClick={() => setShowTagsInfo(true)}
-                    className="flex items-center gap-1 hover:text-primary transition-colors underline-offset-2 hover:underline"
-                  >
-                    Tags
-                    <HelpCircle size={12} className="text-muted-foreground" />
-                  </button>
-                  <span className="text-destructive">*</span>
-                  <span className="text-xs text-muted-foreground ml-1">({workoutTags.length}/5)</span>
-                </Label>
-
-                {/* Tag Input */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a tag (e.g., legs, push, strength)..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addTag();
-                      }
-                    }}
-                    maxLength={20}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={addTag}
-                    disabled={!newTag.trim() || workoutTags.length >= 5}
-                  >
-                    <Plus size={18} />
-                  </Button>
-                </div>
-
-                {/* Suggested Tags - Horizontal scrollable row */}
-                <div className="flex items-center gap-2 relative isolate">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 bg-background pr-1 relative z-20">
-                    Suggested:
-                  </span>
-                  <div className="relative flex-1 overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                    <div className="flex gap-2 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {[
-                        "push",
-                        "pull",
-                        "legs",
-                        "upper",
-                        "lower",
-                        "full body",
-                        "strength",
-                        "hypertrophy",
-                        "cardio",
-                        "hiit",
-                      ].map(
-                        (suggestion) =>
-                          !workoutTags.includes(suggestion) && (
-                            <button
-                              key={suggestion}
-                              type="button"
-                              onClick={() => {
-                                if (workoutTags.length < 5) {
-                                  setWorkoutTags([...workoutTags, suggestion]);
-                                }
-                              }}
-                              className="text-xs px-2 py-0.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors whitespace-nowrap flex-shrink-0"
-                            >
-                              {suggestion}
-                            </button>
-                          ),
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags Display - Below suggested tags */}
-                {workoutTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 min-h-[32px]">
-                    <AnimatePresence>
-                      {workoutTags.map((tag) => (
-                        <motion.span
-                          key={tag}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
-                        >
-                          #{tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="ml-1 hover:text-destructive transition-colors"
-                          >
-                            <X size={14} />
-                          </button>
-                        </motion.span>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Separator between name/tags and exercises */}
+            {/* Separator between name and exercises */}
             {Array.isArray(data.exercises) && (data.exercises as Array<unknown>).length > 0 && (
               <div className="border-t border-border pt-3">
                 <p className="text-xs text-muted-foreground font-medium mb-3">Exercises</p>
@@ -716,16 +256,6 @@ const SharePostScreen = () => {
                       supersetGroupIndex !== undefined
                         ? supersetColors[supersetGroupIndex % supersetColors.length]
                         : null;
-
-                    // Check if this is the first exercise in a superset group
-                    const isFirstInSuperset =
-                      exercise.supersetGroupId &&
-                      exercises.findIndex((e) => e.supersetGroupId === exercise.supersetGroupId) === idx;
-
-                    // Count exercises in this superset
-                    const supersetCount = exercise.supersetGroupId
-                      ? exercises.filter((e) => e.supersetGroupId === exercise.supersetGroupId).length
-                      : 0;
 
                     return (
                       <div key={idx} className="rounded-xl bg-card border border-border overflow-hidden">
@@ -854,136 +384,16 @@ const SharePostScreen = () => {
 
         return (
           <div className="space-y-4">
-            {/* Meal Name - Inside details for meals being shared */}
-            {(isSharing || hasDirectRecipients) && (
+            {/* Meal Name - Read-only */}
+            {mealTitle && (
               <div className="space-y-2">
-                <Label htmlFor="mealTitleDetails" className="flex items-center gap-2 text-sm">
-                  Meal Name
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="mealTitleDetails"
-                  placeholder="Give your meal a unique name..."
-                  value={mealTitle}
-                  onChange={(e) => setMealTitle(e.target.value)}
-                />
+                <Label className="text-sm text-muted-foreground">Meal Name</Label>
+                <p className="text-foreground font-medium">{mealTitle}</p>
               </div>
             )}
 
-            {/* Tags - Inside details for meals being shared */}
-            {(isSharing || hasDirectRecipients) && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm">
-                  <Tag size={14} />
-                  <button
-                    type="button"
-                    onClick={() => setShowMealTagsInfo(true)}
-                    className="flex items-center gap-1 hover:text-primary transition-colors underline-offset-2 hover:underline"
-                  >
-                    Tags
-                    <HelpCircle size={12} className="text-muted-foreground" />
-                  </button>
-                  <span className="text-destructive">*</span>
-                  <span className="text-xs text-muted-foreground ml-1">({mealTags.length}/5)</span>
-                </Label>
-
-                {/* Tag Input */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a tag (e.g., breakfast, high-protein, quick)..."
-                    value={newMealTag}
-                    onChange={(e) => setNewMealTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addMealTag();
-                      }
-                    }}
-                    maxLength={20}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={addMealTag}
-                    disabled={!newMealTag.trim() || mealTags.length >= 5}
-                  >
-                    <Plus size={18} />
-                  </Button>
-                </div>
-
-                {/* Suggested Tags - Horizontal scrollable row */}
-                <div className="flex items-center gap-2 relative isolate">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 bg-background pr-1 relative z-20">
-                    Suggested:
-                  </span>
-                  <div className="relative flex-1 overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                    <div className="flex gap-2 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {[
-                        "breakfast",
-                        "lunch",
-                        "dinner",
-                        "snack",
-                        "high-protein",
-                        "low-carb",
-                        "quick",
-                        "meal-prep",
-                        "healthy",
-                        "comfort-food",
-                      ].map(
-                        (suggestion) =>
-                          !mealTags.includes(suggestion) && (
-                            <button
-                              key={suggestion}
-                              type="button"
-                              onClick={() => {
-                                if (mealTags.length < 5) {
-                                  setMealTags([...mealTags, suggestion]);
-                                }
-                              }}
-                              className="text-xs px-2 py-0.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors whitespace-nowrap flex-shrink-0"
-                            >
-                              {suggestion}
-                            </button>
-                          ),
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags Display - Below suggested tags */}
-                {mealTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 min-h-[32px]">
-                    <AnimatePresence>
-                      {mealTags.map((tag) => (
-                        <motion.span
-                          key={tag}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
-                        >
-                          #{tag}
-                          <button
-                            type="button"
-                            onClick={() => removeMealTag(tag)}
-                            className="ml-1 hover:text-destructive transition-colors"
-                          >
-                            <X size={14} />
-                          </button>
-                        </motion.span>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Separator between name/tags and expanded view */}
-            {(isSharing || hasDirectRecipients) && <div className="border-t border-border pt-4" />}
+            {/* Separator */}
+            {mealTitle && <div className="border-t border-border pt-4" />}
 
             {/* Cover Photo - matching MealSavedCard expanded view */}
             <div className="relative h-40 overflow-hidden rounded-xl">
@@ -1176,134 +586,16 @@ const SharePostScreen = () => {
       case "recipe":
         return (
           <div className="space-y-4">
-            {/* Recipe Name - Inside details for recipes being shared */}
-            {(isSharing || hasDirectRecipients) && (
+            {/* Recipe Name - Read-only */}
+            {recipeTitle && (
               <div className="space-y-2">
-                <Label htmlFor="recipeTitleDetails" className="flex items-center gap-2 text-sm">
-                  Recipe Name
-                </Label>
-                <Input
-                  id="recipeTitleDetails"
-                  placeholder="Give your recipe a name..."
-                  value={recipeTitle}
-                  onChange={(e) => setRecipeTitle(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Tags - Inside details for recipes being shared */}
-            {(isSharing || hasDirectRecipients) && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm">
-                  <Tag size={14} />
-                  <button
-                    type="button"
-                    onClick={() => setShowRecipeTagsInfo(true)}
-                    className="flex items-center gap-1 hover:text-primary transition-colors underline-offset-2 hover:underline"
-                  >
-                    Tags
-                    <HelpCircle size={12} className="text-muted-foreground" />
-                  </button>
-                  <span className="text-xs text-muted-foreground ml-1">({recipeTags.length}/5)</span>
-                </Label>
-
-                {/* Tag Input */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a tag (e.g., healthy, quick, vegan)..."
-                    value={newRecipeTag}
-                    onChange={(e) => setNewRecipeTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addRecipeTag();
-                      }
-                    }}
-                    maxLength={20}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={addRecipeTag}
-                    disabled={!newRecipeTag.trim() || recipeTags.length >= 5}
-                  >
-                    <Plus size={18} />
-                  </Button>
-                </div>
-
-                {/* Suggested Tags */}
-                <div className="flex items-center gap-2 relative isolate">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 bg-background pr-1 relative z-20">
-                    Suggested:
-                  </span>
-                  <div className="relative flex-1 overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                    <div className="flex gap-2 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {[
-                        "breakfast",
-                        "lunch",
-                        "dinner",
-                        "healthy",
-                        "quick",
-                        "vegan",
-                        "keto",
-                        "high-protein",
-                        "meal-prep",
-                        "comfort-food",
-                      ].map(
-                        (suggestion) =>
-                          !recipeTags.includes(suggestion) && (
-                            <button
-                              key={suggestion}
-                              type="button"
-                              onClick={() => {
-                                if (recipeTags.length < 5) {
-                                  setRecipeTags([...recipeTags, suggestion]);
-                                }
-                              }}
-                              className="text-xs px-2 py-0.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors whitespace-nowrap flex-shrink-0"
-                            >
-                              {suggestion}
-                            </button>
-                          ),
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags Display */}
-                {recipeTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 min-h-[32px]">
-                    <AnimatePresence>
-                      {recipeTags.map((tag) => (
-                        <motion.span
-                          key={tag}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
-                        >
-                          #{tag}
-                          <button
-                            type="button"
-                            onClick={() => removeRecipeTag(tag)}
-                            className="ml-1 hover:text-destructive transition-colors"
-                          >
-                            <X size={14} />
-                          </button>
-                        </motion.span>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
+                <Label className="text-sm text-muted-foreground">Recipe Name</Label>
+                <p className="text-foreground font-medium">{recipeTitle}</p>
               </div>
             )}
 
             {/* Separator */}
-            {(isSharing || hasDirectRecipients) && <div className="border-t border-border pt-3" />}
+            {recipeTitle && <div className="border-t border-border pt-3" />}
 
             {data.description && <p className="text-xs text-muted-foreground">{data.description as string}</p>}
             <div className="flex gap-3 text-xs text-muted-foreground">
@@ -1339,161 +631,65 @@ const SharePostScreen = () => {
       case "routine":
         return (
           <div className="space-y-4">
-            {/* Routine Name - Inside details for routines being shared */}
-            {(isSharing || hasDirectRecipients) && (
+            {/* Routine Name - Read-only */}
+            {routineTitle && (
               <div className="space-y-2">
-                <Label htmlFor="routineTitleDetails" className="flex items-center gap-2 text-sm">
-                  Routine Name
-                </Label>
-                <Input
-                  id="routineTitleDetails"
-                  placeholder="Give your routine a name..."
-                  value={routineTitle}
-                  onChange={(e) => setRoutineTitle(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Tags - Inside details for routines being shared */}
-            {(isSharing || hasDirectRecipients) && (
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm">
-                  <Tag size={14} />
-                  <button
-                    type="button"
-                    onClick={() => setShowRoutineTagsInfo(true)}
-                    className="flex items-center gap-1 hover:text-primary transition-colors underline-offset-2 hover:underline"
-                  >
-                    Tags
-                    <HelpCircle size={12} className="text-muted-foreground" />
-                  </button>
-                  <span className="text-xs text-muted-foreground ml-1">({routineTags.length}/5)</span>
-                </Label>
-
-                {/* Tag Input */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a tag (e.g., strength, full body, beginner)..."
-                    value={newRoutineTag}
-                    onChange={(e) => setNewRoutineTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addRoutineTag();
-                      }
-                    }}
-                    maxLength={20}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={addRoutineTag}
-                    disabled={!newRoutineTag.trim() || routineTags.length >= 5}
-                  >
-                    <Plus size={18} />
-                  </Button>
-                </div>
-
-                {/* Suggested Tags */}
-                <div className="flex items-center gap-2 relative isolate">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 bg-background pr-1 relative z-20">
-                    Suggested:
-                  </span>
-                  <div className="relative flex-1 overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                    <div className="flex gap-2 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {[
-                        "push",
-                        "pull",
-                        "legs",
-                        "upper",
-                        "lower",
-                        "full body",
-                        "strength",
-                        "hypertrophy",
-                        "beginner",
-                        "advanced",
-                      ].map(
-                        (suggestion) =>
-                          !routineTags.includes(suggestion) && (
-                            <button
-                              key={suggestion}
-                              type="button"
-                              onClick={() => {
-                                if (routineTags.length < 5) {
-                                  setRoutineTags([...routineTags, suggestion]);
-                                }
-                              }}
-                              className="text-xs px-2 py-0.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors whitespace-nowrap flex-shrink-0"
-                            >
-                              {suggestion}
-                            </button>
-                          ),
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags Display */}
-                {routineTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 min-h-[32px]">
-                    <AnimatePresence>
-                      {routineTags.map((tag) => (
-                        <motion.span
-                          key={tag}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
-                        >
-                          #{tag}
-                          <button
-                            type="button"
-                            onClick={() => removeRoutineTag(tag)}
-                            className="ml-1 hover:text-destructive transition-colors"
-                          >
-                            <X size={14} />
-                          </button>
-                        </motion.span>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
+                <Label className="text-sm text-muted-foreground">Routine Name</Label>
+                <p className="text-foreground font-medium">{routineTitle}</p>
               </div>
             )}
 
             {/* Separator */}
-            {(isSharing || hasDirectRecipients) && <div className="border-t border-border pt-3" />}
+            {routineTitle && <div className="border-t border-border pt-3" />}
 
-            {data.description && <p className="text-xs text-muted-foreground">{data.description as string}</p>}
-            {Array.isArray(data.scheduleDays) && (data.scheduleDays as string[]).length > 0 && (
-              <p className="text-xs text-muted-foreground">Schedule: {(data.scheduleDays as string[]).join(", ")}</p>
+            {/* Schedule display if available */}
+            {data.selectedDays && Array.isArray(data.selectedDays) && (
+              <div className="flex flex-wrap gap-2">
+                {(data.selectedDays as string[]).map((day) => (
+                  <span key={day} className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                    {day}
+                  </span>
+                ))}
+              </div>
             )}
-            {Array.isArray(data.exercises) &&
-              (data.exercises as Array<{ name: string; sets: Array<{ minReps: string; maxReps: string }> }>).map(
-                (exercise, idx) => (
+
+            {/* Exercises */}
+            {Array.isArray(data.exercises) && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Exercises</p>
+                {(
+                  data.exercises as Array<{
+                    name: string;
+                    muscleGroup?: string;
+                    sets?: Array<{ reps?: number; weight?: number }>;
+                  }>
+                ).map((exercise, idx) => (
                   <div key={idx} className="p-3 rounded-xl bg-card border border-border">
-                    <p className="font-medium text-sm">{exercise.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {exercise.sets.length} sets • {exercise.sets[0]?.minReps}-{exercise.sets[0]?.maxReps} reps
-                    </p>
+                    <h4 className="font-medium text-foreground">{exercise.name}</h4>
+                    {exercise.muscleGroup && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{exercise.muscleGroup}</p>
+                    )}
+                    {exercise.sets && exercise.sets.length > 0 && (
+                      <p className="text-xs text-primary mt-1">
+                        {exercise.sets.length} set{exercise.sets.length > 1 ? "s" : ""}
+                      </p>
+                    )}
                   </div>
-                ),
-              )}
+                ))}
+              </div>
+            )}
           </div>
         );
       case "group":
         return (
           <div className="space-y-3">
-            <p className="text-sm font-medium">{data.name as string}</p>
-            {data.description && <p className="text-xs text-muted-foreground">{data.description as string}</p>}
-            <div className="flex gap-3 text-xs text-muted-foreground">
-              {data.category && <span className="capitalize">Category: {data.category as string}</span>}
-              {data.privacy && <span className="capitalize">Privacy: {data.privacy as string}</span>}
-            </div>
+            {data.name && <p className="font-semibold text-foreground">{data.name as string}</p>}
+            {data.description && <p className="text-sm text-muted-foreground">{data.description as string}</p>}
+            {data.visibility && (
+              <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground inline-block">
+                {data.visibility as string}
+              </span>
+            )}
           </div>
         );
       default:
@@ -1517,21 +713,10 @@ const SharePostScreen = () => {
               size="icon"
               onClick={() => {
                 const returnTo = state?.returnTo || "/";
-                // Include updated title and tags when navigating back
-                let updatedContentData = state?.contentData;
-                if (isWorkout) {
-                  updatedContentData = { ...updatedContentData, title: workoutTitle, tags: workoutTags };
-                } else if (isSavedMeal) {
-                  updatedContentData = { ...updatedContentData, name: mealTitle, tags: mealTags };
-                } else if (isRecipe) {
-                  updatedContentData = { ...updatedContentData, title: recipeTitle, tags: recipeTags };
-                } else if (isRoutine) {
-                  updatedContentData = { ...updatedContentData, routineName: routineTitle, tags: routineTags };
-                }
                 navigate(returnTo, {
                   state: {
                     restored: true,
-                    contentData: updatedContentData,
+                    contentData: state?.contentData,
                     images: images,
                   },
                   replace: true,
@@ -1608,41 +793,27 @@ const SharePostScreen = () => {
           </div>
         </div>
 
-        {/* Description - Only visible for public/friends */}
-        <AnimatePresence>
-          {showDescription && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3 mb-6 overflow-hidden"
-            >
-              <Textarea
-                id="description"
-                placeholder="Type a caption and share your awesomeness..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                className="resize-none focus:ring-0 focus:ring-offset-0"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Description */}
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="space-y-3 mb-6 overflow-hidden"
+        >
+          <Textarea
+            id="description"
+            placeholder="Type a caption and share your awesomeness..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="resize-none focus:ring-0 focus:ring-offset-0"
+          />
+        </motion.div>
 
         {/* Content Details Dropdown - Only show if there's actual content data */}
         {state?.contentData &&
           Object.keys(state.contentData).length > 0 &&
+          !isPostType &&
           (() => {
-            const workoutNeedsAttention =
-              isWorkout &&
-              (isSharing || hasDirectRecipients) &&
-              (!workoutTitle.trim() || isAutoGeneratedName || workoutTags.length === 0);
-            const mealNeedsAttention =
-              isSavedMeal &&
-              (isSharing || hasDirectRecipients) &&
-              (!mealTitle.trim() || isAutoGeneratedMealName || mealTags.length === 0);
-            const needsAttention = workoutNeedsAttention || mealNeedsAttention;
-
             return (
               <div className="mb-6">
                 <motion.button
@@ -1652,7 +823,6 @@ const SharePostScreen = () => {
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-medium">View {getContentTypeLabel()} Details</span>
-                    {needsAttention && <span className="text-destructive">*</span>}
                   </div>
                   {showDetails ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </motion.button>
@@ -1675,208 +845,25 @@ const SharePostScreen = () => {
           })()}
       </motion.div>
 
-      {/* Direct Share Recipients Indicator */}
-      {hasDirectRecipients && (
-        <div className="fixed bottom-24 left-0 right-0 px-4 z-40">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Send size={16} className="text-blue-500" />
-              <span className="text-sm">
-                Sending to {[...directShareGroupNames, ...directShareUserNames].slice(0, 2).join(", ")}
-                {directShareGroups.length + directShareUsers.length > 2 &&
-                  ` +${directShareGroups.length + directShareUsers.length - 2} more`}
-              </span>
-            </div>
-            <button
-              onClick={() =>
-                navigate("/direct-share", {
-                  state: {
-                    shareState: { ...state, images, description },
-                    selectedGroups: directShareGroups,
-                    selectedUsers: directShareUsers,
-                  },
-                })
-              }
-              className="text-xs text-blue-500 font-medium"
-            >
-              Edit
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Fixed Bottom Action Bar */}
-      <div
-        className={`fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent ${hasDirectRecipients ? "pt-2" : ""}`}
-      >
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
         <div className="flex gap-3 items-center">
-          {/* Visibility Dropdown - Fills remaining space */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className={`flex-1 h-14 gap-2 border-border ${hasDirectRecipients ? "border-blue-500/50" : ""}`}
-              >
-                {(() => {
-                  const directCount = directShareGroups.length + directShareUsers.length;
-                  const opt = getCurrentVisibilityOption();
-
-                  // Both direct recipients AND visibility selected
-                  if (hasDirectRecipients && isSharing && opt) {
-                    const Icon = opt.icon;
-                    return (
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2 text-blue-500">
-                          <Send size={18} />
-                          <span>{directCount}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Icon size={18} />
-                          <span>{opt.label}</span>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // Only direct recipients (no feed visibility)
-                  if (hasDirectRecipients) {
-                    return (
-                      <>
-                        <Send size={18} className="text-blue-500" />
-                        <span className="text-blue-500">Sending to {directCount}</span>
-                      </>
-                    );
-                  }
-
-                  // Only visibility selected (no direct recipients)
-                  if (opt) {
-                    const Icon = opt.icon;
-                    const descriptions: Record<string, string> = {
-                      public: "Anyone can see this post",
-                      friends: "Only your friends will see this",
-                    };
-                    return (
-                      <div className="flex items-center gap-2 w-full">
-                        <Icon size={18} className="flex-shrink-0" />
-                        <div className="flex flex-col items-start text-left">
-                          <span>{opt.label}</span>
-                          {(opt.value === "public" || opt.value === "friends") && (
-                            <span className="text-xs text-muted-foreground">{descriptions[opt.value]}</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // Nothing selected yet
-                  return (
-                    <>
-                      <ChevronDown size={18} className="text-muted-foreground" />
-                      <span className="text-muted-foreground">Select visibility</span>
-                    </>
-                  );
-                })()}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-80 p-2 bg-card border border-border" sideOffset={8}>
-              {visibilityOptions
-                .filter((option) => !isPostType || option.value !== "private")
-                .map((option) => {
-                  const Icon = option.icon;
-                  // "direct" is selected if we have recipients, others match visibility
-                  const isSelected = option.value === "direct" ? hasDirectRecipients : visibility === option.value;
-                  const isSocial = option.value === "public" || option.value === "friends";
-                  const isDirect = option.value === "direct";
-
-                  const descriptions: Record<string, string> = {
-                    public: "Anyone can see this post in the public feed",
-                    friends: "Only your friends will see this in their feed",
-                    private: "Only you can see this - saved to your library",
-                    direct: "Send directly to specific people or groups",
-                  };
-
-                  const handleVisibilityClick = () => {
-                    if (isDirect) {
-                      // Navigate to direct share selection, preserving visibility
-                      navigate("/direct-share", {
-                        state: {
-                          shareState: {
-                            ...state,
-                            images,
-                            description,
-                            visibility,
-                          },
-                          selectedGroups: directShareGroups,
-                          selectedUsers: directShareUsers,
-                        },
-                      });
-                    } else {
-                      // Toggle visibility - deselect if already selected
-                      setVisibility(visibility === option.value ? null : option.value);
-                    }
-                  };
-
-                  return (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onClick={handleVisibilityClick}
-                      className={`p-3 rounded-xl cursor-pointer transition-all mb-1 last:mb-0 ${
-                        isSocial
-                          ? "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border border-primary/20"
-                          : isDirect
-                            ? "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20 border border-blue-500/20"
-                            : "hover:bg-muted"
-                      } ${isSelected ? "ring-2 ring-primary" : ""}`}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            isSocial
-                              ? "bg-gradient-to-br from-primary to-accent text-primary-foreground"
-                              : isDirect
-                                ? "bg-gradient-to-br from-blue-500 to-cyan-500 text-white"
-                                : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          <Icon size={18} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{option.label}</p>
-                            {(isSocial || isDirect) && (
-                              <Sparkles size={14} className={isDirect ? "text-blue-500" : "text-primary"} />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{descriptions[option.value]}</p>
-                          {isDirect && (directShareGroups.length > 0 || directShareUsers.length > 0) && (
-                            <p className="text-xs text-blue-500 mt-1">
-                              {[...directShareGroupNames, ...directShareUserNames].slice(0, 3).join(", ")}
-                              {directShareGroups.length + directShareUsers.length > 3 &&
-                                ` +${directShareGroups.length + directShareUsers.length - 3} more`}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Static Public Visibility Indicator */}
+          <div className="flex-1 h-14 flex items-center gap-3 px-4 rounded-xl border border-border bg-card">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Globe size={18} className="text-primary-foreground" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium text-foreground">Public</span>
+              <span className="text-xs text-muted-foreground">Anyone can see this post</span>
+            </div>
+          </div>
 
           {/* Send Button - Small circle on right */}
           <Button
             className="w-14 h-14 rounded-full p-0 glow-primary flex-shrink-0"
             onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              (fromSelection && images.length === 0) ||
-              (isWorkout &&
-                (isSharing || hasDirectRecipients) &&
-                (!workoutTitle.trim() || isAutoGeneratedName || workoutTags.length === 0)) ||
-              (isSavedMeal &&
-                (isSharing || hasDirectRecipients) &&
-                (!mealTitle.trim() || isAutoGeneratedMealName || mealTags.length === 0))
-            }
+            disabled={isSubmitting || (fromSelection && images.length === 0)}
           >
             {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </Button>
@@ -1890,100 +877,6 @@ const SharePostScreen = () => {
         onCapture={handleCapturePhoto}
         onSelectFromGallery={(urls) => setImages([...images, ...urls])}
       />
-
-      {/* Tags Info Dialog */}
-      <Dialog open={showTagsInfo} onOpenChange={setShowTagsInfo}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Tag size={18} />
-              What are Tags?
-            </DialogTitle>
-            <DialogDescription className="text-left space-y-3 pt-2">
-              <p>Tags are keywords that describe your workout and make it easier for others to find.</p>
-              <p>
-                When you add tags like "push", "legs", or "strength", other users can search for these terms and
-                discover your workout.
-              </p>
-              <p>Good tags help build community by connecting people with similar training styles and goals.</p>
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setShowTagsInfo(false)} className="mt-2">
-            Got it!
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* Meal Tags Info Dialog */}
-      <Dialog open={showMealTagsInfo} onOpenChange={setShowMealTagsInfo}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Tag size={18} />
-              What are Tags?
-            </DialogTitle>
-            <DialogDescription className="text-left space-y-3 pt-2">
-              <p>Tags are keywords that describe your meal and make it easier for others to find.</p>
-              <p>
-                When you add tags like "breakfast", "high-protein", or "quick", other users can search for these terms
-                and discover your meal.
-              </p>
-              <p>Good tags help build community by connecting people with similar eating styles and goals.</p>
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setShowMealTagsInfo(false)} className="mt-2">
-            Got it!
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* Recipe Tags Info Dialog */}
-      <Dialog open={showRecipeTagsInfo} onOpenChange={setShowRecipeTagsInfo}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Tag size={18} />
-              What are Tags?
-            </DialogTitle>
-            <DialogDescription className="text-left space-y-3 pt-2">
-              <p>Tags are keywords that describe your recipe and make it easier for others to find.</p>
-              <p>
-                When you add tags like "healthy", "quick", or "vegan", other users can search for these terms and
-                discover your recipe.
-              </p>
-              <p>
-                Good tags help build community by connecting people with similar cooking styles and dietary preferences.
-              </p>
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setShowRecipeTagsInfo(false)} className="mt-2">
-            Got it!
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* Routine Tags Info Dialog */}
-      <Dialog open={showRoutineTagsInfo} onOpenChange={setShowRoutineTagsInfo}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Tag size={18} />
-              What are Tags?
-            </DialogTitle>
-            <DialogDescription className="text-left space-y-3 pt-2">
-              <p>Tags are keywords that describe your routine and make it easier for others to find.</p>
-              <p>
-                When you add tags like "push", "legs", or "strength", other users can search for these terms and
-                discover your routine.
-              </p>
-              <p>Good tags help build community by connecting people with similar training styles and goals.</p>
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setShowRoutineTagsInfo(false)} className="mt-2">
-            Got it!
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
