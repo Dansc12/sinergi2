@@ -368,7 +368,7 @@ export const PostDetailModal = ({ open, onClose, post, onCountChange }: PostDeta
   } = useGroupJoin(groupId);
   const { isSaved, toggleSave } = useSavedPosts(post.id, post.type);
   const { setIsPostDetailOpen } = usePostDetail();
-  const { isFollowing, isLoading, follow, unfollow } = useFollow(post.userid);
+  const { isFollowing, isLoading, follow, unfollow } = useFollow(post.userId ?? null);
 
   // Use hooks with initial values and callbacks
   const { isLiked, likeCount, toggleLike } = usePostReactions(post.id, {

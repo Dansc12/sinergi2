@@ -246,7 +246,7 @@ export const PostCard = ({ post, onPostClick, onTagClick, onCountChange }: PostC
   const [showDetailModal, setShowDetailModal] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const heartButtonRef = useRef<HTMLButtonElement | null>(null);
-  const { isFollowing, isLoading, follow, unfollow } = useFollow(post.userid);
+  const { isFollowing, isLoading, follow, unfollow } = useFollow(post.userId ?? null);
 
   // Use reactions hook with initial values from feed
   const { isLiked, likeCount, toggleLike } = usePostReactions(post.id, {
