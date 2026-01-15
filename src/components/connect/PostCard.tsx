@@ -22,6 +22,7 @@ import { usePostComments } from "@/hooks/usePostComments";
 import { formatDistanceToNow } from "date-fns";
 import { PostDetailModal } from "./PostDetailModal";
 import { LazyImage } from "@/components/LazyImage";
+import { useFollow } from "@/hooks/useFollow";
 
 interface FloatingEmoji {
   id: number;
@@ -367,16 +368,15 @@ export const PostCard = ({ post, onPostClick, onTagClick, onCountChange }: PostC
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>
-
-          {/* Follow pill - placeholder for now */}
           <Button
-            variant="outline"
+            variant={isFollowing ? "secondary" : "outline"}
             size="sm"
             className="h-7 px-3 text-xs rounded-full shrink-0"
-            onClick={(e) => e.stopPropagation()}
+            onClick={isFollowing ? unfollow : follow}
+            disabled={isLoading}
           >
             <UserPlus size={12} className="mr-1" />
-            Follow
+            {isFollowing ? "Following" : "Follow"}
           </Button>
         </div>
 
