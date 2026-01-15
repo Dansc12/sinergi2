@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          message_type: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          message_type?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          message_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_read_status: {
+        Row: {
+          group_id: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_read_status_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_exercises: {
         Row: {
           category: string | null
@@ -181,18 +242,21 @@ export type Database = {
           group_id: string
           id: string
           joined_at: string
+          role: string
           user_id: string
         }
         Insert: {
           group_id: string
           id?: string
           joined_at?: string
+          role?: string
           user_id: string
         }
         Update: {
           group_id?: string
           id?: string
           joined_at?: string
+          role?: string
           user_id?: string
         }
         Relationships: [
@@ -451,18 +515,24 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity_level: string | null
           avatar_url: string | null
           bio: string | null
+          biological_sex: string | null
           birth_month: number | null
           birth_year: number | null
+          birthdate: string | null
           bring_you_here: string[] | null
           created_at: string
           current_weight: number | null
           daily_calorie_target: number | null
           display_name: string | null
+          exercise_frequency: string | null
           first_name: string | null
           goal_weight: number | null
           goals_setup_completed: boolean | null
+          height_feet: number | null
+          height_inches: number | null
           height_value: number | null
           hobbies: string[] | null
           id: string
@@ -470,25 +540,34 @@ export type Database = {
           macro_targets: Json | null
           onboarding_completed: boolean | null
           pace: string | null
+          primary_goal: string | null
           tdee_targets_enabled: boolean | null
           units_system: string | null
           updated_at: string
           user_id: string
           username: string | null
+          weight_loss_rate: string | null
+          zip_code: string | null
         }
         Insert: {
+          activity_level?: string | null
           avatar_url?: string | null
           bio?: string | null
+          biological_sex?: string | null
           birth_month?: number | null
           birth_year?: number | null
+          birthdate?: string | null
           bring_you_here?: string[] | null
           created_at?: string
           current_weight?: number | null
           daily_calorie_target?: number | null
           display_name?: string | null
+          exercise_frequency?: string | null
           first_name?: string | null
           goal_weight?: number | null
           goals_setup_completed?: boolean | null
+          height_feet?: number | null
+          height_inches?: number | null
           height_value?: number | null
           hobbies?: string[] | null
           id?: string
@@ -496,25 +575,34 @@ export type Database = {
           macro_targets?: Json | null
           onboarding_completed?: boolean | null
           pace?: string | null
+          primary_goal?: string | null
           tdee_targets_enabled?: boolean | null
           units_system?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
+          weight_loss_rate?: string | null
+          zip_code?: string | null
         }
         Update: {
+          activity_level?: string | null
           avatar_url?: string | null
           bio?: string | null
+          biological_sex?: string | null
           birth_month?: number | null
           birth_year?: number | null
+          birthdate?: string | null
           bring_you_here?: string[] | null
           created_at?: string
           current_weight?: number | null
           daily_calorie_target?: number | null
           display_name?: string | null
+          exercise_frequency?: string | null
           first_name?: string | null
           goal_weight?: number | null
           goals_setup_completed?: boolean | null
+          height_feet?: number | null
+          height_inches?: number | null
           height_value?: number | null
           hobbies?: string[] | null
           id?: string
@@ -522,11 +610,14 @@ export type Database = {
           macro_targets?: Json | null
           onboarding_completed?: boolean | null
           pace?: string | null
+          primary_goal?: string | null
           tdee_targets_enabled?: boolean | null
           units_system?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
+          weight_loss_rate?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }
