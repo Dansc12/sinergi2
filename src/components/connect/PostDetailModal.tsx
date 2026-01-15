@@ -31,6 +31,7 @@ import { usePostComments } from "@/hooks/usePostComments";
 import { usePostDetail } from "@/contexts/PostDetailContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { LazyImage } from "@/components/LazyImage";
+import { useFollow } from "@/hooks/useFollow";
 
 // Interfaces
 interface Exercise {
@@ -817,9 +818,15 @@ export const PostDetailModal = ({ open, onClose, post, onCountChange }: PostDeta
                     <p className="text-xs text-muted-foreground">{formattedDate}</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="h-7 px-3 text-xs rounded-full shrink-0">
+                <Button
+                  variant={isFollowing ? "secondary" : "outline"}
+                  size="sm"
+                  className="h-7 px-3 text-xs rounded-full shrink-0"
+                  onClick={isFollowing ? unfollow : follow}
+                  disabled={isLoading}
+                >
                   <UserPlus size={12} className="mr-1" />
-                  Follow
+                  {isFollowing ? "Following" : "Follow"}
                 </Button>
               </div>
 
