@@ -27,47 +27,39 @@ const typeLabels = {
 
 const EmptyFeedState = () => {
   const navigate = useNavigate();
-  
+
   return (
     <div className="bg-card border border-border rounded-2xl p-6 text-center">
       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
         <Users size={24} className="text-primary" />
       </div>
-      <h3 className="font-semibold mb-1">No Friend Activity</h3>
-      <p className="text-sm text-muted-foreground mb-4">
-        Connect with friends to see their fitness journey
-      </p>
+      <h3 className="font-semibold mb-1">No Following Activity</h3>
+      <p className="text-sm text-muted-foreground mb-4">Follow people to see their fitness journey</p>
       <Button size="sm" onClick={() => navigate("/discover")}>
-        Find Friends
+        Find People to Follow
       </Button>
     </div>
   );
 };
 
 export const FriendFeed = () => {
-  // Empty array - will be populated from real friend posts
   const feedPosts: FeedPost[] = [];
 
   return (
     <section className="px-4 py-4">
-      <h2 className="text-lg font-semibold mb-3">Friend Activity</h2>
-      
+      <h2 className="text-lg font-semibold mb-3">Following Activity</h2>
+
       {feedPosts.length === 0 ? (
         <EmptyFeedState />
       ) : (
         <div className="space-y-4">
           {feedPosts.map((post) => (
-            <article
-              key={post.id}
-              className="bg-card border border-border rounded-2xl p-4 shadow-card"
-            >
+            <article key={post.id} className="bg-card border border-border rounded-2xl p-4 shadow-card">
               {/* Header */}
               <div className="flex items-center gap-3 mb-3">
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={post.user.avatar} />
-                  <AvatarFallback className="bg-muted">
-                    {post.user.name.charAt(0)}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-muted">{post.user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-semibold text-sm">{post.user.name}</p>
@@ -86,11 +78,7 @@ export const FriendFeed = () => {
               {/* Image */}
               {post.image && (
                 <div className="mb-3 -mx-4">
-                  <img 
-                    src={post.image} 
-                    alt="Post content" 
-                    className="w-full aspect-video object-cover"
-                  />
+                  <img src={post.image} alt="Post content" className="w-full aspect-video object-cover" />
                 </div>
               )}
 
