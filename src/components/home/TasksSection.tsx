@@ -42,7 +42,7 @@ export const TasksSection = ({ completedTasks = new Set() }: TasksSectionProps) 
         className="w-full flex items-center justify-between mb-3"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Today's Tasks</h2>
+          <h2 className="text-lg font-semibold">Today</h2>
           <span className="text-sm text-muted-foreground">
             {completedCount}/{totalTasks}
           </span>
