@@ -1,11 +1,3 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -237,6 +229,41 @@ export type Database = {
         }
         Relationships: []
       }
+      group_join_requests: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_join_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           group_id: string
@@ -276,6 +303,7 @@ export type Database = {
           creator_id: string
           description: string | null
           id: string
+          is_system: boolean
           name: string
           updated_at: string
           visibility: string | null
@@ -286,6 +314,7 @@ export type Database = {
           creator_id: string
           description?: string | null
           id?: string
+          is_system?: boolean
           name: string
           updated_at?: string
           visibility?: string | null
@@ -296,6 +325,7 @@ export type Database = {
           creator_id?: string
           description?: string | null
           id?: string
+          is_system?: boolean
           name?: string
           updated_at?: string
           visibility?: string | null
@@ -916,6 +946,7 @@ export type Database = {
           created_at: string
           id: string
           log_date: string
+          notes: string | null
           updated_at: string
           user_id: string
           weight: number
@@ -924,6 +955,7 @@ export type Database = {
           created_at?: string
           id?: string
           log_date: string
+          notes?: string | null
           updated_at?: string
           user_id: string
           weight: number
@@ -932,6 +964,7 @@ export type Database = {
           created_at?: string
           id?: string
           log_date?: string
+          notes?: string | null
           updated_at?: string
           user_id?: string
           weight?: number
@@ -1021,6 +1054,7 @@ export type Database = {
           visibility: string
         }[]
       }
+      get_user_stats: { Args: { target_user_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
