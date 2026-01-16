@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -51,27 +51,18 @@ export type Database = {
       }
       chat_read_status: {
         Row: {
-          created_at: string
           group_id: string
-          id: string
           last_read_at: string
-          updated_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string
           group_id: string
-          id?: string
           last_read_at?: string
-          updated_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string
           group_id?: string
-          id?: string
           last_read_at?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -86,31 +77,31 @@ export type Database = {
       }
       custom_exercises: {
         Row: {
-          category: string
+          category: string | null
           created_at: string
           id: string
-          is_cardio: boolean
-          muscle_group: string
+          is_cardio: boolean | null
+          muscle_group: string | null
           name: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          category: string
+          category?: string | null
           created_at?: string
           id?: string
-          is_cardio?: boolean
-          muscle_group: string
+          is_cardio?: boolean | null
+          muscle_group?: string | null
           name: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          category?: string
+          category?: string | null
           created_at?: string
           id?: string
-          is_cardio?: boolean
-          muscle_group?: string
+          is_cardio?: boolean | null
+          muscle_group?: string | null
           name?: string
           updated_at?: string
           user_id?: string
@@ -119,38 +110,38 @@ export type Database = {
       }
       custom_foods: {
         Row: {
-          base_unit: string
+          base_unit: string | null
           calories: number
-          carbs: number
+          carbs: number | null
           created_at: string
-          fat: number
+          fat: number | null
           id: string
           name: string
-          protein: number
+          protein: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          base_unit?: string
+          base_unit?: string | null
           calories?: number
-          carbs?: number
+          carbs?: number | null
           created_at?: string
-          fat?: number
+          fat?: number | null
           id?: string
           name: string
-          protein?: number
+          protein?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          base_unit?: string
+          base_unit?: string | null
           calories?: number
-          carbs?: number
+          carbs?: number | null
           created_at?: string
-          fat?: number
+          fat?: number | null
           id?: string
           name?: string
-          protein?: number
+          protein?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -161,7 +152,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
-          is_read: boolean
+          is_read: boolean | null
           receiver_id: string
           sender_id: string
         }
@@ -169,7 +160,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
           receiver_id: string
           sender_id: string
         }
@@ -177,62 +168,45 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
           receiver_id?: string
           sender_id?: string
         }
         Relationships: []
       }
-      feedback_messages: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      feedback_upvotes: {
+      follows: {
         Row: {
           created_at: string
-          feedback_id: string
+          followee_id: string
+          follower_id: string
           id: string
-          user_id: string
         }
         Insert: {
           created_at?: string
-          feedback_id: string
+          followee_id: string
+          follower_id: string
           id?: string
-          user_id: string
         }
         Update: {
           created_at?: string
-          feedback_id?: string
+          followee_id?: string
+          follower_id?: string
           id?: string
-          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "feedback_upvotes_feedback_id_fkey"
-            columns: ["feedback_id"]
+            foreignKeyName: "follows_followee_id_fkey"
+            columns: ["followee_id"]
             isOneToOne: false
-            referencedRelation: "feedback_messages"
-            referencedColumns: ["id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -262,41 +236,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      group_join_requests: {
-        Row: {
-          created_at: string
-          group_id: string
-          id: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          group_id: string
-          id?: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          group_id?: string
-          id?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_join_requests_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       group_members: {
         Row: {
@@ -334,77 +273,77 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
-          creator_id: string | null
+          creator_id: string
           description: string | null
           id: string
-          is_system: boolean
           name: string
-          slug: string
           updated_at: string
-          visibility: string
+          visibility: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
-          creator_id?: string | null
+          creator_id: string
           description?: string | null
           id?: string
-          is_system?: boolean
           name: string
-          slug: string
           updated_at?: string
-          visibility?: string
+          visibility?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
-          creator_id?: string | null
+          creator_id?: string
           description?: string | null
           id?: string
-          is_system?: boolean
           name?: string
-          slug?: string
           updated_at?: string
-          visibility?: string
+          visibility?: string | null
         }
         Relationships: []
       }
       meal_logs: {
         Row: {
           created_at: string
-          foods: Json
+          foods: Json | null
           id: string
           log_date: string
-          meal_type: string
+          meal_type: string | null
+          notes: string | null
           total_calories: number | null
           total_carbs: number | null
           total_fat: number | null
+          total_fats: number | null
           total_protein: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          foods?: Json
+          foods?: Json | null
           id?: string
-          log_date?: string
-          meal_type: string
+          log_date: string
+          meal_type?: string | null
+          notes?: string | null
           total_calories?: number | null
           total_carbs?: number | null
           total_fat?: number | null
+          total_fats?: number | null
           total_protein?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          foods?: Json
+          foods?: Json | null
           id?: string
           log_date?: string
-          meal_type?: string
+          meal_type?: string | null
+          notes?: string | null
           total_calories?: number | null
           total_carbs?: number | null
           total_fat?: number | null
+          total_fats?: number | null
           total_protein?: number | null
           updated_at?: string
           user_id?: string
@@ -415,41 +354,59 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          is_read: boolean
+          is_read: boolean | null
           message: string | null
           related_content_id: string | null
           related_content_type: string | null
           related_user_id: string | null
           title: string
           type: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
           message?: string | null
           related_content_id?: string | null
           related_content_type?: string | null
           related_user_id?: string | null
           title: string
           type: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
           message?: string | null
           related_content_id?: string | null
           related_content_type?: string | null
           related_user_id?: string | null
           title?: string
           type?: string
-          updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      off_cache: {
+        Row: {
+          cache_key: string
+          created_at: string | null
+          expires_at: string
+          payload: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string | null
+          expires_at: string
+          payload: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string | null
+          expires_at?: string
+          payload?: Json
         }
         Relationships: []
       }
@@ -709,13 +666,6 @@ export type Database = {
             referencedRelation: "scheduled_routines"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "routine_instances_workout_log_id_fkey"
-            columns: ["workout_log_id"]
-            isOneToOne: false
-            referencedRelation: "workout_logs"
-            referencedColumns: ["id"]
-          },
         ]
       }
       saved_posts: {
@@ -746,60 +696,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      saved_workouts: {
-        Row: {
-          created_at: string
-          description: string | null
-          exercises: Json
-          id: string
-          post_id: string | null
-          tags: string[] | null
-          title: string
-          updated_at: string
-          user_id: string
-          workout_log_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          exercises?: Json
-          id?: string
-          post_id?: string | null
-          tags?: string[] | null
-          title: string
-          updated_at?: string
-          user_id: string
-          workout_log_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          exercises?: Json
-          id?: string
-          post_id?: string | null
-          tags?: string[] | null
-          title?: string
-          updated_at?: string
-          user_id?: string
-          workout_log_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "saved_workouts_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "saved_workouts_workout_log_id_fkey"
-            columns: ["workout_log_id"]
-            isOneToOne: false
-            referencedRelation: "workout_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -862,38 +758,41 @@ export type Database = {
       }
       set_muscle_volume: {
         Row: {
-          allocated_tonnage: number
+          allocated_tonnage: number | null
           created_at: string
-          exercise_name: string
+          exercise_name: string | null
           id: string
           log_date: string
-          muscle: string
-          primary_group: string
-          set_index: number
+          muscle: string | null
+          primary_group: string | null
+          set_index: number | null
+          updated_at: string
           user_id: string
           workout_log_id: string
         }
         Insert: {
-          allocated_tonnage?: number
+          allocated_tonnage?: number | null
           created_at?: string
-          exercise_name: string
+          exercise_name?: string | null
           id?: string
           log_date: string
-          muscle: string
-          primary_group: string
-          set_index: number
+          muscle?: string | null
+          primary_group?: string | null
+          set_index?: number | null
+          updated_at?: string
           user_id: string
           workout_log_id: string
         }
         Update: {
-          allocated_tonnage?: number
+          allocated_tonnage?: number | null
           created_at?: string
-          exercise_name?: string
+          exercise_name?: string | null
           id?: string
           log_date?: string
-          muscle?: string
-          primary_group?: string
-          set_index?: number
+          muscle?: string | null
+          primary_group?: string | null
+          set_index?: number | null
+          updated_at?: string
           user_id?: string
           workout_log_id?: string
         }
@@ -955,28 +854,28 @@ export type Database = {
       user_streaks: {
         Row: {
           created_at: string
-          current_streak: number
+          current_streak: number | null
           id: string
-          last_log_date: string | null
-          longest_streak: number
+          last_activity_date: string | null
+          longest_streak: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          current_streak?: number
+          current_streak?: number | null
           id?: string
-          last_log_date?: string | null
-          longest_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          current_streak?: number
+          current_streak?: number | null
           id?: string
-          last_log_date?: string | null
-          longest_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -985,28 +884,28 @@ export type Database = {
       water_logs: {
         Row: {
           created_at: string
-          glasses: number
+          glasses: number | null
           id: string
           log_date: string
-          target_glasses: number
+          target_glasses: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          glasses?: number
+          glasses?: number | null
           id?: string
-          log_date?: string
-          target_glasses?: number
+          log_date: string
+          target_glasses?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          glasses?: number
+          glasses?: number | null
           id?: string
           log_date?: string
-          target_glasses?: number
+          target_glasses?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1017,7 +916,6 @@ export type Database = {
           created_at: string
           id: string
           log_date: string
-          notes: string | null
           updated_at: string
           user_id: string
           weight: number
@@ -1025,8 +923,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          log_date?: string
-          notes?: string | null
+          log_date: string
           updated_at?: string
           user_id: string
           weight: number
@@ -1035,7 +932,6 @@ export type Database = {
           created_at?: string
           id?: string
           log_date?: string
-          notes?: string | null
           updated_at?: string
           user_id?: string
           weight?: number
@@ -1044,9 +940,11 @@ export type Database = {
       }
       workout_logs: {
         Row: {
+          calories_burned: number | null
           created_at: string
+          duration_minutes: number | null
           duration_seconds: number | null
-          exercises: Json
+          exercises: Json | null
           id: string
           log_date: string
           notes: string | null
@@ -1055,20 +953,24 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          calories_burned?: number | null
           created_at?: string
+          duration_minutes?: number | null
           duration_seconds?: number | null
-          exercises?: Json
+          exercises?: Json | null
           id?: string
-          log_date?: string
+          log_date: string
           notes?: string | null
           photos?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          calories_burned?: number | null
           created_at?: string
+          duration_minutes?: number | null
           duration_seconds?: number | null
-          exercises?: Json
+          exercises?: Json | null
           id?: string
           log_date?: string
           notes?: string | null
@@ -1083,61 +985,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_paginated_posts:
-        | {
-            Args: {
-              p_cursor_created_at?: string
-              p_cursor_id?: string
-              p_limit?: number
-              p_types?: string[]
-              p_user_id: string
-              p_visibility?: string
-            }
-            Returns: {
-              author_avatar_url: string
-              author_first_name: string
-              author_username: string
-              comment_count: number
-              content_data: Json
-              content_type: string
-              created_at: string
-              description: string
-              id: string
-              images: string[]
-              like_count: number
-              user_id: string
-              viewer_has_liked: boolean
-              visibility: string
-            }[]
-          }
-        | {
-            Args: {
-              p_cursor_created_at?: string
-              p_cursor_id?: string
-              p_images_only?: boolean
-              p_limit?: number
-              p_types?: string[]
-              p_user_id: string
-              p_visibility?: string
-            }
-            Returns: {
-              author_avatar_url: string
-              author_first_name: string
-              author_username: string
-              comment_count: number
-              content_data: Json
-              content_type: string
-              created_at: string
-              description: string
-              id: string
-              images: string[]
-              like_count: number
-              user_id: string
-              viewer_has_liked: boolean
-              visibility: string
-            }[]
-          }
-      get_user_stats: { Args: { target_user_id: string }; Returns: Json }
+      create_muscle_volume_entries: {
+        Args: {
+          p_exercises: Json
+          p_log_date: string
+          p_user_id: string
+          p_workout_log_id: string
+        }
+        Returns: undefined
+      }
+      get_paginated_posts: {
+        Args: {
+          p_cursor_created_at?: string
+          p_cursor_id?: string
+          p_images_only?: boolean
+          p_limit?: number
+          p_types?: string[]
+          p_user_id: string
+          p_visibility?: string
+        }
+        Returns: {
+          author_avatar_url: string
+          author_first_name: string
+          author_username: string
+          comment_count: number
+          content_data: Json
+          content_type: string
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          like_count: number
+          user_id: string
+          viewer_has_liked: boolean
+          visibility: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
